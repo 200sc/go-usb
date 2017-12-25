@@ -36,55 +36,7 @@
 		r = err;			\
 		continue;			\
 	}
-
-// WinUSB-like API prototypes
-static int winusbx_init(int sub_api, struct libusb_context *ctx);
-static int winusbx_exit(int sub_api);
-static int winusbx_open(int sub_api, struct libusb_device_handle *dev_handle);
-static void winusbx_close(int sub_api, struct libusb_device_handle *dev_handle);
-static int winusbx_configure_endpoints(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-static int winusbx_claim_interface(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-static int winusbx_release_interface(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-static int winusbx_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int winusbx_set_interface_altsetting(int sub_api, struct libusb_device_handle *dev_handle, int iface, int altsetting);
-static int winusbx_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int winusbx_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint);
-static int winusbx_abort_transfers(int sub_api, struct usbi_transfer *itransfer);
-static int winusbx_abort_control(int sub_api, struct usbi_transfer *itransfer);
-static int winusbx_reset_device(int sub_api, struct libusb_device_handle *dev_handle);
-static int winusbx_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size);
-// HID API prototypes
-static int hid_init(int sub_api, struct libusb_context *ctx);
-static int hid_exit(int sub_api);
-static int hid_open(int sub_api, struct libusb_device_handle *dev_handle);
-static void hid_close(int sub_api, struct libusb_device_handle *dev_handle);
-static int hid_claim_interface(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-static int hid_release_interface(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-static int hid_set_interface_altsetting(int sub_api, struct libusb_device_handle *dev_handle, int iface, int altsetting);
-static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int hid_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint);
-static int hid_abort_transfers(int sub_api, struct usbi_transfer *itransfer);
-static int hid_reset_device(int sub_api, struct libusb_device_handle *dev_handle);
-static int hid_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size);
-// Composite API prototypes
-static int composite_init(int sub_api, struct libusb_context *ctx);
-static int composite_exit(int sub_api);
-static int composite_open(int sub_api, struct libusb_device_handle *dev_handle);
-static void composite_close(int sub_api, struct libusb_device_handle *dev_handle);
-static int composite_claim_interface(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-static int composite_set_interface_altsetting(int sub_api, struct libusb_device_handle *dev_handle, int iface, int altsetting);
-static int composite_release_interface(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-static int composite_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int composite_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int composite_submit_iso_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int composite_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint);
-static int composite_abort_transfers(int sub_api, struct usbi_transfer *itransfer);
-static int composite_abort_control(int sub_api, struct usbi_transfer *itransfer);
-static int composite_reset_device(int sub_api, struct libusb_device_handle *dev_handle);
-static int composite_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size);
-
-
+	
 // Global variables
 int windows_version = WINDOWS_UNDEFINED;
 static char windows_version_str[128] = "Windows Undefined";

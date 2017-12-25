@@ -39,20 +39,8 @@
 typedef unsigned __int8   uint8;
 typedef unsigned __int16  uint16_t;
 typedef unsigned __int32  uint32;
-#else
-#include <stdint.h>
 #endif
 
-#if !defined(_WIN32_WCE)
-#include <sys/types.h>
-#endif
-
-#if defined(__linux) || defined(__APPLE__) || defined(__CYGWIN__) || defined(__HAIKU__)
-#include <sys/time.h>
-#endif
-
-#include <time.h>
-#include <limits.h>
 
 /* 'interface' might be defined as a macro on Windows, so we need to
  * undefine it so as not to break the current libusb API, because
@@ -60,12 +48,10 @@ typedef unsigned __int32  uint32;
  * As this can be problematic if you include windows.h after libusb.h
  * in your sources, we force windows.h to be included first. */
 #if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN32_WCE)
-#include <windows.h>
 #if defined(interface)
 #undef interface
 #endif
 #if !defined(__CYGWIN__)
-#include <winsock.h>
 #endif
 #endif
 
@@ -138,10 +124,6 @@ typedef unsigned __int32  uint32;
 
 /* The following is kept for compatibility, but will be deprecated in the future */
 #define LIBUSBX_API_VERSION LIBUSB_API_VERSION
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * \ingroup libusb_misc
@@ -461,12 +443,6 @@ struct libusb_bos_dev_capability_descriptor {
 	uint8 bDevCapabilityType;
 	/** Device Capability data (bLength - 3 bytes) */
 	uint8 dev_capability_data
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-	[] /* valid C99 code */
-#else
-	[0] /* non-standard, but usually working code */
-#endif
-	;
 };
 
 /** \ingroup libusb_desc
@@ -492,12 +468,6 @@ struct libusb_bos_descriptor {
 
 	/** bNumDeviceCap Device Capability Descriptors */
 	struct libusb_bos_dev_capability_descriptor *dev_capability
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-	[] /* valid C99 code */
-#else
-	[0] /* non-standard, but usually working code */
-#endif
-	;
 };
 
 /** \ingroup libusb_desc
@@ -789,12 +759,6 @@ struct libusb_transfer {
 
 	/** Isochronous packet descriptors, for isochronous transfers only. */
 	struct libusb_iso_packet_descriptor iso_packet_desc
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-	[] /* valid C99 code */
-#else
-	[0] /* non-standard, but usually working code */
-#endif
-	;
 };
 
 /* async I/O */
@@ -1122,20 +1086,6 @@ static  uint8 *libusb_get_iso_packet_buffer_simple(
 	return transfer->buffer + ((int) transfer->iso_packet_desc[0].length * _packet);
 }
 
-/* sync I/O */
-
-int  libusb_control_transfer(libusb_device_handle *dev_handle,
-	uint8 request_type, uint8 bRequest, uint16_t wValue, uint16_t wIndex,
-	uint8 *data, uint16_t wLength, unsigned int timeout);
-
-int  libusb_bulk_transfer(libusb_device_handle *dev_handle,
-	uint8 endpoint, uint8 *data, int length,
-	int *actual_length, unsigned int timeout);
-
-int  libusb_interrupt_transfer(libusb_device_handle *dev_handle,
-	uint8 endpoint, uint8 *data, int length,
-	int *actual_length, unsigned int timeout);
-
 /** \ingroup libusb_desc
  * Retrieve a descriptor from the default control pipe.
  * This is a convenience function which formulates the appropriate control
@@ -1178,33 +1128,6 @@ static  int libusb_get_string_descriptor(libusb_device_handle *dev_handle,
 		langid, data, (uint16_t) length, 1000);
 }
 
-int  libusb_get_string_descriptor_ascii(libusb_device_handle *dev_handle,
-	uint8 desc_index, uint8 *data, int length);
-
-/* polling and timeouts */
-
-int  libusb_try_lock_events(libusb_context *ctx);
-void  libusb_lock_events(libusb_context *ctx);
-void  libusb_unlock_events(libusb_context *ctx);
-int  libusb_event_handling_ok(libusb_context *ctx);
-int  libusb_event_handler_active(libusb_context *ctx);
-void  libusb_interrupt_event_handler(libusb_context *ctx);
-void  libusb_lock_event_waiters(libusb_context *ctx);
-void  libusb_unlock_event_waiters(libusb_context *ctx);
-int  libusb_wait_for_event(libusb_context *ctx, struct timeval *tv);
-
-int  libusb_handle_events_timeout(libusb_context *ctx,
-	struct timeval *tv);
-int  libusb_handle_events_timeout_completed(libusb_context *ctx,
-	struct timeval *tv, int *completed);
-int  libusb_handle_events(libusb_context *ctx);
-int  libusb_handle_events_completed(libusb_context *ctx, int *completed);
-int  libusb_handle_events_locked(libusb_context *ctx,
-	struct timeval *tv);
-int  libusb_pollfds_handle_timeouts(libusb_context *ctx);
-int  libusb_get_next_timeout(libusb_context *ctx,
-	struct timeval *tv);
-
 /** \ingroup libusb_poll
  * File descriptor for polling
  */
@@ -1242,13 +1165,6 @@ typedef void ( *libusb_pollfd_added_cb)(int fd, short events,
  * \see libusb_set_pollfd_notifiers()
  */
 typedef void ( *libusb_pollfd_removed_cb)(int fd, void *user_data);
-
-const struct libusb_pollfd **  libusb_get_pollfds(
-	libusb_context *ctx);
-void  libusb_free_pollfds(const struct libusb_pollfd **pollfds);
-void  libusb_set_pollfd_notifiers(libusb_context *ctx,
-	libusb_pollfd_added_cb added_cb, libusb_pollfd_removed_cb removed_cb,
-	void *user_data);
 
 /** \ingroup libusb_hotplug
  * Callback handle.
@@ -1296,60 +1212,3 @@ typedef int ( *libusb_hotplug_callback_fn)(libusb_context *ctx,
 						libusb_device *device,
 						libusb_hotplug_event event,
 						void *user_data);
-
-/** \ingroup libusb_hotplug
- * Register a hotplug callback function
- *
- * Register a callback with the libusb_context. The callback will fire
- * when a matching event occurs on a matching device. The callback is
- * armed until either it is deregistered with libusb_hotplug_deregister_callback()
- * or the supplied callback returns 1 to indicate it is finished processing events.
- *
- * If the \ref LIBUSB_HOTPLUG_ENUMERATE is passed the callback will be
- * called with a \ref LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED for all devices
- * already plugged into the machine. Note that libusb modifies its internal
- * device list from a separate thread, while calling hotplug callbacks from
- * libusb_handle_events(), so it is possible for a device to already be present
- * on, or removed from, its internal device list, while the hotplug callbacks
- * still need to be dispatched. This means that when using \ref
- * LIBUSB_HOTPLUG_ENUMERATE, your callback may be called twice for the arrival
- * of the same device, once from libusb_hotplug_register_callback() and once
- * from libusb_handle_events(); and/or your callback may be called for the
- * removal of a device for which an arrived call was never made.
- *
- * Since version 1.0.16, \ref LIBUSB_API_VERSION >= 0x01000102
- *
- * \param[in] ctx context to register this callback with
- * \param[in] events bitwise or of events that will trigger this callback. See \ref
- *            libusb_hotplug_event
- * \param[in] flags hotplug callback flags. See \ref libusb_hotplug_flag
- * \param[in] vendor_id the vendor id to match or \ref LIBUSB_HOTPLUG_MATCH_ANY
- * \param[in] product_id the product id to match or \ref LIBUSB_HOTPLUG_MATCH_ANY
- * \param[in] dev_class the device class to match or \ref LIBUSB_HOTPLUG_MATCH_ANY
- * \param[in] cb_fn the function to be invoked on a matching event/device
- * \param[in] user_data user data to pass to the callback function
- * \param[out] callback_handle pointer to store the handle of the allocated callback (can be NULL)
- * \returns LIBUSB_SUCCESS on success LIBUSB_ERROR code on failure
- */
-int  libusb_hotplug_register_callback(libusb_context *ctx,
-						libusb_hotplug_event events,
-						libusb_hotplug_flag flags,
-						int vendor_id, int product_id,
-						int dev_class,
-						libusb_hotplug_callback_fn cb_fn,
-						void *user_data,
-						libusb_hotplug_callback_handle *callback_handle);
-
-/** \ingroup libusb_hotplug
- * Deregisters a hotplug callback.
- *
- * Deregister a callback from a libusb_context. This function is safe to call from within
- * a hotplug callback.
- *
- * Since version 1.0.16, \ref LIBUSB_API_VERSION >= 0x01000102
- *
- * \param[in] ctx context this callback is registered with
- * \param[in] callback_handle the handle of the callback to deregister
- */
-void  libusb_hotplug_deregister_callback(libusb_context *ctx,
-						libusb_hotplug_callback_handle callback_handle);

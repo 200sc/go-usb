@@ -62,22 +62,6 @@ struct winfd {
 	cancel_transfer *cancel_fn;		// Function pointer to cancel transfer API
 	rw_type rw;				// I/O transfer direction: read *XOR* write (NOT BOTH)
 };
-extern const struct winfd INVALID_WINFD;
-
-int usbi_pipe(int pipefd[2]);
-int usbi_poll(struct pollfd *fds, unsigned int nfds, int timeout);
-ssize_t usbi_write(int fd, const void *buf, int count);
-ssize_t usbi_read(int fd, void *buf, int count);
-int usbi_close(int fd);
-
-void init_polling(void);
-void exit_polling(void);
-struct winfd usbi_create_fd(HANDLE handle, int access_mode, 
-	struct usbi_transfer *transfer, cancel_transfer *cancel_fn);
-void usbi_free_fd(struct winfd* winfd);
-struct winfd fd_to_winfd(int fd);
-struct winfd handle_to_winfd(HANDLE handle);
-struct winfd overlapped_to_winfd(OVERLAPPED* overlapped);
 
 /*
  * Timeval operations

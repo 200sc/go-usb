@@ -155,20 +155,3 @@ struct usbfs_streams {
 #define IOCTL_USBFS_DISCONNECT_CLAIM	_IOR('U', 27, struct usbfs_disconnect_claim)
 #define IOCTL_USBFS_ALLOC_STREAMS	_IOR('U', 28, struct usbfs_streams)
 #define IOCTL_USBFS_FREE_STREAMS	_IOR('U', 29, struct usbfs_streams)
-
-extern usbi_mutex_static_t linux_hotplug_lock;
-
-int linux_netlink_start_event_monitor(void);
-int linux_netlink_stop_event_monitor(void);
-void linux_netlink_hotplug_poll(void);
-
-void linux_hotplug_enumerate(uint8 busnum, uint8 devaddr, const char *sys_name);
-void linux_device_disconnected(uint8 busnum, uint8 devaddr);
-
-int linux_get_device_address (struct libusb_context *ctx, int detached,
-	uint8 *busnum, uint8 *devaddr, const char *dev_node,
-	const char *sys_name);
-int linux_enumerate_device(struct libusb_context *ctx,
-	uint8 busnum, uint8 devaddr, const char *sysfs_dir);
-
-#endif

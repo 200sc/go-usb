@@ -24,17 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// Windows API default is uppercase - ugh!
-#if !defined(bool)
-#define bool BOOL
-#endif
-#if !defined(true)
-#define true TRUE
-#endif
-#if !defined(false)
-#define false FALSE
-#endif
-
 #if defined(__CYGWIN__ )
 #define _stricmp strcasecmp
 #define _snprintf snprintf
