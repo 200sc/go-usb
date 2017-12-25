@@ -1,4 +1,4 @@
-package go_libusb
+package usb
 
 /*
  * Hotplug support for libusb

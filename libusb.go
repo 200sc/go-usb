@@ -1,4 +1,4 @@
-package libusb
+package usb
 
 /* standard USB stuff */
 

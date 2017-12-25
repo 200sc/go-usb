@@ -1,4 +1,4 @@
-package libusb
+package usb
 
 type usbi_event_flags uint8
 const(
