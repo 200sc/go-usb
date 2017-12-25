@@ -870,15 +870,6 @@ static  void libusb_fill_control_setup(unsigned char *buffer,
 	setup->wLength = libusb_cpu_to_le16(wLength);
 }
 
-struct libusb_transfer *  libusb_alloc_transfer(int iso_packets);
-int  libusb_submit_transfer(struct libusb_transfer *transfer);
-int  libusb_cancel_transfer(struct libusb_transfer *transfer);
-void  libusb_free_transfer(struct libusb_transfer *transfer);
-void  libusb_transfer_set_stream_id(
-	struct libusb_transfer *transfer, uint32_t stream_id);
-uint32_t  libusb_transfer_get_stream_id(
-	struct libusb_transfer *transfer);
-
 /** \ingroup libusb_asyncio
  * Helper function to populate the required \ref libusb_transfer fields
  * for a control transfer.

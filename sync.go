@@ -1,3 +1,5 @@
+package usb
+
 /*
  * Synchronous I/O functions for libusb
  * Copyright © 2007-2008 Daniel Drake <dsd@gentoo.org>
@@ -25,21 +27,17 @@
  * may wish to consider using the \ref libusb_asyncio "asynchronous I/O API" instead.
  */
 
-static void  sync_transfer_cb(struct libusb_transfer *transfer)
-{
-	int *completed = transfer->user_data;
-	*completed = 1;
-	usbi_dbg("actual_length=%d", transfer->actual_length);
-	/* caller interprets result and frees transfer */
+func sync_transfer_cb(transfer *libusb_transfer) {
+	*transfer.user_data = 1
 }
 
-static void sync_transfer_wait_for_completion(struct libusb_transfer *transfer)
-{
-	int r, *completed = transfer->user_data;
-	struct libusb_context *ctx = HANDLE_CTX(transfer->dev_handle);
+func sync_transfer_wait_for_completion(transfer *libusb_transfer) {
+	var completed *int = transfer.user_data //user_data is probably an interface{}?
 
-	while (!*completed) {
-		r = libusb_handle_events_completed(ctx, completed);
+	ctx := HANDLE_CTX(transfer.dev_handle);
+
+	for *completed == 0 {
+		r := libusb_handle_events_completed(ctx, completed);
 		if (r < 0) {
 			if (r == LIBUSB_ERROR_INTERRUPTED)
 				continue;
@@ -82,135 +80,118 @@ static void sync_transfer_wait_for_completion(struct libusb_transfer *transfer)
  * the operating system and/or hardware can support
  * \returns another LIBUSB_ERROR code on other failures
  */
-int  libusb_control_transfer(libusb_device_handle *dev_handle,
-	uint8_t bmRequestType, uint8_t bRequest, uint16_t wValue, uint16_t wIndex,
-	unsigned char *data, uint16_t wLength, unsigned int timeout)
-{
-	struct libusb_transfer *transfer;
-	unsigned char *buffer;
-	int completed = 0;
-	int r;
+func ibusb_control_transfer(dev_handle *libusb_device_handle,
+	bmRequestType uint8, bRequest uint8, wValue uint16, wIndex uint16,
+	data []uint8, wLength uint16, timeout uint) int {
 
-	if (usbi_handling_events(HANDLE_CTX(dev_handle)))
-		return LIBUSB_ERROR_BUSY;
-
-	transfer = libusb_alloc_transfer(0);
-	if (!transfer)
-		return LIBUSB_ERROR_NO_MEM;
-
-	buffer = (unsigned char*) malloc(LIBUSB_CONTROL_SETUP_SIZE + wLength);
-	if (!buffer) {
-		libusb_free_transfer(transfer);
-		return LIBUSB_ERROR_NO_MEM;
+	if (usbi_handling_events(HANDLE_CTX(dev_handle))) {
+		return LIBUSB_ERROR_BUSY
 	}
 
-	libusb_fill_control_setup(buffer, bmRequestType, bRequest, wValue, wIndex,
-		wLength);
-	if ((bmRequestType & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_OUT)
-		memcpy(buffer + LIBUSB_CONTROL_SETUP_SIZE, data, wLength);
+	var completed int
+
+	transfer := libusb_alloc_transfer(0)
+	buffer := make([]uint8, LIBUSB_CONTROL_SETUP_SIZE)
+	
+	libusb_fill_control_setup(buffer, bmRequestType, bRequest, wValue, wIndex, wLength)
+
+	if (bmRequestType & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_OUT {
+		buffer = append(buffer, data[0:wLength])
+	} else {
+		buffer = make([]uint8, LIBUSB_CONTROL_SETUP_SIZE + wLength)	
+	}
 
 	libusb_fill_control_transfer(transfer, dev_handle, buffer,
-		sync_transfer_cb, &completed, timeout);
-	transfer->flags = LIBUSB_TRANSFER_FREE_BUFFER;
-	r = libusb_submit_transfer(transfer);
+		sync_transfer_cb, &completed, timeout)
+
+	transfer.flags = LIBUSB_TRANSFER_FREE_BUFFER
+
+	r := libusb_submit_transfer(transfer);
 	if (r < 0) {
-		libusb_free_transfer(transfer);
 		return r;
 	}
 
 	sync_transfer_wait_for_completion(transfer);
 
-	if ((bmRequestType & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN)
-		memcpy(data, libusb_control_transfer_get_data(transfer),
-			transfer->actual_length);
+	if (bmRequestType & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN {
+		tdata := libusb_control_transfer_get_data(transfer)
+		for i := 0; i < transfer.actual_length; i++ {
+			data[i] = tdata[i]
+		}
+	}
 
-	switch (transfer->status) {
+	switch transfer.status {
 	case LIBUSB_TRANSFER_COMPLETED:
-		r = transfer->actual_length;
-		break;
+		r = transfer.actual_length
 	case LIBUSB_TRANSFER_TIMED_OUT:
-		r = LIBUSB_ERROR_TIMEOUT;
-		break;
+		r = LIBUSB_ERROR_TIMEOUT
 	case LIBUSB_TRANSFER_STALL:
-		r = LIBUSB_ERROR_PIPE;
-		break;
+		r = LIBUSB_ERROR_PIPE
 	case LIBUSB_TRANSFER_NO_DEVICE:
-		r = LIBUSB_ERROR_NO_DEVICE;
-		break;
+		r = LIBUSB_ERROR_NO_DEVICE
 	case LIBUSB_TRANSFER_OVERFLOW:
-		r = LIBUSB_ERROR_OVERFLOW;
-		break;
+		r = LIBUSB_ERROR_OVERFLOW
 	case LIBUSB_TRANSFER_ERROR:
+		fallthrough
 	case LIBUSB_TRANSFER_CANCELLED:
-		r = LIBUSB_ERROR_IO;
-		break;
+		r = LIBUSB_ERROR_IO
 	default:
 		usbi_warn(HANDLE_CTX(dev_handle),
-			"unrecognised status code %d", transfer->status);
+			"unrecognised status code %d", transfer.status);
 		r = LIBUSB_ERROR_OTHER;
 	}
 
-	libusb_free_transfer(transfer);
-	return r;
+	return r 
 }
 
-static int do_sync_bulk_transfer(struct libusb_device_handle *dev_handle,
-	unsigned char endpoint, unsigned char *buffer, int length,
-	int *transferred, unsigned int timeout, unsigned char type)
-{
-	struct libusb_transfer *transfer;
-	int completed = 0;
-	int r;
+func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
+	endpoint uint8, buffer []uint8, length int,
+	transferred *int, timeout uint, type uint8) int {
 
-	if (usbi_handling_events(HANDLE_CTX(dev_handle)))
-		return LIBUSB_ERROR_BUSY;
-
-	transfer = libusb_alloc_transfer(0);
-	if (!transfer)
-		return LIBUSB_ERROR_NO_MEM;
-
-	libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length,
-		sync_transfer_cb, &completed, timeout);
-	transfer->type = type;
-
-	r = libusb_submit_transfer(transfer);
-	if (r < 0) {
-		libusb_free_transfer(transfer);
-		return r;
+	if usbi_handling_events(HANDLE_CTX(dev_handle)) {
+		return LIBUSB_ERROR_BUSY
 	}
 
-	sync_transfer_wait_for_completion(transfer);
+	completed := 0
 
-	if (transferred)
-		*transferred = transfer->actual_length;
+	transfer := libusb_alloc_transfer(0)
 
-	switch (transfer->status) {
+	libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length,
+		sync_transfer_cb, &completed, timeout)
+	transfer.type = type
+
+	r := libusb_submit_transfer(transfer)
+	if (r < 0) {
+		return r
+	}
+
+	sync_transfer_wait_for_completion(transfer)
+
+	if transferred != nil {
+		*transferred = transfer.actual_length
+	}
+
+	switch (transfer.status) {
 	case LIBUSB_TRANSFER_COMPLETED:
 		r = 0;
-		break;
 	case LIBUSB_TRANSFER_TIMED_OUT:
-		r = LIBUSB_ERROR_TIMEOUT;
-		break;
+		r = LIBUSB_ERROR_TIMEOUT
 	case LIBUSB_TRANSFER_STALL:
-		r = LIBUSB_ERROR_PIPE;
-		break;
+		r = LIBUSB_ERROR_PIPE
 	case LIBUSB_TRANSFER_OVERFLOW:
-		r = LIBUSB_ERROR_OVERFLOW;
-		break;
+		r = LIBUSB_ERROR_OVERFLOW
 	case LIBUSB_TRANSFER_NO_DEVICE:
-		r = LIBUSB_ERROR_NO_DEVICE;
-		break;
+		r = LIBUSB_ERROR_NO_DEVICE
 	case LIBUSB_TRANSFER_ERROR:
+		fallthrough
 	case LIBUSB_TRANSFER_CANCELLED:
-		r = LIBUSB_ERROR_IO;
-		break;
+		r = LIBUSB_ERROR_IO
 	default:
 		usbi_warn(HANDLE_CTX(dev_handle),
-			"unrecognised status code %d", transfer->status);
+			"unrecognised status code %d", transfer.status);
 		r = LIBUSB_ERROR_OTHER;
 	}
 
-	libusb_free_transfer(transfer);
 	return r;
 }
 
@@ -257,10 +238,8 @@ static int do_sync_bulk_transfer(struct libusb_device_handle *dev_handle,
  * \returns LIBUSB_ERROR_BUSY if called from event handling context
  * \returns another LIBUSB_ERROR code on other failures
  */
-int  libusb_bulk_transfer(struct libusb_device_handle *dev_handle,
-	unsigned char endpoint, unsigned char *data, int length, int *transferred,
-	unsigned int timeout)
-{
+func libusb_bulk_transfer(*dev_handle libusb_device_handle, endpoint uint8, 
+	data *uint8, length int, transferred *int, timeout uint) int {
 	return do_sync_bulk_transfer(dev_handle, endpoint, data, length,
 		transferred, timeout, LIBUSB_TRANSFER_TYPE_BULK);
 }
@@ -309,10 +288,8 @@ int  libusb_bulk_transfer(struct libusb_device_handle *dev_handle,
  * \returns LIBUSB_ERROR_BUSY if called from event handling context
  * \returns another LIBUSB_ERROR code on other error
  */
-int libusb_interrupt_transfer(
-	struct libusb_device_handle *dev_handle, unsigned char endpoint,
-	unsigned char *data, int length, int *transferred, unsigned int timeout)
-{
+func libusb_interrupt_transfer(dev_handle *libusb_device_handle, endpoint uint8,
+	data *uint8, length int, transferred *int, timeout uint32) int {
 	return do_sync_bulk_transfer(dev_handle, endpoint, data, length,
-		transferred, timeout, LIBUSB_TRANSFER_TYPE_INTERRUPT);
+		transferred, timeout, LIBUSB_TRANSFER_TYPE_INTERRUPT)
 }

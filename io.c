@@ -1231,24 +1231,11 @@ static int calculate_timeout(struct usbi_transfer *transfer)
  * \returns a newly allocated transfer, or NULL on error
  */
 
-struct libusb_transfer *  libusb_alloc_transfer(
-	int iso_packets)
-{
-	struct libusb_transfer *transfer;
-	size_t os_alloc_size = usbi_backend->transfer_priv_size;
-	size_t alloc_size = sizeof(struct usbi_transfer)
-		+ sizeof(struct libusb_transfer)
-		+ (sizeof(struct libusb_iso_packet_descriptor) * iso_packets)
-		+ os_alloc_size;
-	struct usbi_transfer *itransfer = calloc(1, alloc_size);
-	if (!itransfer)
-		return NULL;
+func libusb_alloc_transfer(iso_packets int) *libusb_transfer {
+	itransfer := &usbi_transfer{}
+	itransfer.num_iso_packets = iso_packets;
 
-	itransfer->num_iso_packets = iso_packets;
-	usbi_mutex_init(&itransfer->lock);
-	transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
-	usbi_dbg("transfer %p", transfer);
-	return transfer;
+	return USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 }
 
 /** \ingroup libusb_asyncio
@@ -1268,17 +1255,6 @@ struct libusb_transfer *  libusb_alloc_transfer(
  *
  * \param transfer the transfer to free
  */
-void  libusb_free_transfer(struct libusb_transfer *transfer)
-{
-	struct usbi_transfer *itransfer;
-	if (!transfer)
-		return;
-
-	usbi_dbg("transfer %p", transfer);
-
-	itransfer = LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
-	usbi_mutex_destroy(&itransfer->lock);
-}
 
 #ifdef USBI_TIMERFD_AVAILABLE
 static int disarm_timerfd(struct libusb_context *ctx)
@@ -1643,10 +1619,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 	usbi_dbg("transfer %p has callback %p", transfer, transfer->callback);
 	if (transfer->callback)
 		transfer->callback(transfer);
-	/* transfer might have been freed by the above call, do not use from
-	 * this point. */
-	if (flags & LIBUSB_TRANSFER_FREE_TRANSFER)
-		libusb_free_transfer(transfer);
+		
 	libusb_unref_device(dev_handle->dev);
 	return r;
 }
