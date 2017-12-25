@@ -179,7 +179,7 @@ int  libusb_setlocale(const char *locale)
  * \param errcode the error code whose description is desired
  * \returns a short description of the error code in UTF-8 encoding
  */
-const char* LIBUSB_CALL libusb_strerror(libusb_error errcode)
+const char*  libusb_strerror(libusb_error errcode)
 {
 	int errcode_index = -errcode;
 

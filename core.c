@@ -881,7 +881,7 @@ out:
  * \returns the same device
  */
 
-libusb_device * LIBUSB_CALL libusb_ref_device(libusb_device *dev)
+libusb_device *  libusb_ref_device(libusb_device *dev)
 {
 	usbi_mutex_lock(&dev->lock);
 	dev->refcnt++;
@@ -1039,7 +1039,7 @@ int  libusb_open(libusb_device *dev,
  * \returns a device handle for the first found device, or NULL on error
  * or if the device could not be found. */
 
-libusb_device_handle * LIBUSB_CALL libusb_open_device_with_vid_pid(
+libusb_device_handle *  libusb_open_device_with_vid_pid(
 	libusb_context *ctx, uint16_t vendor_id, uint16_t product_id)
 {
 	struct libusb_device **devs;
@@ -1577,7 +1577,7 @@ int  libusb_free_streams(libusb_device_handle *dev_handle,
  * \returns a pointer to the newly allocated memory, or NULL on failure
  */
 
-unsigned char * LIBUSB_CALL libusb_dev_mem_alloc(libusb_device_handle *dev_handle,
+unsigned char *  libusb_dev_mem_alloc(libusb_device_handle *dev_handle,
         size_t length)
 {
 	if (!dev_handle->dev->attached)
@@ -2093,7 +2093,7 @@ void usbi_log(struct libusb_context *ctx, libusb_log_level level,
  * \returns The error name, or the string **UNKNOWN** if the value of
  * error_code is not a known error / status code.
  */
-const char * LIBUSB_CALL libusb_error_name(int error_code)
+const char *  libusb_error_name(int error_code)
 {
 	switch (error_code) {
 	case LIBUSB_ERROR_IO:

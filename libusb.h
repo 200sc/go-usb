@@ -76,7 +76,7 @@ typedef unsigned __int32  uint32_t;
 #define LIBUSB_DEPRECATED_FOR(f)
 #endif /* __GNUC__ */
 
-/** \def LIBUSB_CALL
+/** \def 
  * \ingroup libusb_misc
  * libusb's Windows calling convention.
  *
@@ -93,7 +93,7 @@ typedef unsigned __int32  uint32_t;
  * your codebase.
  *
  * The one consideration that you must apply in your software is to mark
- * all functions which you use as libusb callbacks with this LIBUSB_CALL
+ * all functions which you use as libusb callbacks with this 
  * annotation, so that they too get compiled for the correct calling
  * convention.
  *
@@ -101,7 +101,7 @@ typedef unsigned __int32  uint32_t;
  * means that you can apply it to your code without worrying about
  * cross-platform compatibility.
  */
-/* LIBUSB_CALL must be defined on both definition and declaration of libusb
+/*  must be defined on both definition and declaration of libusb
  * functions. You'd think that declaration would be enough, but cygwin will
  * complain about conflicting types unless both are marked this way.
  * The placement of this macro is important too; it must appear after the
@@ -109,9 +109,9 @@ typedef unsigned __int32  uint32_t;
  * .
  */
 #if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN32_WCE)
-#define LIBUSB_CALL WINAPI
+#define  WINAPI
 #else
-#define LIBUSB_CALL
+#define 
 #endif
 
 /** \def LIBUSB_API_VERSION
@@ -731,7 +731,7 @@ struct libusb_transfer;
  * \param transfer The libusb_transfer struct the callback function is being
  * notified about.
  */
-typedef void (LIBUSB_CALL *libusb_transfer_cb_fn)(struct libusb_transfer *transfer);
+typedef void ( *libusb_transfer_cb_fn)(struct libusb_transfer *transfer);
 
 /** \ingroup libusb_asyncio
  * The generic USB transfer structure. The user populates this structure and
@@ -870,13 +870,13 @@ static  void libusb_fill_control_setup(unsigned char *buffer,
 	setup->wLength = libusb_cpu_to_le16(wLength);
 }
 
-struct libusb_transfer * LIBUSB_CALL libusb_alloc_transfer(int iso_packets);
-int LIBUSB_CALL libusb_submit_transfer(struct libusb_transfer *transfer);
-int LIBUSB_CALL libusb_cancel_transfer(struct libusb_transfer *transfer);
-void LIBUSB_CALL libusb_free_transfer(struct libusb_transfer *transfer);
-void LIBUSB_CALL libusb_transfer_set_stream_id(
+struct libusb_transfer *  libusb_alloc_transfer(int iso_packets);
+int  libusb_submit_transfer(struct libusb_transfer *transfer);
+int  libusb_cancel_transfer(struct libusb_transfer *transfer);
+void  libusb_free_transfer(struct libusb_transfer *transfer);
+void  libusb_transfer_set_stream_id(
 	struct libusb_transfer *transfer, uint32_t stream_id);
-uint32_t LIBUSB_CALL libusb_transfer_get_stream_id(
+uint32_t  libusb_transfer_get_stream_id(
 	struct libusb_transfer *transfer);
 
 /** \ingroup libusb_asyncio
@@ -1133,15 +1133,15 @@ static  unsigned char *libusb_get_iso_packet_buffer_simple(
 
 /* sync I/O */
 
-int LIBUSB_CALL libusb_control_transfer(libusb_device_handle *dev_handle,
+int  libusb_control_transfer(libusb_device_handle *dev_handle,
 	uint8_t request_type, uint8_t bRequest, uint16_t wValue, uint16_t wIndex,
 	unsigned char *data, uint16_t wLength, unsigned int timeout);
 
-int LIBUSB_CALL libusb_bulk_transfer(libusb_device_handle *dev_handle,
+int  libusb_bulk_transfer(libusb_device_handle *dev_handle,
 	unsigned char endpoint, unsigned char *data, int length,
 	int *actual_length, unsigned int timeout);
 
-int LIBUSB_CALL libusb_interrupt_transfer(libusb_device_handle *dev_handle,
+int  libusb_interrupt_transfer(libusb_device_handle *dev_handle,
 	unsigned char endpoint, unsigned char *data, int length,
 	int *actual_length, unsigned int timeout);
 
@@ -1187,31 +1187,31 @@ static  int libusb_get_string_descriptor(libusb_device_handle *dev_handle,
 		langid, data, (uint16_t) length, 1000);
 }
 
-int LIBUSB_CALL libusb_get_string_descriptor_ascii(libusb_device_handle *dev_handle,
+int  libusb_get_string_descriptor_ascii(libusb_device_handle *dev_handle,
 	uint8_t desc_index, unsigned char *data, int length);
 
 /* polling and timeouts */
 
-int LIBUSB_CALL libusb_try_lock_events(libusb_context *ctx);
-void LIBUSB_CALL libusb_lock_events(libusb_context *ctx);
-void LIBUSB_CALL libusb_unlock_events(libusb_context *ctx);
-int LIBUSB_CALL libusb_event_handling_ok(libusb_context *ctx);
-int LIBUSB_CALL libusb_event_handler_active(libusb_context *ctx);
-void LIBUSB_CALL libusb_interrupt_event_handler(libusb_context *ctx);
-void LIBUSB_CALL libusb_lock_event_waiters(libusb_context *ctx);
-void LIBUSB_CALL libusb_unlock_event_waiters(libusb_context *ctx);
-int LIBUSB_CALL libusb_wait_for_event(libusb_context *ctx, struct timeval *tv);
+int  libusb_try_lock_events(libusb_context *ctx);
+void  libusb_lock_events(libusb_context *ctx);
+void  libusb_unlock_events(libusb_context *ctx);
+int  libusb_event_handling_ok(libusb_context *ctx);
+int  libusb_event_handler_active(libusb_context *ctx);
+void  libusb_interrupt_event_handler(libusb_context *ctx);
+void  libusb_lock_event_waiters(libusb_context *ctx);
+void  libusb_unlock_event_waiters(libusb_context *ctx);
+int  libusb_wait_for_event(libusb_context *ctx, struct timeval *tv);
 
-int LIBUSB_CALL libusb_handle_events_timeout(libusb_context *ctx,
+int  libusb_handle_events_timeout(libusb_context *ctx,
 	struct timeval *tv);
-int LIBUSB_CALL libusb_handle_events_timeout_completed(libusb_context *ctx,
+int  libusb_handle_events_timeout_completed(libusb_context *ctx,
 	struct timeval *tv, int *completed);
-int LIBUSB_CALL libusb_handle_events(libusb_context *ctx);
-int LIBUSB_CALL libusb_handle_events_completed(libusb_context *ctx, int *completed);
-int LIBUSB_CALL libusb_handle_events_locked(libusb_context *ctx,
+int  libusb_handle_events(libusb_context *ctx);
+int  libusb_handle_events_completed(libusb_context *ctx, int *completed);
+int  libusb_handle_events_locked(libusb_context *ctx,
 	struct timeval *tv);
-int LIBUSB_CALL libusb_pollfds_handle_timeouts(libusb_context *ctx);
-int LIBUSB_CALL libusb_get_next_timeout(libusb_context *ctx,
+int  libusb_pollfds_handle_timeouts(libusb_context *ctx);
+int  libusb_get_next_timeout(libusb_context *ctx,
 	struct timeval *tv);
 
 /** \ingroup libusb_poll
@@ -1238,7 +1238,7 @@ struct libusb_pollfd {
  * libusb_set_pollfd_notifiers() call
  * \see libusb_set_pollfd_notifiers()
  */
-typedef void (LIBUSB_CALL *libusb_pollfd_added_cb)(int fd, short events,
+typedef void ( *libusb_pollfd_added_cb)(int fd, short events,
 	void *user_data);
 
 /** \ingroup libusb_poll
@@ -1250,12 +1250,12 @@ typedef void (LIBUSB_CALL *libusb_pollfd_added_cb)(int fd, short events,
  * libusb_set_pollfd_notifiers() call
  * \see libusb_set_pollfd_notifiers()
  */
-typedef void (LIBUSB_CALL *libusb_pollfd_removed_cb)(int fd, void *user_data);
+typedef void ( *libusb_pollfd_removed_cb)(int fd, void *user_data);
 
-const struct libusb_pollfd ** LIBUSB_CALL libusb_get_pollfds(
+const struct libusb_pollfd **  libusb_get_pollfds(
 	libusb_context *ctx);
-void LIBUSB_CALL libusb_free_pollfds(const struct libusb_pollfd **pollfds);
-void LIBUSB_CALL libusb_set_pollfd_notifiers(libusb_context *ctx,
+void  libusb_free_pollfds(const struct libusb_pollfd **pollfds);
+void  libusb_set_pollfd_notifiers(libusb_context *ctx,
 	libusb_pollfd_added_cb added_cb, libusb_pollfd_removed_cb removed_cb,
 	void *user_data);
 
@@ -1301,7 +1301,7 @@ typedef int libusb_hotplug_callback_handle;
  * \returns bool whether this callback is finished processing events.
  *                       returning 1 will cause this callback to be deregistered
  */
-typedef int (LIBUSB_CALL *libusb_hotplug_callback_fn)(libusb_context *ctx,
+typedef int ( *libusb_hotplug_callback_fn)(libusb_context *ctx,
 						libusb_device *device,
 						libusb_hotplug_event event,
 						void *user_data);
@@ -1340,7 +1340,7 @@ typedef int (LIBUSB_CALL *libusb_hotplug_callback_fn)(libusb_context *ctx,
  * \param[out] callback_handle pointer to store the handle of the allocated callback (can be NULL)
  * \returns LIBUSB_SUCCESS on success LIBUSB_ERROR code on failure
  */
-int LIBUSB_CALL libusb_hotplug_register_callback(libusb_context *ctx,
+int  libusb_hotplug_register_callback(libusb_context *ctx,
 						libusb_hotplug_event events,
 						libusb_hotplug_flag flags,
 						int vendor_id, int product_id,
@@ -1360,5 +1360,5 @@ int LIBUSB_CALL libusb_hotplug_register_callback(libusb_context *ctx,
  * \param[in] ctx context this callback is registered with
  * \param[in] callback_handle the handle of the callback to deregister
  */
-void LIBUSB_CALL libusb_hotplug_deregister_callback(libusb_context *ctx,
+void  libusb_hotplug_deregister_callback(libusb_context *ctx,
 						libusb_hotplug_callback_handle callback_handle);

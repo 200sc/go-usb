@@ -25,7 +25,7 @@
  * may wish to consider using the \ref libusb_asyncio "asynchronous I/O API" instead.
  */
 
-static void LIBUSB_CALL sync_transfer_cb(struct libusb_transfer *transfer)
+static void  sync_transfer_cb(struct libusb_transfer *transfer)
 {
 	int *completed = transfer->user_data;
 	*completed = 1;
