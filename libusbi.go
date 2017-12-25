@@ -246,3 +246,11 @@ type discovered_devs struct {
 	capacity int
 	devices []libusb_device
 }
+
+func IS_EPIN(ep uint8) bool {
+	return ep & LIBUSB_ENDPOINT_IN != 0
+}
+
+func IS_XFERIN(xfer usbfs_urb) bool {
+	return xfer.endpoint & LIBUSB_ENDPOINT_IN != 0
+}

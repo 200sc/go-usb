@@ -21,9 +21,6 @@ static  void *usbi_reallocf(void *ptr, int size)
 			(ctx) = usbi_default_context;	\
 	} while(0)
 
-#define IS_EPIN(ep)		(0 != ((ep) & LIBUSB_ENDPOINT_IN))
-#define IS_XFERIN(xfer)		(0 != ((xfer)->endpoint & LIBUSB_ENDPOINT_IN))
-
 /* Forward declaration for use in context (fully defined inside poll abstraction) */
 /* Macros for managing event handling state */
 #define usbi_handling_events(ctx) \
