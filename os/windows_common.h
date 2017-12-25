@@ -24,8 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#pragma once
-
 // Windows API default is uppercase - ugh!
 #if !defined(bool)
 #define bool BOOL

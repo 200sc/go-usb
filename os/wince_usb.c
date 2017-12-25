@@ -22,14 +22,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#include <stdint.h>
-#include <inttypes.h>
-
-#include "libusbi.h"
-#include "wince_usb.h"
-
 // Global variables
 const uint64_t epoch_time = UINT64_C(116444736000000000); // 1970.01.01 00:00:000 in MS Filetime
 int windows_version = WINDOWS_CE;

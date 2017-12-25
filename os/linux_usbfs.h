@@ -18,11 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBUSB_USBFS_H
-#define LIBUSB_USBFS_H
-
-#include <linux/types.h>
-
 #define SYSFS_DEVICE_PATH "/sys/bus/usb/devices"
 
 struct usbfs_ctrltransfer {

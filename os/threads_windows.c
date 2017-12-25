@@ -18,13 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#include <objbase.h>
-#include <errno.h>
-
-#include "libusbi.h"
-
 struct usbi_cond_perthread {
 	struct list_head list;
 	DWORD tid;

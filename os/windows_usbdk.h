@@ -21,8 +21,6 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
-#pragma once
-
 typedef struct tag_USB_DK_DEVICE_ID {
 	WCHAR DeviceID[MAX_DEVICE_ID_LEN];
 	WCHAR InstanceID[MAX_DEVICE_ID_LEN];

@@ -19,21 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#include <assert.h>
-#include <errno.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#ifdef USBI_TIMERFD_AVAILABLE
-#include <sys/timerfd.h>
-#endif
-
-#include "libusbi.h"
-#include "hotplug.h"
-
 /**
  * \page libusb_io Synchronous and asynchronous device I/O
  *

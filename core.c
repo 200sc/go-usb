@@ -20,20 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
-#include <errno.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif
-
-#include "libusbi.h"
-#include "hotplug.h"
-
 #if defined(OS_LINUX)
 const struct usbi_os_backend * const usbi_backend = &linux_usbfs_backend;
 #elif defined(OS_DARWIN)

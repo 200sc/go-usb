@@ -20,12 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#pragma once
-
-#if defined(_MSC_VER)
-// disable /W4 MSVC warnings that are benign
-#pragma warning(disable:4127) // conditional expression is constant
-#endif
 
 // Handle synchronous completion through the overlapped structure
 #if !defined(STATUS_REPARSE)	// reuse the REPARSE status code

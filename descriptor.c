@@ -19,15 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#include <errno.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "libusbi.h"
-
 #define DESC_HEADER_LENGTH		2
 #define DEVICE_DESC_LENGTH		18
 #define CONFIG_DESC_LENGTH		9

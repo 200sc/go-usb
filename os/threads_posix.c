@@ -19,24 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#include <time.h>
-#if defined(__linux__) || defined(__OpenBSD__)
-# if defined(__OpenBSD__)
-#  define _BSD_SOURCE
-# endif
-# include <unistd.h>
-# include <sys/syscall.h>
-#elif defined(__APPLE__)
-# include <mach/mach.h>
-#elif defined(__CYGWIN__)
-# include <windows.h>
-#endif
-
-#include "threads_posix.h"
-#include "libusbi.h"
-
 int usbi_cond_timedwait(pthread_cond_t *cond,
 	pthread_mutex_t *mutex, const struct timeval *tv)
 {

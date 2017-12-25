@@ -22,25 +22,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#if !defined(USE_USBDK)
-
-#include <windows.h>
-#include <setupapi.h>
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <process.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <objbase.h>
-#include <winioctl.h>
-
-#include "libusbi.h"
-#include "poll_windows.h"
-#include "windows_winusb.h"
-
 #define HANDLE_VALID(h) (((h) != 0) && ((h) != INVALID_HANDLE_VALUE))
 
 // The 2 macros below are used in conjunction with safe loops.

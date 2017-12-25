@@ -18,11 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBUSB_THREADS_POSIX_H
-#define LIBUSB_THREADS_POSIX_H
-
-#include <pthread.h>
-
 #define usbi_mutex_static_t		pthread_mutex_t
 #define USBI_MUTEX_INITIALIZER		PTHREAD_MUTEX_INITIALIZER
 #define usbi_mutex_static_lock		pthread_mutex_lock

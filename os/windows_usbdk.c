@@ -21,18 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#if defined(USE_USBDK)
-
-#include <windows.h>
-#include <cfgmgr32.h>
-#include <stdio.h>
-
-#include "libusbi.h"
-#include "windows_common.h"
-#include "windows_nt_common.h"
-
 #define ULONG64 uint64_t
 #define PVOID64 uint64_t
 

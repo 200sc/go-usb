@@ -21,24 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <config.h>
-
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-
-#include <sys/socket.h>
-#include <linux/netlink.h>
-
-#include "libusbi.h"
-#include "linux_usbfs.h"
-
 #define NL_GROUP_KERNEL 1
 
 static int linux_netlink_socket = -1;

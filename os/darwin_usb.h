@@ -17,16 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if !defined(LIBUSB_DARWIN_H)
-#define LIBUSB_DARWIN_H
-
-#include "libusbi.h"
-
-#include <IOKit/IOTypes.h>
-#include <IOKit/IOCFBundle.h>
-#include <IOKit/usb/IOUSBLib.h>
-#include <IOKit/IOCFPlugIn.h>
-
 /* IOUSBInterfaceInferface */
 #if defined (kIOUSBInterfaceInterfaceID700) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
 
