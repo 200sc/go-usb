@@ -1,5 +1,5 @@
 # go-usb
-An in-progress port of lib-usb to Go
+An in-progress port of libusb to Go
 
 # Current state
 
