@@ -2730,8 +2730,8 @@ void usbi_handle_disconnect(struct libusb_device_handle *dev_handle)
 
 	while (1) {
 		to_cancel = NULL;
-		usbi_mutex_lock(&HANDLE_CTX(dev_handle)->flying_transfers_lock);
-		list_for_each_entry(cur, &HANDLE_CTX(dev_handle)->flying_transfers, list, struct usbi_transfer)
+		usbi_mutex_lock(&dev_handle.dev.ctx->flying_transfers_lock);
+		list_for_each_entry(cur, &dev_handle)->flying_transfers, list, struct usbi_transfer.dev.ctx
 			if (USBI_TRANSFER_TO_LIBUSB_TRANSFER(cur)->dev_handle == dev_handle) {
 				usbi_mutex_lock(&cur->lock);
 				if (cur->state_flags & USBI_TRANSFER_IN_FLIGHT)
@@ -2741,7 +2741,7 @@ void usbi_handle_disconnect(struct libusb_device_handle *dev_handle)
 				if (to_cancel)
 					break;
 			}
-		usbi_mutex_unlock(&HANDLE_CTX(dev_handle)->flying_transfers_lock);
+		usbi_mutex_unlock(&dev_handle.dev.ctx->flying_transfers_lock);
 
 		if (!to_cancel)
 			break;

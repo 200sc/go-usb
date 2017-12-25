@@ -135,7 +135,7 @@ static int ep_to_pipeRef(struct libusb_device_handle *dev_handle, uint8 ep, uint
   }
 
   /* No pipe found with the correct endpoint address */
-  // usbi_warn (HANDLE_CTX(dev_handle), "no pipeRef found with endpoint address 0x%02x.", ep);
+  // usbi_warn (dev_handle), "no pipeRef found with endpoint address 0x%02x.", ep.dev.ctx;
 
   return LIBUSB_ERROR_NOT_FOUND;
 }

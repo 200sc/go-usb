@@ -891,11 +891,11 @@ int  libusb_get_bos_descriptor(libusb_device_handle *dev_handle,
 				  LIBUSB_DT_BOS_SIZE);
 	if (r < 0) {
 		if (r != LIBUSB_ERROR_PIPE)
-			// usbi_err(HANDLE_CTX(dev_handle), "failed to read BOS (%d)", r);
+			// usbi_err(dev_handle), "failed to read BOS (%d)", r.dev.ctx;
 		return r;
 	}
 	if (r < LIBUSB_DT_BOS_SIZE) {
-		// usbi_err(HANDLE_CTX(dev_handle), "short BOS read %d/%d",
+		// usbi_err(dev_handle.dev.ctx, "short BOS read %d/%d",
 			 r, LIBUSB_DT_BOS_SIZE);
 		return LIBUSB_ERROR_IO;
 	}
@@ -910,9 +910,9 @@ int  libusb_get_bos_descriptor(libusb_device_handle *dev_handle,
 	r = libusb_get_descriptor(dev_handle, LIBUSB_DT_BOS, 0, bos_data,
 				  _bos.wTotalLength);
 	if (r >= 0)
-		r = parse_bos(HANDLE_CTX(dev_handle), bos, bos_data, r, host_endian);
+		r = parse_bos(dev_handle.dev.ctx, bos, bos_data, r, host_endian);
 	else
-		// usbi_err(HANDLE_CTX(dev_handle), "failed to read BOS (%d)", r);
+		// usbi_err(dev_handle), "failed to read BOS (%d)", r.dev.ctx;
 
 	
 	return r;

@@ -409,7 +409,7 @@ static int usbdk_open(struct libusb_device_handle *dev_handle)
 
 	priv->redirector_handle = usbdk_helper.StartRedirect(&priv->info.ID);
 	if (priv->redirector_handle == INVALID_HANDLE_VALUE) {
-		// usbi_err(DEVICE_CTX(dev_handle->dev), "Redirector startup failed");
+		// usbi_err(dev_handle->dev), "Redirector startup failed".ctx;
 		return LIBUSB_ERROR_OTHER;
 	}
 
@@ -421,7 +421,7 @@ static void usbdk_close(struct libusb_device_handle *dev_handle)
 	struct usbdk_device_priv *priv = _usbdk_device_priv(dev_handle->dev);
 
 	if (!usbdk_helper.StopRedirect(priv->redirector_handle)) {
-		struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
+		struct libusb_context *ctx = dev_handle->dev.ctx;
 		// usbi_err(ctx, "Redirector shutdown failed");
 	}
 }
@@ -445,7 +445,7 @@ static int usbdk_claim_interface(struct libusb_device_handle *dev_handle, int if
 
 static int usbdk_set_interface_altsetting(struct libusb_device_handle *dev_handle, int iface, int altsetting)
 {
-	struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
+	struct libusb_context *ctx = dev_handle->dev.ctx;
 	struct usbdk_device_priv *priv = _usbdk_device_priv(dev_handle->dev);
 
 	if (!usbdk_helper.SetAltsetting(priv->redirector_handle, iface, altsetting)) {
@@ -463,7 +463,7 @@ static int usbdk_release_interface(struct libusb_device_handle *dev_handle, int 
 
 static int usbdk_clear_halt(struct libusb_device_handle *dev_handle, uint8 endpoint)
 {
-	struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
+	struct libusb_context *ctx = dev_handle->dev.ctx;
 	struct usbdk_device_priv *priv = _usbdk_device_priv(dev_handle->dev);
 
 	if (!usbdk_helper.ResetPipe(priv->redirector_handle, endpoint)) {
@@ -476,7 +476,7 @@ static int usbdk_clear_halt(struct libusb_device_handle *dev_handle, uint8 endpo
 
 static int usbdk_reset_device(struct libusb_device_handle *dev_handle)
 {
-	struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
+	struct libusb_context *ctx = dev_handle->dev.ctx;
 	struct usbdk_device_priv *priv = _usbdk_device_priv(dev_handle->dev);
 
 	if (!usbdk_helper.ResetDevice(priv->redirector_handle)) {
@@ -523,7 +523,7 @@ static int usbdk_do_control_transfer(struct usbi_transfer *itransfer)
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
-	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
+	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct winfd wfd;
 	uint64 Length;
 	TransferResult transResult;
@@ -572,7 +572,7 @@ static int usbdk_do_bulk_transfer(struct usbi_transfer *itransfer)
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
-	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
+	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct winfd wfd;
 	TransferResult transferRes;
 	HANDLE sysHandle;
@@ -630,7 +630,7 @@ static int usbdk_do_iso_transfer(struct usbi_transfer *itransfer)
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
-	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
+	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct winfd wfd;
 	TransferResult transferRes;
 	int i;
@@ -715,7 +715,7 @@ static int usbdk_submit_transfer(struct usbi_transfer *itransfer)
 static int usbdk_abort_transfers(struct usbi_transfer *itransfer)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
-	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
+	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 
 	if (!usbdk_helper.AbortPipe(priv->redirector_handle, transfer->endpoint)) {

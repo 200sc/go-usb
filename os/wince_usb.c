@@ -514,7 +514,7 @@ static int wince_cancel_transfer(struct usbi_transfer *itransfer)
 static int wince_submit_control_or_bulk_transfer(struct usbi_transfer *itransfer)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
-	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
+	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct wince_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	BOOL direction_in, ret;

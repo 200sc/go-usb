@@ -34,7 +34,7 @@ func sync_transfer_cb(transfer *libusb_transfer) {
 func sync_transfer_wait_for_completion(transfer *libusb_transfer) {
 	var completed *int = transfer.user_data //user_data is probably an interface{}?
 
-	ctx := HANDLE_CTX(transfer.dev_handle);
+	ctx := transfer.dev_handle.dev.ctx;
 
 	for *completed == 0 {
 		r := libusb_handle_events_completed(ctx, completed);
@@ -84,7 +84,7 @@ func ibusb_control_transfer(dev_handle *libusb_device_handle,
 	bmRequestType uint8, bRequest uint8, wValue uint16, wIndex uint16,
 	data []uint8, wLength uint16, timeout uint) int {
 
-	if (usbi_handling_events(HANDLE_CTX(dev_handle))) {
+	if usbi_handling_events(dev_handle.dev.ctx) {
 		return LIBUSB_ERROR_BUSY
 	}
 
@@ -136,7 +136,7 @@ func ibusb_control_transfer(dev_handle *libusb_device_handle,
 	case LIBUSB_TRANSFER_CANCELLED:
 		r = LIBUSB_ERROR_IO
 	default:
-		// usbi_warn(HANDLE_CTX(dev_handle),
+		// usbi_warn(dev_handle.dev.ctx,
 			"unrecognised status code %d", transfer.status);
 		r = LIBUSB_ERROR_OTHER;
 	}
@@ -148,7 +148,7 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 	endpoint uint8, buffer []uint8, length int,
 	transferred *int, timeout uint, type uint8) int {
 
-	if usbi_handling_events(HANDLE_CTX(dev_handle)) {
+	if usbi_handling_events(dev_handle.dev.ctx) {
 		return LIBUSB_ERROR_BUSY
 	}
 
@@ -187,7 +187,7 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 	case LIBUSB_TRANSFER_CANCELLED:
 		r = LIBUSB_ERROR_IO
 	default:
-		// usbi_warn(HANDLE_CTX(dev_handle),
+		// usbi_warn(dev_handle.dev.ctx,
 			"unrecognised status code %d", transfer.status);
 		r = LIBUSB_ERROR_OTHER;
 	}

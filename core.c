@@ -518,7 +518,7 @@ struct libusb_device *usbi_alloc_device(struct libusb_context *ctx,
 
 void usbi_connect_device(struct libusb_device *dev)
 {
-	struct libusb_context *ctx = DEVICE_CTX(dev);
+	struct libusb_context *ctx = dev.ctx;
 
 	dev->attached = 1;
 
@@ -536,7 +536,7 @@ void usbi_connect_device(struct libusb_device *dev)
 
 void usbi_disconnect_device(struct libusb_device *dev)
 {
-	struct libusb_context *ctx = DEVICE_CTX(dev);
+	struct libusb_context *ctx = dev.ctx;
 
 	usbi_mutex_lock(&dev->lock);
 	dev->attached = 0;
@@ -569,7 +569,7 @@ int usbi_sanitize_device(struct libusb_device *dev)
 
 	num_configurations = dev->device_descriptor.bNumConfigurations;
 	if (num_configurations > USB_MAXCONFIG) {
-		// usbi_err(DEVICE_CTX(dev), "too many configurations");
+		// usbi_err(dev), "too many configurations".ctx;
 		return LIBUSB_ERROR_IO;
 	} else if (0 == num_configurations)
 		// usbi_dbg("zero configurations, maybe an unauthorized device");
@@ -716,7 +716,7 @@ int  libusb_get_port_numbers(libusb_device *dev,
 	uint8* port_numbers, int port_numbers_len)
 {
 	int i = port_numbers_len;
-	struct libusb_context *ctx = DEVICE_CTX(dev);
+	struct libusb_context *ctx = dev.ctx;
 
 	if (port_numbers_len <= 0)
 		return LIBUSB_ERROR_INVALID_PARAM;
@@ -794,7 +794,7 @@ int  libusb_get_max_packet_size(libusb_device *dev,
 
 	r = libusb_get_active_config_descriptor(dev, &config);
 	if (r < 0) {
-		// usbi_err(DEVICE_CTX(dev),
+		// usbi_err(dev.ctx,
 			"could not retrieve active config descriptor");
 		return LIBUSB_ERROR_OTHER;
 	}
@@ -849,7 +849,7 @@ int  libusb_get_max_iso_packet_size(libusb_device *dev,
 
 	r = libusb_get_active_config_descriptor(dev, &config);
 	if (r < 0) {
-		// usbi_err(DEVICE_CTX(dev),
+		// usbi_err(dev.ctx,
 			"could not retrieve active config descriptor");
 		return LIBUSB_ERROR_OTHER;
 	}
@@ -980,7 +980,7 @@ int usbi_clear_event(struct libusb_context *ctx)
 int  libusb_open(libusb_device *dev,
 	libusb_device_handle **dev_handle)
 {
-	struct libusb_context *ctx = DEVICE_CTX(dev);
+	struct libusb_context *ctx = dev.ctx;
 	struct libusb_device_handle *_dev_handle;
 	int priv_size = usbi_backend->device_handle_priv_size;
 	int r;
@@ -1146,7 +1146,7 @@ void  libusb_close(libusb_device_handle *dev_handle)
 		return;
 	// usbi_dbg("");
 
-	ctx = HANDLE_CTX(dev_handle);
+	ctx = dev_handle.dev.ctx;
 	handling_events = usbi_handling_events(ctx);
 
 	/* Similarly to libusb_open(), we want to interrupt all event handlers
@@ -1223,7 +1223,7 @@ int  libusb_get_configuration(libusb_device_handle *dev_handle,
 		r = libusb_control_transfer(dev_handle, LIBUSB_ENDPOINT_IN,
 			LIBUSB_REQUEST_GET_CONFIGURATION, 0, 0, &tmp, 1, 1000);
 		if (r == 0) {
-			// usbi_err(HANDLE_CTX(dev_handle), "zero bytes returned in ctrl transfer?");
+			// usbi_err(dev_handle), "zero bytes returned in ctrl transfer?".dev.ctx;
 			r = LIBUSB_ERROR_IO;
 		} else if (r == 1) {
 			r = 0;
