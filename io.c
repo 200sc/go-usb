@@ -1129,12 +1129,12 @@ int usbi_io_init(struct libusb_context *ctx)
 	ctx->timerfd = timerfd_create(usbi_backend->get_timerfd_clockid(),
 		TFD_NONBLOCK);
 	if (ctx->timerfd >= 0) {
-		usbi_dbg("using timerfd for timeouts");
+		// usbi_dbg("using timerfd for timeouts");
 		r = usbi_add_pollfd(ctx, ctx->timerfd, POLLIN);
 		if (r < 0)
 			goto err_close_timerfd;
 	} else {
-		usbi_dbg("timerfd not available (code %d error %d)", ctx->timerfd, errno);
+		// usbi_dbg("timerfd not available (code %d error %d)", ctx->timerfd, errno);
 		ctx->timerfd = -1;
 	}
 #endif
@@ -1190,7 +1190,7 @@ static int calculate_timeout(struct usbi_transfer *transfer)
 
 	r = usbi_backend->clock_gettime(USBI_CLOCK_MONOTONIC, &current_time);
 	if (r < 0) {
-		usbi_err(ITRANSFER_CTX(transfer),
+		// usbi_err(ITRANSFER_CTX(transfer),
 			"failed to read monotonic clock, errno=%d", errno);
 		return r;
 	}
@@ -1262,7 +1262,7 @@ static int disarm_timerfd(struct libusb_context *ctx)
 	const struct itimerspec disarm_timer = { { 0, 0 }, { 0, 0 } };
 	int r;
 
-	usbi_dbg("");
+	// usbi_dbg("");
 	r = timerfd_settime(ctx->timerfd, 0, &disarm_timer, NULL);
 	if (r < 0)
 		return LIBUSB_ERROR_OTHER;
@@ -1292,7 +1292,7 @@ static int arm_timerfd_for_next_timeout(struct libusb_context *ctx)
 			int r;
 			const struct itimerspec it = { {0, 0},
 				{ cur_tv->tv_sec, cur_tv->tv_usec * 1000 } };
-			usbi_dbg("next timeout originally %dms", USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)->timeout);
+			// usbi_dbg("next timeout originally %dms", USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)->timeout);
 			r = timerfd_settime(ctx->timerfd, TFD_TIMER_ABSTIME, &it, NULL);
 			if (r < 0)
 				return LIBUSB_ERROR_OTHER;
@@ -1306,7 +1306,6 @@ disarm:
 #else
 static int arm_timerfd_for_next_timeout(struct libusb_context *ctx)
 {
-	UNUSED(ctx);
 	return 0;
 }
 #endif
@@ -1363,16 +1362,14 @@ out:
 		 * rearm the timerfd with this transfer's timeout */
 		const struct itimerspec it = { {0, 0},
 			{ timeout->tv_sec, timeout->tv_usec * 1000 } };
-		usbi_dbg("arm timerfd for timeout in %dms (first in line)",
+		// usbi_dbg("arm timerfd for timeout in %dms (first in line)",
 			USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)->timeout);
 		r = timerfd_settime(ctx->timerfd, TFD_TIMER_ABSTIME, &it, NULL);
 		if (r < 0) {
-			usbi_warn(ctx, "failed to arm first timerfd (errno %d)", errno);
+			// usbi_warn(ctx, "failed to arm first timerfd (errno %d)", errno);
 			r = LIBUSB_ERROR_OTHER;
 		}
 	}
-#else
-	UNUSED(first);
 #endif
 
 	if (r)
@@ -1423,7 +1420,7 @@ int  libusb_submit_transfer(struct libusb_transfer *transfer)
 	struct libusb_context *ctx = TRANSFER_CTX(transfer);
 	int r;
 
-	usbi_dbg("transfer %p", transfer);
+	// usbi_dbg("transfer %p", transfer);
 
 	/*
 	 * Important note on locking, this function takes / releases locks
@@ -1513,7 +1510,7 @@ int  libusb_cancel_transfer(struct libusb_transfer *transfer)
 		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
 	int r;
 
-	usbi_dbg("transfer %p", transfer );
+	// usbi_dbg("transfer %p", transfer );
 	usbi_mutex_lock(&itransfer->lock);
 	if (!(itransfer->state_flags & USBI_TRANSFER_IN_FLIGHT)
 			|| (itransfer->state_flags & USBI_TRANSFER_CANCELLING)) {
@@ -1524,10 +1521,10 @@ int  libusb_cancel_transfer(struct libusb_transfer *transfer)
 	if (r < 0) {
 		if (r != LIBUSB_ERROR_NOT_FOUND &&
 		    r != LIBUSB_ERROR_NO_DEVICE)
-			usbi_err(TRANSFER_CTX(transfer),
+			// usbi_err(TRANSFER_CTX(transfer),
 				"cancel transfer failed error %d", r);
 		else
-			usbi_dbg("cancel transfer failed error %d", r);
+			// usbi_dbg("cancel transfer failed error %d", r);
 
 		if (r == LIBUSB_ERROR_NO_DEVICE)
 			itransfer->state_flags |= USBI_TRANSFER_DEVICE_DISAPPEARED;
@@ -1596,7 +1593,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 
 	r = remove_from_flying_list(itransfer);
 	if (r < 0)
-		usbi_err(ITRANSFER_CTX(itransfer), "failed to set timer for next timeout, errno=%d", errno);
+		// usbi_err(ITRANSFER_CTX(itransfer), "failed to set timer for next timeout, errno=%d", errno);
 
 	usbi_mutex_lock(&itransfer->lock);
 	itransfer->state_flags &= ~USBI_TRANSFER_IN_FLIGHT;
@@ -1608,7 +1605,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 		if (transfer->type == LIBUSB_TRANSFER_TYPE_CONTROL)
 			rqlen -= LIBUSB_CONTROL_SETUP_SIZE;
 		if (rqlen != itransfer->transferred) {
-			usbi_dbg("interpreting short transfer as error");
+			// usbi_dbg("interpreting short transfer as error");
 			status = LIBUSB_TRANSFER_ERROR;
 		}
 	}
@@ -1616,10 +1613,10 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 	flags = transfer->flags;
 	transfer->status = status;
 	transfer->actual_length = itransfer->transferred;
-	usbi_dbg("transfer %p has callback %p", transfer, transfer->callback);
+	// usbi_dbg("transfer %p has callback %p", transfer, transfer->callback);
 	if (transfer->callback)
 		transfer->callback(transfer);
-		
+
 	libusb_unref_device(dev_handle->dev);
 	return r;
 }
@@ -1641,7 +1638,7 @@ int usbi_handle_transfer_cancellation(struct usbi_transfer *transfer)
 
 	/* if the URB was cancelled due to timeout, report timeout to the user */
 	if (timed_out) {
-		usbi_dbg("detected timeout cancellation");
+		// usbi_dbg("detected timeout cancellation");
 		return usbi_handle_transfer_completion(transfer, LIBUSB_TRANSFER_TIMED_OUT);
 	}
 
@@ -1696,7 +1693,7 @@ int  libusb_try_lock_events(libusb_context *ctx)
 	ru = ctx->device_close;
 	usbi_mutex_unlock(&ctx->event_data_lock);
 	if (ru) {
-		usbi_dbg("someone else is closing a device");
+		// usbi_dbg("someone else is closing a device");
 		return 1;
 	}
 
@@ -1787,7 +1784,7 @@ int  libusb_event_handling_ok(libusb_context *ctx)
 	r = ctx->device_close;
 	usbi_mutex_unlock(&ctx->event_data_lock);
 	if (r) {
-		usbi_dbg("someone else is closing a device");
+		// usbi_dbg("someone else is closing a device");
 		return 0;
 	}
 
@@ -1815,7 +1812,7 @@ int  libusb_event_handler_active(libusb_context *ctx)
 	r = ctx->device_close;
 	usbi_mutex_unlock(&ctx->event_data_lock);
 	if (r) {
-		usbi_dbg("someone else is closing a device");
+		// usbi_dbg("someone else is closing a device");
 		return 1;
 	}
 
@@ -1836,7 +1833,7 @@ void  libusb_interrupt_event_handler(libusb_context *ctx)
 {
 	USBI_GET_CONTEXT(ctx);
 
-	usbi_dbg("");
+	// usbi_dbg("");
 	usbi_mutex_lock(&ctx->event_data_lock);
 	if (!usbi_pending_events(ctx)) {
 		ctx->event_flags |= USBI_EVENT_USER_INTERRUPT;
@@ -1936,7 +1933,7 @@ static void handle_timeout(struct usbi_transfer *itransfer)
 	if (r == LIBUSB_SUCCESS)
 		itransfer->timeout_flags |= USBI_TRANSFER_TIMED_OUT;
 	else
-		usbi_warn(TRANSFER_CTX(transfer),
+		// usbi_warn(TRANSFER_CTX(transfer),
 			"async cancel failed %d errno=%d", r, errno);
 }
 
@@ -2050,7 +2047,7 @@ static int handle_events(struct libusb_context *ctx, struct timeval *tv)
 	 * since the last poll, otherwise reuse them to save the additional overhead */
 	usbi_mutex_lock(&ctx->event_data_lock);
 	if (ctx->event_flags & USBI_EVENT_POLLFDS_MODIFIED) {
-		usbi_dbg("poll fds modified, reallocating");
+		// usbi_dbg("poll fds modified, reallocating");
 
 		if (ctx->pollfds) {
 			ctx->pollfds = NULL;
@@ -2093,9 +2090,9 @@ static int handle_events(struct libusb_context *ctx, struct timeval *tv)
 		timeout_ms++;
 
 redo_poll:
-	usbi_dbg("poll() %d fds with timeout in %dms", nfds, timeout_ms);
+	// usbi_dbg("poll() %d fds with timeout in %dms", nfds, timeout_ms);
 	r = usbi_poll(fds, nfds, timeout_ms);
-	usbi_dbg("poll() returned %d", r);
+	// usbi_dbg("poll() returned %d", r);
 	if (r == 0) {
 		r = handle_timeouts(ctx);
 		goto done;
@@ -2105,7 +2102,7 @@ redo_poll:
 		goto done;
 	}
 	else if (r < 0) {
-		usbi_err(ctx, "poll failed %d err=%d", r, errno);
+		// usbi_err(ctx, "poll failed %d err=%d", r, errno);
 		r = LIBUSB_ERROR_IO;
 		goto done;
 	}
@@ -2118,27 +2115,27 @@ redo_poll:
 		struct usbi_transfer *itransfer;
 		int ret = 0;
 
-		usbi_dbg("caught a fish on the event pipe");
+		// usbi_dbg("caught a fish on the event pipe");
 
 		/* take the the event data lock while processing events */
 		usbi_mutex_lock(&ctx->event_data_lock);
 
 		/* check if someone added a new poll fd */
 		if (ctx->event_flags & USBI_EVENT_POLLFDS_MODIFIED)
-			usbi_dbg("someone updated the poll fds");
+			// usbi_dbg("someone updated the poll fds");
 
 		if (ctx->event_flags & USBI_EVENT_USER_INTERRUPT) {
-			usbi_dbg("someone purposely interrupted");
+			// usbi_dbg("someone purposely interrupted");
 			ctx->event_flags &= ~USBI_EVENT_USER_INTERRUPT;
 		}
 
 		/* check if someone is closing a device */
 		if (ctx->device_close)
-			usbi_dbg("someone is closing a device");
+			// usbi_dbg("someone is closing a device");
 
 		/* check for any pending hotplug messages */
 		if (!list_empty(&ctx->hotplug_msgs)) {
-			usbi_dbg("hotplug message received");
+			// usbi_dbg("hotplug message received");
 			special_event = 1;
 			message = list_first_entry(&ctx->hotplug_msgs, libusb_hotplug_message, list);
 			list_del(&message->list);
@@ -2151,7 +2148,7 @@ redo_poll:
 			usbi_mutex_unlock(&ctx->event_data_lock);
 			ret = usbi_backend->handle_transfer_completion(itransfer);
 			if (ret)
-				usbi_err(ctx, "backend handle_transfer_completion failed with error %d", ret);
+				// usbi_err(ctx, "backend handle_transfer_completion failed with error %d", ret);
 			usbi_mutex_lock(&ctx->event_data_lock);
 		}
 
@@ -2186,7 +2183,7 @@ redo_poll:
 	if (usbi_using_timerfd(ctx) && fds[1].revents) {
 		/* timerfd indicates that a timeout has expired */
 		int ret;
-		usbi_dbg("timerfd triggered");
+		// usbi_dbg("timerfd triggered");
 		special_event = 1;
 
 		ret = handle_timerfd_trigger(ctx);
@@ -2203,7 +2200,7 @@ redo_poll:
 
 	r = usbi_backend->handle_events(ctx, fds + internal_nfds, nfds - internal_nfds, r);
 	if (r)
-		usbi_err(ctx, "backend handle_events failed with error %d", r);
+		// usbi_err(ctx, "backend handle_events failed with error %d", r);
 
 handled:
 	if (r == 0 && special_event) {
@@ -2286,7 +2283,7 @@ retry:
 	if (libusb_try_lock_events(ctx) == 0) {
 		if (completed == NULL || !*completed) {
 			/* we obtained the event lock: do our own event handling */
-			usbi_dbg("doing our own event handling");
+			// usbi_dbg("doing our own event handling");
 			r = handle_events(ctx, &poll_timeout);
 		}
 		libusb_unlock_events(ctx);
@@ -2304,11 +2301,11 @@ retry:
 		/* we hit a race: whoever was event handling earlier finished in the
 		 * time it took us to reach this point. try the cycle again. */
 		libusb_unlock_event_waiters(ctx);
-		usbi_dbg("event handler was active but went away, retrying");
+		// usbi_dbg("event handler was active but went away, retrying");
 		goto retry;
 	}
 
-	usbi_dbg("another thread is doing event handling");
+	// usbi_dbg("another thread is doing event handling");
 	r = libusb_wait_for_event(ctx, &poll_timeout);
 
 already_done:
@@ -2456,7 +2453,6 @@ int  libusb_pollfds_handle_timeouts(libusb_context *ctx)
 	USBI_GET_CONTEXT(ctx);
 	return usbi_using_timerfd(ctx);
 #else
-	UNUSED(ctx);
 	return 0;
 #endif
 }
@@ -2505,7 +2501,7 @@ int  libusb_get_next_timeout(libusb_context *ctx,
 	usbi_mutex_lock(&ctx->flying_transfers_lock);
 	if (list_empty(&ctx->flying_transfers)) {
 		usbi_mutex_unlock(&ctx->flying_transfers_lock);
-		usbi_dbg("no URBs, no timeout!");
+		// usbi_dbg("no URBs, no timeout!");
 		return 0;
 	}
 
@@ -2524,23 +2520,23 @@ int  libusb_get_next_timeout(libusb_context *ctx,
 	usbi_mutex_unlock(&ctx->flying_transfers_lock);
 
 	if (!timerisset(&next_timeout)) {
-		usbi_dbg("no URB with timeout or all handled by OS; no timeout!");
+		// usbi_dbg("no URB with timeout or all handled by OS; no timeout!");
 		return 0;
 	}
 
 	r = usbi_backend->clock_gettime(USBI_CLOCK_MONOTONIC, &cur_ts);
 	if (r < 0) {
-		usbi_err(ctx, "failed to read monotonic clock, errno=%d", errno);
+		// usbi_err(ctx, "failed to read monotonic clock, errno=%d", errno);
 		return 0;
 	}
 	TIMESPEC_TO_TIMEVAL(&cur_tv, &cur_ts);
 
 	if (!timercmp(&cur_tv, &next_timeout, <)) {
-		usbi_dbg("first timeout already expired");
+		// usbi_dbg("first timeout already expired");
 		timerclear(tv);
 	} else {
 		timersub(&next_timeout, &cur_tv, tv);
-		usbi_dbg("next timeout in %d.%06ds", tv->tv_sec, tv->tv_usec);
+		// usbi_dbg("next timeout in %d.%06ds", tv->tv_sec, tv->tv_usec);
 	}
 
 	return 1;
@@ -2602,7 +2598,7 @@ int usbi_add_pollfd(struct libusb_context *ctx, int fd, short events)
 	if (!ipollfd)
 		return LIBUSB_ERROR_NO_MEM;
 
-	usbi_dbg("add fd %d events %d", fd, events);
+	// usbi_dbg("add fd %d events %d", fd, events);
 	ipollfd->pollfd.fd = fd;
 	ipollfd->pollfd.events = events;
 	usbi_mutex_lock(&ctx->event_data_lock);
@@ -2622,7 +2618,7 @@ void usbi_remove_pollfd(struct libusb_context *ctx, int fd)
 	struct usbi_pollfd *ipollfd;
 	int found = 0;
 
-	usbi_dbg("remove fd %d", fd);
+	// usbi_dbg("remove fd %d", fd);
 	usbi_mutex_lock(&ctx->event_data_lock);
 	list_for_each_entry(ipollfd, &ctx->ipollfds, list, struct usbi_pollfd)
 		if (ipollfd->pollfd.fd == fd) {
@@ -2631,7 +2627,7 @@ void usbi_remove_pollfd(struct libusb_context *ctx, int fd)
 		}
 
 	if (!found) {
-		usbi_dbg("couldn't find fd %d to remove", fd);
+		// usbi_dbg("couldn't find fd %d to remove", fd);
 		usbi_mutex_unlock(&ctx->event_data_lock);
 		return;
 	}
@@ -2683,7 +2679,7 @@ out:
 	usbi_mutex_unlock(&ctx->event_data_lock);
 	return (const struct libusb_pollfd **) ret;
 #else
-	usbi_err(ctx, "external polling of libusb's internal descriptors "\
+	// usbi_err(ctx, "external polling of libusb's internal descriptors "\
 		"is not yet supported on Windows platforms");
 	return NULL;
 #endif
@@ -2715,7 +2711,7 @@ void usbi_handle_disconnect(struct libusb_device_handle *dev_handle)
 	struct usbi_transfer *cur;
 	struct usbi_transfer *to_cancel;
 
-	usbi_dbg("device %d.%d",
+	// usbi_dbg("device %d.%d",
 		dev_handle->dev->bus_number, dev_handle->dev->device_address);
 
 	/* terminate all pending transfers with the LIBUSB_TRANSFER_NO_DEVICE
@@ -2749,7 +2745,7 @@ void usbi_handle_disconnect(struct libusb_device_handle *dev_handle)
 		if (!to_cancel)
 			break;
 
-		usbi_dbg("cancelling transfer %p from disconnect",
+		// usbi_dbg("cancelling transfer %p from disconnect",
 			 USBI_TRANSFER_TO_LIBUSB_TRANSFER(to_cancel));
 
 		usbi_mutex_lock(&to_cancel->lock);

@@ -44,7 +44,7 @@
 // Uncomment to debug the polling layer
 //#define DEBUG_POLL_WINDOWS
 #if defined(DEBUG_POLL_WINDOWS)
-#define poll_dbg usbi_dbg
+#define poll_dbg // usbi_dbg
 #else
 // MSVC++ < 2005 cannot use a variadic argument and non MSVC
 // compilers produce warnings if parenthesis are omitted.
@@ -87,7 +87,7 @@ static  void setup_cancel_io(void)
 		pCancelIoEx = (BOOL (__stdcall *)(HANDLE,LPOVERLAPPED))
 			GetProcAddress(hKernel32, "CancelIoEx");
 	}
-	usbi_dbg("Will use CancelIo%s for I/O cancellation",
+	// usbi_dbg("Will use CancelIo%s for I/O cancellation",
 		Use_Duplicate_Handles?"":"Ex");
 }
 
@@ -112,7 +112,7 @@ static  BOOL cancel_io(int _index)
 	if (_poll_fd[_index].thread_id == GetCurrentThreadId()) {
 		return CancelIo(poll_fd[_index].handle);
 	}
-	usbi_warn(NULL, "Unable to cancel I/O that was started from another thread");
+	// usbi_warn(NULL, "Unable to cancel I/O that was started from another thread");
 	return FALSE;
 }
 #else
@@ -321,7 +321,7 @@ struct winfd usbi_create_fd(HANDLE handle, int access_mode, struct usbi_transfer
 	wfd.cancel_fn = cancel_fn;
 
 	if ((access_mode != RW_READ) && (access_mode != RW_WRITE)) {
-		usbi_warn(NULL, "only one of RW_READ or RW_WRITE are supported. "
+		// usbi_warn(NULL, "only one of RW_READ or RW_WRITE are supported. "
 			"If you want to poll for R/W simultaneously, create multiple fds from the same handle.");
 		return INVALID_WINFD;
 	}
@@ -352,7 +352,7 @@ struct winfd usbi_create_fd(HANDLE handle, int access_mode, struct usbi_transfer
 				_poll_fd[i].thread_id = GetCurrentThreadId();
 				if (!DuplicateHandle(GetCurrentProcess(), handle, GetCurrentProcess(),
 					&wfd.handle, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
-					usbi_dbg("could not duplicate handle for CancelIo - using original one");
+					// usbi_dbg("could not duplicate handle for CancelIo - using original one");
 					wfd.handle = handle;
 					// Make sure we won't close the original handle on fd deletion then
 					_poll_fd[i].original_handle = INVALID_HANDLE_VALUE;
@@ -521,7 +521,7 @@ int usbi_poll(struct pollfd *fds, unsigned int nfds, int timeout)
 		if ((fds[i].events & ~POLLIN) && (!(fds[i].events & POLLOUT))) {
 			fds[i].revents |= POLLERR;
 			errno = EACCES;
-			usbi_warn(NULL, "unsupported set of events");
+			// usbi_warn(NULL, "unsupported set of events");
 			triggered = -1;
 			goto poll_exit;
 		}
@@ -536,7 +536,7 @@ int usbi_poll(struct pollfd *fds, unsigned int nfds, int timeout)
 			if (_index >= 0) {
 				LeaveCriticalSection(&_poll_fd[_index].mutex);
 			}
-			usbi_warn(NULL, "invalid fd");
+			// usbi_warn(NULL, "invalid fd");
 			triggered = -1;
 			goto poll_exit;
 		}
@@ -545,7 +545,7 @@ int usbi_poll(struct pollfd *fds, unsigned int nfds, int timeout)
 		if ((fds[i].events & POLLIN) && (poll_fd[_index].rw != RW_READ)) {
 			fds[i].revents |= POLLNVAL | POLLERR;
 			errno = EBADF;
-			usbi_warn(NULL, "attempted POLLIN on fd without READ access");
+			// usbi_warn(NULL, "attempted POLLIN on fd without READ access");
 			LeaveCriticalSection(&_poll_fd[_index].mutex);
 			triggered = -1;
 			goto poll_exit;
@@ -554,7 +554,7 @@ int usbi_poll(struct pollfd *fds, unsigned int nfds, int timeout)
 		if ((fds[i].events & POLLOUT) && (poll_fd[_index].rw != RW_WRITE)) {
 			fds[i].revents |= POLLNVAL | POLLERR;
 			errno = EBADF;
-			usbi_warn(NULL, "attempted POLLOUT on fd without WRITE access");
+			// usbi_warn(NULL, "attempted POLLOUT on fd without WRITE access");
 			LeaveCriticalSection(&_poll_fd[_index].mutex);
 			triggered = -1;
 			goto poll_exit;
@@ -635,12 +635,11 @@ int usbi_close(int fd)
 ssize_t usbi_write(int fd, const void *buf, size_t count)
 {
 	int _index;
-	UNUSED(buf);
 
 	CHECK_INIT_POLLING;
 
 	if (count != sizeof(unsigned char)) {
-		usbi_err(NULL, "this function should only used for signaling");
+		// usbi_err(NULL, "this function should only used for signaling");
 		return -1;
 	}
 
@@ -672,12 +671,10 @@ ssize_t usbi_read(int fd, void *buf, size_t count)
 {
 	int _index;
 	ssize_t r = -1;
-	UNUSED(buf);
-
 	CHECK_INIT_POLLING;
 
 	if (count != sizeof(unsigned char)) {
-		usbi_err(NULL, "this function should only used for signaling");
+		// usbi_err(NULL, "this function should only used for signaling");
 		return -1;
 	}
 
@@ -689,7 +686,7 @@ ssize_t usbi_read(int fd, void *buf, size_t count)
 	}
 
 	if (WaitForSingleObject(poll_fd[_index].overlapped->hEvent, INFINITE) != WAIT_OBJECT_0) {
-		usbi_warn(NULL, "waiting for event failed: %u", (unsigned int)GetLastError());
+		// usbi_warn(NULL, "waiting for event failed: %u", (unsigned int)GetLastError());
 		errno = EIO;
 		goto out;
 	}

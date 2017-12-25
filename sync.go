@@ -41,7 +41,7 @@ func sync_transfer_wait_for_completion(transfer *libusb_transfer) {
 		if (r < 0) {
 			if (r == LIBUSB_ERROR_INTERRUPTED)
 				continue;
-			usbi_err(ctx, "libusb_handle_events failed: %s, cancelling transfer and retrying",
+			// usbi_err(ctx, "libusb_handle_events failed: %s, cancelling transfer and retrying",
 				 libusb_error_name(r));
 			libusb_cancel_transfer(transfer);
 			continue;
@@ -136,7 +136,7 @@ func ibusb_control_transfer(dev_handle *libusb_device_handle,
 	case LIBUSB_TRANSFER_CANCELLED:
 		r = LIBUSB_ERROR_IO
 	default:
-		usbi_warn(HANDLE_CTX(dev_handle),
+		// usbi_warn(HANDLE_CTX(dev_handle),
 			"unrecognised status code %d", transfer.status);
 		r = LIBUSB_ERROR_OTHER;
 	}
@@ -187,7 +187,7 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 	case LIBUSB_TRANSFER_CANCELLED:
 		r = LIBUSB_ERROR_IO
 	default:
-		usbi_warn(HANDLE_CTX(dev_handle),
+		// usbi_warn(HANDLE_CTX(dev_handle),
 			"unrecognised status code %d", transfer.status);
 		r = LIBUSB_ERROR_OTHER;
 	}

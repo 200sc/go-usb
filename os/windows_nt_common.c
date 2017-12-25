@@ -88,7 +88,7 @@ static int isprime(unsigned long number)
 static bool htab_create(struct libusb_context *ctx, unsigned long nel)
 {
 	if (htab_table != NULL) {
-		usbi_err(ctx, "hash table already allocated");
+		// usbi_err(ctx, "hash table already allocated");
 		return true;
 	}
 
@@ -101,13 +101,13 @@ static bool htab_create(struct libusb_context *ctx, unsigned long nel)
 		nel += 2;
 
 	htab_size = nel;
-	usbi_dbg("using %lu entries hash table", nel);
+	// usbi_dbg("using %lu entries hash table", nel);
 	htab_filled = 0;
 
 	// allocate memory and zero out.
 	htab_table = calloc(htab_size + 1, sizeof(htab_entry));
 	if (htab_table == NULL) {
-		usbi_err(ctx, "could not allocate space for hash table");
+		// usbi_err(ctx, "could not allocate space for hash table");
 		return false;
 	}
 
@@ -162,7 +162,7 @@ unsigned long htab_hash(const char *str)
 		if ((htab_table[idx].used == hval) && (safe_strcmp(str, htab_table[idx].str) == 0))
 			return idx; // existing hash
 
-		usbi_dbg("hash collision ('%s' vs '%s')", str, htab_table[idx].str);
+		// usbi_dbg("hash collision ('%s' vs '%s')", str, htab_table[idx].str);
 
 		// Second hash function, as suggested in [Knuth]
 		hval2 = 1 + hval % (htab_size - 2);
@@ -188,7 +188,7 @@ unsigned long htab_hash(const char *str)
 
 	// If the table is full return an error
 	if (htab_filled >= htab_size) {
-		usbi_err(NULL, "hash table is full (%d entries)", htab_size);
+		// usbi_err(NULL, "hash table is full (%d entries)", htab_size);
 		return 0;
 	}
 
@@ -201,7 +201,7 @@ unsigned long htab_hash(const char *str)
 	htab_table[idx].used = hval;
 	htab_table[idx].str = _strdup(str);
 	if (htab_table[idx].str == NULL) {
-		usbi_err(NULL, "could not duplicate string for hash table");
+		// usbi_err(NULL, "could not duplicate string for hash table");
 		usbi_mutex_unlock(&htab_write_mutex);
 		return 0;
 	}
@@ -236,7 +236,7 @@ static bool windows_init_clock(struct libusb_context *ctx)
 	if (QueryPerformanceFrequency(&li_frequency)) {
 		// Load DLL imports
 		if (windows_init_dlls() != LIBUSB_SUCCESS) {
-			usbi_err(ctx, "could not resolve DLL functions");
+			// usbi_err(ctx, "could not resolve DLL functions");
 			return false;
 		}
 
@@ -244,13 +244,13 @@ static bool windows_init_clock(struct libusb_context *ctx)
 		// to picoseconds to compute the tv_nsecs part in clock_gettime
 		hires_frequency = li_frequency.QuadPart;
 		hires_ticks_to_ps = UINT64_C(1000000000000) / hires_frequency;
-		usbi_dbg("hires timer available (Frequency: %"PRIu64" Hz)", hires_frequency);
+		// usbi_dbg("hires timer available (Frequency: %"PRIu64" Hz)", hires_frequency);
 
 		// Because QueryPerformanceCounter might report different values when
 		// running on different cores, we create a separate thread for the timer
 		// calls, which we glue to the first available core always to prevent timing discrepancies.
 		if (!GetProcessAffinityMask(GetCurrentProcess(), &affinity, &dummy) || (affinity == 0)) {
-			usbi_err(ctx, "could not get process affinity: %s", windows_error_str(0));
+			// usbi_err(ctx, "could not get process affinity: %s", windows_error_str(0));
 			return false;
 		}
 
@@ -259,35 +259,35 @@ static bool windows_init_clock(struct libusb_context *ctx)
 		for (i = 0; !(affinity & (DWORD_PTR)(1 << i)); i++);
 		affinity = (DWORD_PTR)(1 << i);
 
-		usbi_dbg("timer thread will run on core #%d", i);
+		// usbi_dbg("timer thread will run on core #%d", i);
 
 		event = CreateEvent(NULL, FALSE, FALSE, NULL);
 		if (event == NULL) {
-			usbi_err(ctx, "could not create event: %s", windows_error_str(0));
+			// usbi_err(ctx, "could not create event: %s", windows_error_str(0));
 			return false;
 		}
 
 		timer_thread = (HANDLE)_beginthreadex(NULL, 0, windows_clock_gettime_threaded, (void *)event,
 				0, (unsigned int *)&timer_thread_id);
 		if (timer_thread == NULL) {
-			usbi_err(ctx, "unable to create timer thread - aborting");
+			// usbi_err(ctx, "unable to create timer thread - aborting");
 			CloseHandle(event);
 			return false;
 		}
 
 		if (!SetThreadAffinityMask(timer_thread, affinity))
-			usbi_warn(ctx, "unable to set timer thread affinity, timer discrepancies may arise");
+			// usbi_warn(ctx, "unable to set timer thread affinity, timer discrepancies may arise");
 
 		// Wait for timer thread to init before continuing.
 		if (WaitForSingleObject(event, INFINITE) != WAIT_OBJECT_0) {
-			usbi_err(ctx, "failed to wait for timer thread to become ready - aborting");
+			// usbi_err(ctx, "failed to wait for timer thread to become ready - aborting");
 			CloseHandle(event);
 			return false;
 		}
 
 		CloseHandle(event);
 	} else {
-		usbi_dbg("no hires timer available on this platform");
+		// usbi_dbg("no hires timer available on this platform");
 		hires_frequency = 0;
 		hires_ticks_to_ps = UINT64_C(0);
 	}
@@ -301,7 +301,7 @@ void windows_destroy_clock(void)
 		// actually the signal to quit the thread.
 		if (!pPostThreadMessageA(timer_thread_id, WM_TIMER_EXIT, 0, 0)
 				|| (WaitForSingleObject(timer_thread, INFINITE) != WAIT_OBJECT_0)) {
-			usbi_dbg("could not wait for timer thread to quit");
+			// usbi_dbg("could not wait for timer thread to quit");
 			TerminateThread(timer_thread, 1);
 			// shouldn't happen, but we're destroying
 			// all objects it might have held anyway.
@@ -327,13 +327,13 @@ static unsigned __stdcall windows_clock_gettime_threaded(void *param)
 
 	// Signal windows_init_clock() that we're ready to service requests
 	if (!SetEvent((HANDLE)param))
-		usbi_dbg("SetEvent failed for timer init event: %s", windows_error_str(0));
+		// usbi_dbg("SetEvent failed for timer init event: %s", windows_error_str(0));
 	param = NULL;
 
 	// Main loop - wait for requests
 	while (1) {
 		if (pGetMessageA(&msg, NULL, WM_TIMER_REQUEST, WM_TIMER_EXIT) == -1) {
-			usbi_err(NULL, "GetMessage failed for timer thread: %s", windows_error_str(0));
+			// usbi_err(NULL, "GetMessage failed for timer thread: %s", windows_error_str(0));
 			return 1;
 		}
 
@@ -347,10 +347,10 @@ static unsigned __stdcall windows_clock_gettime_threaded(void *param)
 			request->tp->tv_sec = (long)(hires_counter.QuadPart / hires_frequency);
 			request->tp->tv_nsec = (long)(((hires_counter.QuadPart % hires_frequency) / 1000) * hires_ticks_to_ps);
 			if (!SetEvent(request->event))
-				usbi_err(NULL, "SetEvent failed for timer request: %s", windows_error_str(0));
+				// usbi_err(NULL, "SetEvent failed for timer request: %s", windows_error_str(0));
 			break;
 		case WM_TIMER_EXIT:
-			usbi_dbg("timer thread quitting");
+			// usbi_dbg("timer thread quitting");
 			return 0;
 		}
 	}
@@ -372,7 +372,7 @@ int windows_clock_gettime(int clk_id, struct timespec *tp)
 				return LIBUSB_ERROR_NO_MEM;
 
 			if (!pPostThreadMessageA(timer_thread_id, WM_TIMER_REQUEST, 0, (LPARAM)&request)) {
-				usbi_err(NULL, "PostThreadMessage failed for timer thread: %s", windows_error_str(0));
+				// usbi_err(NULL, "PostThreadMessage failed for timer thread: %s", windows_error_str(0));
 				CloseHandle(request.event);
 				return LIBUSB_ERROR_OTHER;
 			}
@@ -380,9 +380,9 @@ int windows_clock_gettime(int clk_id, struct timespec *tp)
 			do {
 				r = WaitForSingleObject(request.event, TIMER_REQUEST_RETRY_MS);
 				if (r == WAIT_TIMEOUT)
-					usbi_dbg("could not obtain a timer value within reasonable timeframe - too much load?");
+					// usbi_dbg("could not obtain a timer value within reasonable timeframe - too much load?");
 				else if (r == WAIT_FAILED)
-					usbi_err(NULL, "WaitForSingleObject failed: %s", windows_error_str(0));
+					// usbi_err(NULL, "WaitForSingleObject failed: %s", windows_error_str(0));
 			} while (r == WAIT_TIMEOUT);
 			CloseHandle(request.event);
 
@@ -413,30 +413,30 @@ static void windows_transfer_callback(struct usbi_transfer *itransfer, uint32_t 
 {
 	int status, istatus;
 
-	usbi_dbg("handling I/O completion with errcode %u, size %u", io_result, io_size);
+	// usbi_dbg("handling I/O completion with errcode %u, size %u", io_result, io_size);
 
 	switch (io_result) {
 	case NO_ERROR:
 		status = windows_copy_transfer_data(itransfer, io_size);
 		break;
 	case ERROR_GEN_FAILURE:
-		usbi_dbg("detected endpoint stall");
+		// usbi_dbg("detected endpoint stall");
 		status = LIBUSB_TRANSFER_STALL;
 		break;
 	case ERROR_SEM_TIMEOUT:
-		usbi_dbg("detected semaphore timeout");
+		// usbi_dbg("detected semaphore timeout");
 		status = LIBUSB_TRANSFER_TIMED_OUT;
 		break;
 	case ERROR_OPERATION_ABORTED:
 		istatus = windows_copy_transfer_data(itransfer, io_size);
 		if (istatus != LIBUSB_TRANSFER_COMPLETED)
-			usbi_dbg("Failed to copy partial data in aborted operation: %d", istatus);
+			// usbi_dbg("Failed to copy partial data in aborted operation: %d", istatus);
 
-		usbi_dbg("detected operation aborted");
+		// usbi_dbg("detected operation aborted");
 		status = LIBUSB_TRANSFER_CANCELLED;
 		break;
 	default:
-		usbi_err(ITRANSFER_CTX(itransfer), "detected I/O error %u: %s", io_result, windows_error_str(io_result));
+		// usbi_err(ITRANSFER_CTX(itransfer), "detected I/O error %u: %s", io_result, windows_error_str(io_result));
 		status = LIBUSB_TRANSFER_ERROR;
 		break;
 	}
@@ -459,10 +459,10 @@ void windows_handle_callback(struct usbi_transfer *itransfer, uint32_t io_result
 		windows_transfer_callback(itransfer, io_result, io_size);
 		break;
 	case LIBUSB_TRANSFER_TYPE_BULK_STREAM:
-		usbi_warn(ITRANSFER_CTX(itransfer), "bulk stream transfers are not yet supported on this platform");
+		// usbi_warn(ITRANSFER_CTX(itransfer), "bulk stream transfers are not yet supported on this platform");
 		break;
 	default:
-		usbi_err(ITRANSFER_CTX(itransfer), "unknown endpoint type %d", transfer->type);
+		// usbi_err(ITRANSFER_CTX(itransfer), "unknown endpoint type %d", transfer->type);
 	}
 }
 
@@ -478,7 +478,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 	usbi_mutex_lock(&ctx->open_devs_lock);
 	for (i = 0; i < nfds && num_ready > 0; i++) {
 
-		usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
+		// usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
 
 		if (!fds[i].revents)
 			continue;
@@ -507,7 +507,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 			// newly allocated wfd that took the place of the one from the transfer.
 			windows_handle_callback(transfer, io_result, io_size);
 		} else {
-			usbi_err(ctx, "could not find a matching transfer for fd %d", fds[i]);
+			// usbi_err(ctx, "could not find a matching transfer for fd %d", fds[i]);
 			r = LIBUSB_ERROR_NOT_FOUND;
 			break;
 		}

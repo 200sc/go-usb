@@ -74,13 +74,6 @@ struct windows_usb_api_backend {
 	int (*copy_transfer_data)(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size);
 };
 
-extern const struct windows_usb_api_backend usb_api_backend[USB_API_MAX];
-
-#define PRINT_UNSUPPORTED_API(fname)				\
-	usbi_dbg("unsupported API call for '"			\
-		#fname "' (unrecognized device driver)");	\
-	return LIBUSB_ERROR_NOT_SUPPORTED;
-
 /*
  * private structures definition
  * with  pseudo constructors/destructors

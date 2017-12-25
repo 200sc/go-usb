@@ -121,14 +121,14 @@ static int wince_init(struct libusb_context *ctx)
 	_stprintf(sem_name, _T("libusb_init%08X"), (unsigned int)(GetCurrentProcessId() & 0xFFFFFFFF));
 	semaphore = CreateSemaphore(NULL, 1, 1, sem_name);
 	if (semaphore == NULL) {
-		usbi_err(ctx, "could not create semaphore: %s", windows_error_str(0));
+		// usbi_err(ctx, "could not create semaphore: %s", windows_error_str(0));
 		return LIBUSB_ERROR_NO_MEM;
 	}
 
 	// A successful wait brings our semaphore count to 0 (unsignaled)
 	// => any concurent wait stalls until the semaphore's release
 	if (WaitForSingleObject(semaphore, INFINITE) != WAIT_OBJECT_0) {
-		usbi_err(ctx, "failure to access semaphore: %s", windows_error_str(0));
+		// usbi_err(ctx, "failure to access semaphore: %s", windows_error_str(0));
 		CloseHandle(semaphore);
 		return LIBUSB_ERROR_NO_MEM;
 	}
@@ -141,7 +141,7 @@ static int wince_init(struct libusb_context *ctx)
 
 		// Load DLL imports
 		if (init_dllimports() != LIBUSB_SUCCESS) {
-			usbi_err(ctx, "could not resolve DLL functions");
+			// usbi_err(ctx, "could not resolve DLL functions");
 			r = LIBUSB_ERROR_NOT_SUPPORTED;
 			goto init_exit;
 		}
@@ -149,7 +149,7 @@ static int wince_init(struct libusb_context *ctx)
 		// try to open a handle to the driver
 		driver_handle = UkwOpenDriver();
 		if (driver_handle == INVALID_HANDLE_VALUE) {
-			usbi_err(ctx, "could not connect to driver");
+			// usbi_err(ctx, "could not connect to driver");
 			r = LIBUSB_ERROR_NOT_SUPPORTED;
 			goto init_exit;
 		}
@@ -160,9 +160,9 @@ static int wince_init(struct libusb_context *ctx)
 			// The hires frequency can go as high as 4 GHz, so we'll use a conversion
 			// to picoseconds to compute the tv_nsecs part in clock_gettime
 			hires_ticks_to_ps = UINT64_C(1000000000000) / hires_frequency;
-			usbi_dbg("hires timer available (Frequency: %"PRIu64" Hz)", hires_frequency);
+			// usbi_dbg("hires timer available (Frequency: %"PRIu64" Hz)", hires_frequency);
 		} else {
-			usbi_dbg("no hires timer available on this platform");
+			// usbi_dbg("no hires timer available on this platform");
 			hires_frequency = 0;
 			hires_ticks_to_ps = UINT64_C(0);
 		}
@@ -238,7 +238,7 @@ static int wince_get_device_list(
 	success = UkwGetDeviceList(driver_handle, devices, MAX_DEVICE_COUNT, &count);
 	if (!success) {
 		int libusbErr = translate_driver_error(GetLastError());
-		usbi_err(ctx, "could not get devices: %s", windows_error_str(0));
+		// usbi_err(ctx, "could not get devices: %s", windows_error_str(0));
 		return libusbErr;
 	}
 
@@ -247,20 +247,20 @@ static int wince_get_device_list(
 		success = UkwGetDeviceAddress(devices[i], &bus_addr, &dev_addr, &session_id);
 		if (!success) {
 			r = translate_driver_error(GetLastError());
-			usbi_err(ctx, "could not get device address for %u: %s", (unsigned int)i, windows_error_str(0));
+			// usbi_err(ctx, "could not get device address for %u: %s", (unsigned int)i, windows_error_str(0));
 			goto err_out;
 		}
 
 		dev = usbi_get_device_by_session_id(ctx, session_id);
 		if (dev) {
-			usbi_dbg("using existing device for %u/%u (session %lu)",
+			// usbi_dbg("using existing device for %u/%u (session %lu)",
 					bus_addr, dev_addr, session_id);
 			// Release just this element in the device list (as we already hold a
 			// reference to it).
 			UkwReleaseDeviceList(driver_handle, &devices[i], 1);
 			release_list_offset++;
 		} else {
-			usbi_dbg("allocating new device for %u/%u (session %lu)",
+			// usbi_dbg("allocating new device for %u/%u (session %lu)",
 					bus_addr, dev_addr, session_id);
 			dev = usbi_alloc_device(ctx, session_id);
 			if (!dev) {
@@ -536,7 +536,7 @@ static int wince_submit_control_or_bulk_transfer(struct usbi_transfer *itransfer
 
 	eventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if (eventHandle == NULL) {
-		usbi_err(ctx, "Failed to create event for async transfer");
+		// usbi_err(ctx, "Failed to create event for async transfer");
 		return LIBUSB_ERROR_NO_MEM;
 	}
 
@@ -560,7 +560,7 @@ static int wince_submit_control_or_bulk_transfer(struct usbi_transfer *itransfer
 
 	if (!ret) {
 		int libusbErr = translate_driver_error(GetLastError());
-		usbi_err(ctx, "UkwIssue%sTransfer failed: error %u",
+		// usbi_err(ctx, "UkwIssue%sTransfer failed: error %u",
 			control_transfer ? "Control" : "Bulk", (unsigned int)GetLastError());
 		wince_clear_transfer_priv(itransfer);
 		return libusbErr;
@@ -589,7 +589,7 @@ static int wince_submit_transfer(struct usbi_transfer *itransfer)
 	case LIBUSB_TRANSFER_TYPE_BULK_STREAM:
 		return LIBUSB_ERROR_NOT_SUPPORTED;
 	default:
-		usbi_err(TRANSFER_CTX(transfer), "unknown endpoint type %d", transfer->type);
+		// usbi_err(TRANSFER_CTX(transfer), "unknown endpoint type %d", transfer->type);
 		return LIBUSB_ERROR_INVALID_PARAM;
 	}
 }
@@ -603,7 +603,7 @@ static void wince_transfer_callback(
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	int status;
 
-	usbi_dbg("handling I/O completion with errcode %u", io_result);
+	// usbi_dbg("handling I/O completion with errcode %u", io_result);
 
 	if (io_result == ERROR_NOT_SUPPORTED &&
 		transfer->type != LIBUSB_TRANSFER_TYPE_CONTROL) {
@@ -619,7 +619,7 @@ static void wince_transfer_callback(
 		 * checking the pipe status and requesting the endpoint status from the device.
 		 */
 		BOOL halted = FALSE;
-		usbi_dbg("checking I/O completion with errcode ERROR_NOT_SUPPORTED is really a stall");
+		// usbi_dbg("checking I/O completion with errcode ERROR_NOT_SUPPORTED is really a stall");
 		if (UkwIsPipeHalted(priv->dev, transfer->endpoint, &halted)) {
 			/* Pipe status retrieved, so now request endpoint status by sending a GET_STATUS
 			 * control request to the device. This is done synchronously, which is a bit
@@ -640,10 +640,10 @@ static void wince_transfer_callback(
 				if (written == sizeof(wStatus) &&
 						(wStatus & STATUS_HALT_FLAG) == 0) {
 					if (!halted || UkwClearHaltHost(priv->dev, transfer->endpoint)) {
-						usbi_dbg("Endpoint doesn't appear to be stalled, overriding error with success");
+						// usbi_dbg("Endpoint doesn't appear to be stalled, overriding error with success");
 						io_result = ERROR_SUCCESS;
 					} else {
-						usbi_dbg("Endpoint doesn't appear to be stalled, but the host is halted, changing error");
+						// usbi_dbg("Endpoint doesn't appear to be stalled, but the host is halted, changing error");
 						io_result = ERROR_IO_DEVICE;
 					}
 				}
@@ -657,24 +657,24 @@ static void wince_transfer_callback(
 		status = LIBUSB_TRANSFER_COMPLETED;
 		break;
 	case ERROR_CANCELLED:
-		usbi_dbg("detected transfer cancel");
+		// usbi_dbg("detected transfer cancel");
 		status = LIBUSB_TRANSFER_CANCELLED;
 		break;
 	case ERROR_NOT_SUPPORTED:
 	case ERROR_GEN_FAILURE:
-		usbi_dbg("detected endpoint stall");
+		// usbi_dbg("detected endpoint stall");
 		status = LIBUSB_TRANSFER_STALL;
 		break;
 	case ERROR_SEM_TIMEOUT:
-		usbi_dbg("detected semaphore timeout");
+		// usbi_dbg("detected semaphore timeout");
 		status = LIBUSB_TRANSFER_TIMED_OUT;
 		break;
 	case ERROR_OPERATION_ABORTED:
-		usbi_dbg("detected operation aborted");
+		// usbi_dbg("detected operation aborted");
 		status = LIBUSB_TRANSFER_CANCELLED;
 		break;
 	default:
-		usbi_err(ITRANSFER_CTX(itransfer), "detected I/O error: %s", windows_error_str(io_result));
+		// usbi_err(ITRANSFER_CTX(itransfer), "detected I/O error: %s", windows_error_str(io_result));
 		status = LIBUSB_TRANSFER_ERROR;
 		break;
 	}
@@ -702,7 +702,7 @@ static void wince_handle_callback(
 	case LIBUSB_TRANSFER_TYPE_BULK_STREAM:
 		break;
 	default:
-		usbi_err(ITRANSFER_CTX(itransfer), "unknown endpoint type %d", transfer->type);
+		// usbi_err(ITRANSFER_CTX(itransfer), "unknown endpoint type %d", transfer->type);
 	}
 }
 
@@ -720,7 +720,7 @@ static int wince_handle_events(
 	usbi_mutex_lock(&ctx->open_devs_lock);
 	for (i = 0; i < nfds && num_ready > 0; i++) {
 
-		usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
+		// usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
 
 		if (!fds[i].revents)
 			continue;
@@ -748,11 +748,11 @@ static int wince_handle_events(
 			// newly allocated wfd that took the place of the one from the transfer.
 			wince_handle_callback(transfer, io_result, io_size);
 		} else if (found) {
-			usbi_err(ctx, "matching transfer for fd %d has not completed", fds[i]);
+			// usbi_err(ctx, "matching transfer for fd %d has not completed", fds[i]);
 			r = LIBUSB_ERROR_OTHER;
 			break;
 		} else {
-			usbi_err(ctx, "could not find a matching transfer for fd %d", fds[i]);
+			// usbi_err(ctx, "could not find a matching transfer for fd %d", fds[i]);
 			r = LIBUSB_ERROR_NOT_FOUND;
 			break;
 		}
