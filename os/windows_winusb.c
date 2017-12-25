@@ -48,11 +48,11 @@ static int winusbx_release_interface(int sub_api, struct libusb_device_handle *d
 static int winusbx_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer);
 static int winusbx_set_interface_altsetting(int sub_api, struct libusb_device_handle *dev_handle, int iface, int altsetting);
 static int winusbx_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int winusbx_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint);
+static int winusbx_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint);
 static int winusbx_abort_transfers(int sub_api, struct usbi_transfer *itransfer);
 static int winusbx_abort_control(int sub_api, struct usbi_transfer *itransfer);
 static int winusbx_reset_device(int sub_api, struct libusb_device_handle *dev_handle);
-static int winusbx_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size);
+static int winusbx_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size);
 // HID API prototypes
 static int hid_init(int sub_api, struct libusb_context *ctx);
 static int hid_exit(int sub_api);
@@ -63,10 +63,10 @@ static int hid_release_interface(int sub_api, struct libusb_device_handle *dev_h
 static int hid_set_interface_altsetting(int sub_api, struct libusb_device_handle *dev_handle, int iface, int altsetting);
 static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer);
 static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int hid_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint);
+static int hid_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint);
 static int hid_abort_transfers(int sub_api, struct usbi_transfer *itransfer);
 static int hid_reset_device(int sub_api, struct libusb_device_handle *dev_handle);
-static int hid_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size);
+static int hid_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size);
 // Composite API prototypes
 static int composite_init(int sub_api, struct libusb_context *ctx);
 static int composite_exit(int sub_api);
@@ -78,11 +78,11 @@ static int composite_release_interface(int sub_api, struct libusb_device_handle 
 static int composite_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer);
 static int composite_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer);
 static int composite_submit_iso_transfer(int sub_api, struct usbi_transfer *itransfer);
-static int composite_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint);
+static int composite_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint);
 static int composite_abort_transfers(int sub_api, struct usbi_transfer *itransfer);
 static int composite_abort_control(int sub_api, struct usbi_transfer *itransfer);
 static int composite_reset_device(int sub_api, struct libusb_device_handle *dev_handle);
-static int composite_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size);
+static int composite_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size);
 
 
 // Global variables
@@ -127,9 +127,9 @@ static  bool guid_eq(const GUID *guid1, const GUID *guid2)
 static char *sanitize_path(const char *path)
 {
 	const char root_prefix[] = "\\\\.\\";
-	size_t j, size, root_size;
+	int j, size, root_size;
 	char *ret_path = NULL;
-	size_t add_root = 0;
+	int add_root = 0;
 
 	if (path == NULL)
 		return NULL;
@@ -420,10 +420,10 @@ err_exit:
  * Returns the session ID of a device's nth level ancestor
  * If there's no device at the nth level, return 0
  */
-static unsigned long get_ancestor_session_id(DWORD devinst, unsigned level)
+static uint64 get_ancestor_session_id(DWORD devinst, unsigned level)
 {
 	DWORD parent_devinst;
-	unsigned long session_id = 0;
+	uint64 session_id = 0;
 	char *sanitized_path = NULL;
 	char path[MAX_PATH_LENGTH];
 	unsigned i;
@@ -452,7 +452,7 @@ static unsigned long get_ancestor_session_id(DWORD devinst, unsigned level)
 /*
  * Determine which interface the given endpoint address belongs to
  */
-static int get_interface_by_endpoint(struct libusb_config_descriptor *conf_desc, uint8_t ep)
+static int get_interface_by_endpoint(struct libusb_config_descriptor *conf_desc, uint8 ep)
 {
 	const struct libusb_interface *intf;
 	const struct libusb_interface_descriptor *intf_desc;
@@ -524,7 +524,7 @@ static int get_sub_api(char *driver, int api)
 	int i;
 	const char sep_str[2] = {LIST_SEPARATOR, 0};
 	char *tok, *tmp_str;
-	size_t len = safe_strlen(driver);
+	int len = safe_strlen(driver);
 
 	if (len == 0)
 		return SUB_API_NOTSET;
@@ -640,7 +640,7 @@ static void get_windows_version(void)
 	const char *w = 0;
 	const char *w64 = "32 bit";
 	char *vptr;
-	size_t vlen;
+	int vlen;
 	unsigned major, minor;
 	ULONGLONG major_equal, minor_equal;
 	BOOL ws;
@@ -852,7 +852,7 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 	struct libusb_context *ctx = DEVICE_CTX(dev);
 	struct windows_device_priv *priv = _device_priv(dev);
 	int r;
-	uint8_t i;
+	uint8 i;
 
 	USB_CONFIGURATION_DESCRIPTOR_SHORT cd_buf_short; // dummy request
 	PUSB_DESCRIPTOR_REQUEST cd_buf_actual = NULL;    // actual request
@@ -861,7 +861,7 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 	if (dev->num_configurations == 0)
 		return LIBUSB_ERROR_INVALID_PARAM;
 
-	priv->config_descriptor = calloc(dev->num_configurations, sizeof(unsigned char *));
+	priv->config_descriptor = calloc(dev->num_configurations, sizeof(uint8 *));
 	if (priv->config_descriptor == NULL)
 		return LIBUSB_ERROR_NO_MEM;
 
@@ -947,7 +947,7 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
  * Populate a libusb device structure
  */
 static int init_device(struct libusb_device *dev, struct libusb_device *parent_dev,
-	uint8_t port_number, char *device_id, DWORD devinst)
+	uint8 port_number, char *device_id, DWORD devinst)
 {
 	HANDLE handle;
 	DWORD size;
@@ -956,7 +956,7 @@ static int init_device(struct libusb_device *dev, struct libusb_device *parent_d
 	struct windows_device_priv *priv, *parent_priv;
 	struct libusb_context *ctx;
 	struct libusb_device *tmp_dev;
-	unsigned long tmp_id;
+	uint64 tmp_id;
 	unsigned i;
 
 	if ((dev == NULL) || (parent_dev == NULL))
@@ -1066,7 +1066,7 @@ static int init_device(struct libusb_device *dev, struct libusb_device *parent_d
 		if (conn_info.DeviceAddress > UINT8_MAX)
 			// usbi_err(ctx, "program assertion failed: device address overflow");
 
-		dev->device_address = (uint8_t)conn_info.DeviceAddress + 1;
+		dev->device_address = (uint8)conn_info.DeviceAddress + 1;
 		if (dev->device_address == 1)
 			// usbi_err(ctx, "program assertion failed: device address collision with root hub");
 
@@ -1247,7 +1247,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 #define HID_PASS 4
 	int r = LIBUSB_SUCCESS;
 	int api, sub_api;
-	size_t class_index = 0;
+	int class_index = 0;
 	unsigned int nb_guids, pass, i, j, ancestor;
 	char path[MAX_PATH_LENGTH];
 	char strbuf[MAX_PATH_LENGTH];
@@ -1255,7 +1255,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 	struct windows_device_priv *priv, *parent_priv;
 	char *dev_interface_path = NULL;
 	char *dev_id_path = NULL;
-	unsigned long session_id;
+	uint64 session_id;
 	DWORD size, reg_type, port_nr, install_state;
 	HKEY key;
 	WCHAR guid_string_w[MAX_GUID_STRING_LENGTH];
@@ -1507,7 +1507,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				// If the hcd has already been setup, don't do it again
 				if (priv->path != NULL)
 					break;
-				dev->bus_number = (uint8_t)(i + 1); // bus 0 is reserved for disconnected
+				dev->bus_number = (uint8)(i + 1); // bus 0 is reserved for disconnected
 				dev->device_address = 0;
 				dev->num_configurations = 0;
 				priv->apib = &usb_api_backend[USB_API_HUB];
@@ -1551,7 +1551,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				}
 				break;
 			case GEN_PASS:
-				r = init_device(dev, parent_dev, (uint8_t)port_nr, dev_id_path, dev_info_data.DevInst);
+				r = init_device(dev, parent_dev, (uint8)port_nr, dev_id_path, dev_info_data.DevInst);
 				if (r == LIBUSB_SUCCESS) {
 					// Append device to the list of discovered devices
 					discdevs = discovered_devs_append(*_discdevs, dev);
@@ -1635,7 +1635,7 @@ static void windows_exit(void)
 	CloseHandle(semaphore);
 }
 
-static int windows_get_device_descriptor(struct libusb_device *dev, unsigned char *buffer, int *host_endian)
+static int windows_get_device_descriptor(struct libusb_device *dev, uint8 *buffer, int *host_endian)
 {
 	struct windows_device_priv *priv = _device_priv(dev);
 
@@ -1645,11 +1645,11 @@ static int windows_get_device_descriptor(struct libusb_device *dev, unsigned cha
 	return LIBUSB_SUCCESS;
 }
 
-static int windows_get_config_descriptor(struct libusb_device *dev, uint8_t config_index, unsigned char *buffer, size_t len, int *host_endian)
+static int windows_get_config_descriptor(struct libusb_device *dev, uint8 config_index, uint8 *buffer, int len, int *host_endian)
 {
 	struct windows_device_priv *priv = _device_priv(dev);
 	PUSB_CONFIGURATION_DESCRIPTOR config_header;
-	size_t size;
+	int size;
 
 	// config index is zero based
 	if (config_index >= dev->num_configurations)
@@ -1670,12 +1670,12 @@ static int windows_get_config_descriptor(struct libusb_device *dev, uint8_t conf
 	return (int)size;
 }
 
-static int windows_get_config_descriptor_by_value(struct libusb_device *dev, uint8_t bConfigurationValue,
-	unsigned char **buffer, int *host_endian)
+static int windows_get_config_descriptor_by_value(struct libusb_device *dev, uint8 bConfigurationValue,
+	uint8 **buffer, int *host_endian)
 {
 	struct windows_device_priv *priv = _device_priv(dev);
 	PUSB_CONFIGURATION_DESCRIPTOR config_header;
-	uint8_t index;
+	uint8 index;
 
 	*buffer = NULL;
 	*host_endian = 0;
@@ -1697,10 +1697,10 @@ static int windows_get_config_descriptor_by_value(struct libusb_device *dev, uin
 /*
  * return the cached copy of the active config descriptor
  */
-static int windows_get_active_config_descriptor(struct libusb_device *dev, unsigned char *buffer, size_t len, int *host_endian)
+static int windows_get_active_config_descriptor(struct libusb_device *dev, uint8 *buffer, int len, int *host_endian)
 {
 	struct windows_device_priv *priv = _device_priv(dev);
-	unsigned char *config_desc;
+	uint8 *config_desc;
 	int r;
 
 	if (priv->active_config == 0)
@@ -1769,7 +1769,7 @@ static int windows_set_configuration(struct libusb_device_handle *dev_handle, in
 		0, NULL, 0, 1000);
 
 	if (r == LIBUSB_SUCCESS)
-		priv->active_config = (uint8_t)config;
+		priv->active_config = (uint8)config;
 
 	return r;
 }
@@ -1811,7 +1811,7 @@ static int windows_release_interface(struct libusb_device_handle *dev_handle, in
 	return priv->apib->release_interface(SUB_API_NOTSET, dev_handle, iface);
 }
 
-static int windows_clear_halt(struct libusb_device_handle *dev_handle, unsigned char endpoint)
+static int windows_clear_halt(struct libusb_device_handle *dev_handle, uint8 endpoint)
 {
 	struct windows_device_priv *priv = _device_priv(dev_handle->dev);
 	return priv->apib->clear_halt(SUB_API_NOTSET, dev_handle, endpoint);
@@ -1958,7 +1958,7 @@ static int windows_cancel_transfer(struct usbi_transfer *itransfer)
 	}
 }
 
-int windows_copy_transfer_data(struct usbi_transfer *itransfer, uint32_t io_size)
+int windows_copy_transfer_data(struct usbi_transfer *itransfer, uint32 io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -2084,7 +2084,7 @@ static int unsupported_release_interface(int sub_api, struct libusb_device_handl
 	PRINT_UNSUPPORTED_API(release_interface);
 }
 
-static int unsupported_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint)
+static int unsupported_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint)
 {
 	PRINT_UNSUPPORTED_API(clear_halt);
 }
@@ -2119,7 +2119,7 @@ static int unsupported_abort_transfers(int sub_api, struct usbi_transfer *itrans
 	PRINT_UNSUPPORTED_API(abort_transfers);
 }
 
-static int unsupported_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size)
+static int unsupported_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size)
 {
 	PRINT_UNSUPPORTED_API(copy_transfer_data);
 }
@@ -2437,7 +2437,7 @@ static int winusbx_configure_endpoints(int sub_api, struct libusb_device_handle 
 	HANDLE winusb_handle = handle_priv->interface_handle[iface].api_handle;
 	uint8 policy;
 	uint64 timeout = 0;
-	uint8_t endpoint_address;
+	uint8 endpoint_address;
 	int i;
 
 	CHECK_WINUSBX_AVAILABLE(sub_api);
@@ -2625,7 +2625,7 @@ static int get_valid_interface(struct libusb_device_handle *dev_handle, int api_
  * Lookup interface by endpoint address. -1 if not found
  */
 static int interface_by_endpoint(struct windows_device_priv *priv,
-	struct windows_device_handle_priv *handle_priv, uint8_t endpoint_address)
+	struct windows_device_handle_priv *handle_priv, uint8 endpoint_address)
 {
 	int i, j;
 
@@ -2705,7 +2705,7 @@ static int winusbx_submit_control_transfer(int sub_api, struct usbi_transfer *it
 
 	// Use priv_transfer to store data needed for async polling
 	transfer_priv->pollable_fd = wfd;
-	transfer_priv->interface_number = (uint8_t)current_interface;
+	transfer_priv->interface_number = (uint8)current_interface;
 
 	return LIBUSB_SUCCESS;
 }
@@ -2787,12 +2787,12 @@ static int winusbx_submit_bulk_transfer(int sub_api, struct usbi_transfer *itran
 	}
 
 	transfer_priv->pollable_fd = wfd;
-	transfer_priv->interface_number = (uint8_t)current_interface;
+	transfer_priv->interface_number = (uint8)current_interface;
 
 	return LIBUSB_SUCCESS;
 }
 
-static int winusbx_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint)
+static int winusbx_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint)
 {
 	struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(dev_handle);
@@ -2920,7 +2920,7 @@ static int winusbx_reset_device(int sub_api, struct libusb_device_handle *dev_ha
 	return LIBUSB_SUCCESS;
 }
 
-static int winusbx_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size)
+static int winusbx_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size)
 {
 	itransfer->transferred += io_size;
 	return LIBUSB_TRANSFER_COMPLETED;
@@ -2931,8 +2931,8 @@ static int winusbx_copy_transfer_data(int sub_api, struct usbi_transfer *itransf
  * Note that functions that complete data transfer synchronously must return
  * LIBUSB_COMPLETED instead of LIBUSB_SUCCESS
  */
-static int _hid_get_hid_descriptor(struct hid_device_priv *dev, void *data, size_t *size);
-static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, size_t *size);
+static int _hid_get_hid_descriptor(struct hid_device_priv *dev, void *data, int *size);
+static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, int *size);
 
 static int _hid_wcslen(WCHAR *str)
 {
@@ -2944,7 +2944,7 @@ static int _hid_wcslen(WCHAR *str)
 	return i;
 }
 
-static int _hid_get_device_descriptor(struct hid_device_priv *dev, void *data, size_t *size)
+static int _hid_get_device_descriptor(struct hid_device_priv *dev, void *data, int *size)
 {
 	struct libusb_device_descriptor d;
 
@@ -2970,16 +2970,16 @@ static int _hid_get_device_descriptor(struct hid_device_priv *dev, void *data, s
 	return LIBUSB_COMPLETED;
 }
 
-static int _hid_get_config_descriptor(struct hid_device_priv *dev, void *data, size_t *size)
+static int _hid_get_config_descriptor(struct hid_device_priv *dev, void *data, int *size)
 {
 	char num_endpoints = 0;
-	size_t config_total_len = 0;
+	int config_total_len = 0;
 	char tmp[HID_MAX_CONFIG_DESC_SIZE];
 	struct libusb_config_descriptor *cd;
 	struct libusb_interface_descriptor *id;
 	struct libusb_hid_descriptor *hd;
 	struct libusb_endpoint_descriptor *ed;
-	size_t tmp_size;
+	int tmp_size;
 
 	if (dev->input_report_size)
 		num_endpoints++;
@@ -3046,10 +3046,10 @@ static int _hid_get_config_descriptor(struct hid_device_priv *dev, void *data, s
 }
 
 static int _hid_get_string_descriptor(struct hid_device_priv *dev, int _index,
-	void *data, size_t *size)
+	void *data, int *size)
 {
 	void *tmp = NULL;
-	size_t tmp_size = 0;
+	int tmp_size = 0;
 	int i;
 
 	/* language ID, EN-US */
@@ -3081,18 +3081,18 @@ static int _hid_get_string_descriptor(struct hid_device_priv *dev, int _index,
 		*size = tmp_size;
 
 	// 2 byte header
-	((uint8_t *)data)[0] = (uint8_t)*size;
-	((uint8_t *)data)[1] = LIBUSB_DT_STRING;
-	memcpy((uint8_t *)data + 2, tmp, *size - 2);
+	((uint8 *)data)[0] = (uint8)*size;
+	((uint8 *)data)[1] = LIBUSB_DT_STRING;
+	memcpy((uint8 *)data + 2, tmp, *size - 2);
 
 	return LIBUSB_COMPLETED;
 }
 
-static int _hid_get_hid_descriptor(struct hid_device_priv *dev, void *data, size_t *size)
+static int _hid_get_hid_descriptor(struct hid_device_priv *dev, void *data, int *size)
 {
 	struct libusb_hid_descriptor d;
-	uint8_t tmp[MAX_HID_DESCRIPTOR_SIZE];
-	size_t report_len = MAX_HID_DESCRIPTOR_SIZE;
+	uint8 tmp[MAX_HID_DESCRIPTOR_SIZE];
+	int report_len = MAX_HID_DESCRIPTOR_SIZE;
 
 	_hid_get_report_descriptor(dev, tmp, &report_len);
 
@@ -3111,10 +3111,10 @@ static int _hid_get_hid_descriptor(struct hid_device_priv *dev, void *data, size
 	return LIBUSB_COMPLETED;
 }
 
-static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, size_t *size)
+static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, int *size)
 {
-	uint8_t d[MAX_HID_DESCRIPTOR_SIZE];
-	size_t i = 0;
+	uint8 d[MAX_HID_DESCRIPTOR_SIZE];
+	int i = 0;
 
 	/* usage page (0xFFA0 == vendor defined) */
 	d[i++] = 0x06; d[i++] = 0xA0; d[i++] = 0xFF;
@@ -3133,7 +3133,7 @@ static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, s
 		/* report size (8 bits) */
 		d[i++] = 0x75; d[i++] = 0x08;
 		/* report count */
-		d[i++] = 0x95; d[i++] = (uint8_t)dev->input_report_size - 1;
+		d[i++] = 0x95; d[i++] = (uint8)dev->input_report_size - 1;
 		/* input (data, variable, absolute) */
 		d[i++] = 0x81; d[i++] = 0x00;
 	}
@@ -3148,7 +3148,7 @@ static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, s
 		/* report size (8 bits) */
 		d[i++] = 0x75; d[i++] = 0x08;
 		/* report count */
-		d[i++] = 0x95; d[i++] = (uint8_t)dev->output_report_size - 1;
+		d[i++] = 0x95; d[i++] = (uint8)dev->output_report_size - 1;
 		/* output (data, variable, absolute) */
 		d[i++] = 0x91; d[i++] = 0x00;
 	}
@@ -3163,7 +3163,7 @@ static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, s
 		/* report size (8 bits) */
 		d[i++] = 0x75; d[i++] = 0x08;
 		/* report count */
-		d[i++] = 0x95; d[i++] = (uint8_t)dev->feature_report_size - 1;
+		d[i++] = 0x95; d[i++] = (uint8)dev->feature_report_size - 1;
 		/* feature (data, variable, absolute) */
 		d[i++] = 0xb2; d[i++] = 0x02; d[i++] = 0x01;
 	}
@@ -3179,7 +3179,7 @@ static int _hid_get_report_descriptor(struct hid_device_priv *dev, void *data, s
 }
 
 static int _hid_get_descriptor(struct hid_device_priv *dev, HANDLE hid_handle, int recipient,
-	int type, int _index, void *data, size_t *size)
+	int type, int _index, void *data, int *size)
 {
 	switch(type) {
 	case LIBUSB_DT_DEVICE:
@@ -3215,9 +3215,9 @@ static int _hid_get_descriptor(struct hid_device_priv *dev, HANDLE hid_handle, i
 }
 
 static int _hid_get_report(struct hid_device_priv *dev, HANDLE hid_handle, int id, void *data,
-	struct windows_transfer_priv *tp, size_t *size, OVERLAPPED *overlapped, int report_type)
+	struct windows_transfer_priv *tp, int *size, OVERLAPPED *overlapped, int report_type)
 {
-	uint8_t *buf;
+	uint8 *buf;
 	DWORD ioctl_code, read_size, expected_size = (DWORD)*size;
 	int r = LIBUSB_SUCCESS;
 
@@ -3246,7 +3246,7 @@ static int _hid_get_report(struct hid_device_priv *dev, HANDLE hid_handle, int i
 	if (buf == NULL)
 		return LIBUSB_ERROR_NO_MEM;
 
-	buf[0] = (uint8_t)id; // Must be set always
+	buf[0] = (uint8)id; // Must be set always
 	// usbi_dbg("report ID: 0x%02X", buf[0]);
 
 	tp->hid_expected_size = expected_size;
@@ -3273,7 +3273,7 @@ static int _hid_get_report(struct hid_device_priv *dev, HANDLE hid_handle, int i
 		if (buf[0] != id)
 			// usbi_warn(NULL, "mismatched report ID (data is %02X, parameter is %02X)", buf[0], id);
 
-		if ((size_t)read_size > expected_size) {
+		if ((int)read_size > expected_size) {
 			r = LIBUSB_ERROR_OVERFLOW;
 			// usbi_dbg("OVERFLOW!");
 		} else {
@@ -3293,9 +3293,9 @@ static int _hid_get_report(struct hid_device_priv *dev, HANDLE hid_handle, int i
 }
 
 static int _hid_set_report(struct hid_device_priv *dev, HANDLE hid_handle, int id, void *data,
-	struct windows_transfer_priv *tp, size_t *size, OVERLAPPED *overlapped, int report_type)
+	struct windows_transfer_priv *tp, int *size, OVERLAPPED *overlapped, int report_type)
 {
-	uint8_t *buf = NULL;
+	uint8 *buf = NULL;
 	DWORD ioctl_code, write_size = (DWORD)*size;
 
 	if (tp->hid_buffer != NULL)
@@ -3361,7 +3361,7 @@ static int _hid_set_report(struct hid_device_priv *dev, HANDLE hid_handle, int i
 
 static int _hid_class_request(struct hid_device_priv *dev, HANDLE hid_handle, int request_type,
 	int request, int value, int _index, void *data, struct windows_transfer_priv *tp,
-	size_t *size, OVERLAPPED *overlapped)
+	int *size, OVERLAPPED *overlapped)
 {
 	int report_type = (value >> 8) & 0xFF;
 	int report_id = value & 0xFF;
@@ -3649,7 +3649,7 @@ static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itrans
 	HANDLE hid_handle;
 	struct winfd wfd;
 	int current_interface, config;
-	size_t size;
+	int size;
 	int r = LIBUSB_ERROR_INVALID_PARAM;
 
 	CHECK_HID_AVAILABLE;
@@ -3685,7 +3685,7 @@ static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itrans
 			r = windows_get_configuration(transfer->dev_handle, &config);
 			if (r == LIBUSB_SUCCESS) {
 				size = 1;
-				((uint8_t *)transfer->buffer)[LIBUSB_CONTROL_SETUP_SIZE] = (uint8_t)config;
+				((uint8 *)transfer->buffer)[LIBUSB_CONTROL_SETUP_SIZE] = (uint8)config;
 				r = LIBUSB_COMPLETED;
 			}
 			break;
@@ -3699,7 +3699,7 @@ static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itrans
 			break;
 		case LIBUSB_REQUEST_GET_INTERFACE:
 			size = 1;
-			((uint8_t *)transfer->buffer)[LIBUSB_CONTROL_SETUP_SIZE] = 0;
+			((uint8 *)transfer->buffer)[LIBUSB_CONTROL_SETUP_SIZE] = 0;
 			r = LIBUSB_COMPLETED;
 			break;
 		case LIBUSB_REQUEST_SET_INTERFACE:
@@ -3736,7 +3736,7 @@ static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itrans
 	if (r == LIBUSB_SUCCESS) {
 		// Use priv_transfer to store data needed for async polling
 		transfer_priv->pollable_fd = wfd;
-		transfer_priv->interface_number = (uint8_t)current_interface;
+		transfer_priv->interface_number = (uint8)current_interface;
 	} else {
 		usbi_free_fd(&wfd);
 	}
@@ -3821,7 +3821,7 @@ static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer
 			// usbi_err(ctx, "program assertion failed - no data was transferred");
 			size = 1;
 		}
-		if (size > (size_t)length) {
+		if (size > (int)length) {
 			// usbi_err(ctx, "OVERFLOW!");
 			r = LIBUSB_ERROR_OVERFLOW;
 		}
@@ -3830,7 +3830,7 @@ static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer
 	}
 
 	transfer_priv->pollable_fd = wfd;
-	transfer_priv->interface_number = (uint8_t)current_interface;
+	transfer_priv->interface_number = (uint8)current_interface;
 
 	return r;
 }
@@ -3870,7 +3870,7 @@ static int hid_reset_device(int sub_api, struct libusb_device_handle *dev_handle
 	return LIBUSB_SUCCESS;
 }
 
-static int hid_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint)
+static int hid_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint)
 {
 	struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(dev_handle);
@@ -3901,13 +3901,13 @@ static int hid_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, 
 }
 
 // This extra function is only needed for HID
-static int hid_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size)
+static int hid_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	int r = LIBUSB_TRANSFER_COMPLETED;
-	uint32_t corrected_size = io_size;
+	uint32 corrected_size = io_size;
 
 	if (transfer_priv->hid_buffer != NULL) {
 		// If we have a valid hid_buffer, it means the transfer was async
@@ -3916,7 +3916,7 @@ static int hid_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, 
 				// First, check for overflow
 				if (corrected_size > transfer_priv->hid_expected_size) {
 					// usbi_err(ctx, "OVERFLOW!");
-					corrected_size = (uint32_t)transfer_priv->hid_expected_size;
+					corrected_size = (uint32)transfer_priv->hid_expected_size;
 					r = LIBUSB_TRANSFER_OVERFLOW;
 				}
 
@@ -3954,7 +3954,7 @@ static int composite_open(int sub_api, struct libusb_device_handle *dev_handle)
 {
 	struct windows_device_priv *priv = _device_priv(dev_handle->dev);
 	int r = LIBUSB_ERROR_NOT_FOUND;
-	uint8_t i;
+	uint8 i;
 	// SUB_API_MAX + 1 as the SUB_API_MAX pos is used to indicate availability of HID
 	bool available[SUB_API_MAX + 1] = { 0 };
 
@@ -3989,7 +3989,7 @@ static int composite_open(int sub_api, struct libusb_device_handle *dev_handle)
 static void composite_close(int sub_api, struct libusb_device_handle *dev_handle)
 {
 	struct windows_device_priv *priv = _device_priv(dev_handle->dev);
-	uint8_t i;
+	uint8 i;
 	// SUB_API_MAX + 1 as the SUB_API_MAX pos is used to indicate availability of HID
 	bool available[SUB_API_MAX + 1] = { 0 };
 
@@ -4136,7 +4136,7 @@ static int composite_submit_iso_transfer(int sub_api, struct usbi_transfer *itra
 		submit_iso_transfer(priv->usb_interface[current_interface].sub_api, itransfer);
 }
 
-static int composite_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint)
+static int composite_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint)
 {
 	struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(dev_handle);
@@ -4177,7 +4177,7 @@ static int composite_reset_device(int sub_api, struct libusb_device_handle *dev_
 {
 	struct windows_device_priv *priv = _device_priv(dev_handle->dev);
 	int r;
-	uint8_t i;
+	uint8 i;
 	bool available[SUB_API_MAX];
 
 	for (i = 0; i < SUB_API_MAX; i++)
@@ -4200,7 +4200,7 @@ static int composite_reset_device(int sub_api, struct libusb_device_handle *dev_
 	return LIBUSB_SUCCESS;
 }
 
-static int composite_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size)
+static int composite_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);

@@ -37,7 +37,7 @@
 #define ARRAYSIZE(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
-static  void *usbi_reallocf(void *ptr, size_t size)
+static  void *usbi_reallocf(void *ptr, int size)
 {
 	void *ret = realloc(ptr, size);
 	return ret;
@@ -103,15 +103,15 @@ static  void *usbi_reallocf(void *ptr, size_t size)
 #endif
 
 #define USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)			\
-	((struct libusb_transfer *)(((unsigned char *)(transfer))	\
+	((struct libusb_transfer *)(((uint8 *)(transfer))	\
 		+ sizeof(struct usbi_transfer)))
 #define LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer)			\
-	((struct usbi_transfer *)(((unsigned char *)(transfer))		\
+	((struct usbi_transfer *)(((uint8 *)(transfer))		\
 		- sizeof(struct usbi_transfer)))
 
 static  void *usbi_transfer_get_os_priv(struct usbi_transfer *transfer)
 {
-	return ((unsigned char *)transfer) + sizeof(struct usbi_transfer)
+	return ((uint8 *)transfer) + sizeof(struct usbi_transfer)
 		+ sizeof(struct libusb_transfer)
 		+ (transfer->num_iso_packets
 			* sizeof(struct libusb_iso_packet_descriptor));

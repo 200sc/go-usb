@@ -39,116 +39,115 @@ const(
 	USBI_TRANSFER_TIMED_OUT usbi_transfer_timeout_flags = 1 << 2,
 )
 
-struct pollfd;
-
-struct libusb_context {
-	int debug;
-	int debug_fixed;
+type libusb_context struct {
+	debug int
+	debug_fixed int
 
 	/* internal event pipe, used for signalling occurrence of an internal event. */
-	int event_pipe[2];
+	event_pipe [2]int
 
-	struct list_head usb_devs;
-	usbi_mutex_t usb_devs_lock;
+	usb_devs list_head 
+	usb_devs_lock sync.Mutex
 
 	/* A list of open handles. Backends are free to traverse this if required.
 	 */
-	struct list_head open_devs;
-	usbi_mutex_t open_devs_lock;
+	open_devs list_head 
+	open_devs_lock sync.Mutex
 
 	/* A list of registered hotplug callbacks */
-	struct list_head hotplug_cbs;
-	usbi_mutex_t hotplug_cbs_lock;
+	hotplug_cbs list_head 
+	hotplug_cbs_lock sync.Mutex
 
 	/* this is a list of in-flight transfer handles, sorted by timeout
 	 * expiration. URBs to timeout the soonest are placed at the beginning of
 	 * the list, URBs that will time out later are placed after, and urbs with
 	 * infinite timeout are always placed at the very end. */
-	struct list_head flying_transfers;
+	flying_transfers list_head 
 	/* Note paths taking both this and usbi_transfer->lock must always
 	 * take this lock first */
-	usbi_mutex_t flying_transfers_lock;
+	flying_transfers_lock sync.Mutex
 
 	/* user callbacks for pollfd changes */
-	libusb_pollfd_added_cb fd_added_cb;
-	libusb_pollfd_removed_cb fd_removed_cb;
-	void *fd_cb_user_data;
+	fd_added_cb libusb_pollfd_added_cb 
+	fd_removed_cb libusb_pollfd_removed_cb 
+	fd_cb_user_data interface{}
 
 	/* ensures that only one thread is handling events at any one time */
-	usbi_mutex_t events_lock;
+	events_lock sync.Mutex
 
 	/* used to see if there is an active thread doing event handling */
-	int event_handler_active;
+	event_handler_active int
 
 	/* A thread-local storage key to track which thread is performing event
 	 * handling */
-	usbi_tls_key_t event_handling_key;
+	event_handling_key usbi_tls_key_t 
 
 	/* used to wait for event completion in threads other than the one that is
 	 * event handling */
-	usbi_mutex_t event_waiters_lock;
-	usbi_cond_t event_waiters_cond;
+	event_waiters_lock sync.Mutex
+	event_waiters_cond usbi_cond_t
 
 	/* A lock to protect internal context event data. */
-	usbi_mutex_t event_data_lock;
+	event_data_lock sync.Mutex
 
 	/* A bitmask of flags that are set to indicate specific events that need to
 	 * be handled. Protected by event_data_lock. */
-	unsigned int event_flags;
+	event_flags uint
 
 	/* A counter that is set when we want to interrupt and prevent event handling,
 	 * in order to safely close a device. Protected by event_data_lock. */
-	unsigned int device_close;
+	device_close uint
 
 	/* list and count of poll fds and an array of poll fd structures that is
 	 * (re)allocated as necessary prior to polling. Protected by event_data_lock. */
-	struct list_head ipollfds;
-	struct pollfd *pollfds;
-	POLL_NFDS_TYPE pollfds_cnt;
+	ipollfds list_head 
+	pollfds []pollfd 
+	pollfds_cnt POLL_NFDS_TYPE 
 
 	/* A list of pending hotplug messages. Protected by event_data_lock. */
-	struct list_head hotplug_msgs;
+	hotplug_msgs list_head 
 
 	/* A list of pending completed transfers. Protected by event_data_lock. */
-	struct list_head completed_transfers;
+	completed_transfers list_head 
 
-	struct list_head list;
-};
+	list list_head 
+}
 
+type libusb_device struct {
 struct libusb_device {
 	/* lock protects refcnt, everything else is finalized at initialization
 	 * time */
-	usbi_mutex_t lock;
-	int refcnt;
+	lock sync.Mutex
+	refcnt int
 
-	struct libusb_context *ctx;
+	ctx *libusb_context
 
-	uint8_t bus_number;
-	uint8_t port_number;
-	struct libusb_device* parent_dev;
-	uint8_t device_address;
-	uint8_t num_configurations;
-	libusb_speed speed;
+	bus_number uint8
+	port_number uint8
+	parent_dev *libusb_device 
+	device_address uint8
+	num_configurations uint8
+	speed libusb_speed
 
-	struct list_head list;
-	unsigned long session_data;
+	list list_head 
+	uint64 session_data
 
-	struct libusb_device_descriptor device_descriptor;
-	int attached;
+	device_descriptor libusb_device_descriptor 
+	attached int
 
-	unsigned char os_priv
-};
+	os_priv uint8
+}
 
-struct libusb_device_handle {
+type libusb_device_handle struct {
 	/* lock protects claimed_interfaces */
-	usbi_mutex_t lock;
-	unsigned long claimed_interfaces;
+	lock sync.Mutex
+	claimed_interfaces uint64
 
-	struct list_head list;
-	struct libusb_device *dev;
-	int auto_detach_kernel_driver;
-	unsigned char os_priv
-};
+	list list_head
+	dev *libusb_device 
+	auto_detach_kernel_driver int
+	os_priv uint8
+}
 
 /* in-memory transfer layout:
  *
@@ -163,15 +162,15 @@ struct libusb_device_handle {
  * OS-private data.
  */
 
-struct usbi_transfer {
-	int num_iso_packets;
-	struct list_head list;
-	struct list_head completed_list;
-	struct timeval timeout;
-	int transferred;
-	uint32_t stream_id;
-	uint8_t state_flags;   /* Protected by usbi_transfer->lock */
-	uint8_t timeout_flags; /* Protected by the flying_stransfers_lock */
+type usbi_transfer struct {
+	num_iso_packets int
+	list list_head 
+	completed_list list_head 
+	timeout timeval 
+	transferred int
+	stream_id uint32
+	state_flags uint8   /* Protected by usbi_transfer->lock */ 
+	timeout_flags uint8 /* Protected by the flying_stransfers_lock */ 
 
 	/* this lock is held during libusb_submit_transfer() and
 	 * libusb_cancel_transfer() (allowing the OS backend to prevent duplicate
@@ -182,21 +181,20 @@ struct usbi_transfer {
 	 * if this were possible).
 	 * Note paths taking both this and the flying_transfers_lock must
 	 * always take the flying_transfers_lock first */
-	usbi_mutex_t lock;
-};
+	lock sync.Mutex
+}
 
 /* All standard descriptors have these 2 fields in common */
-struct usb_descriptor_header {
-	uint8_t bLength;
-	uint8_t bDescriptorType;
-};
+type usb_descriptor_header struct {
+	bLength uint8
+	bDescriptorType uint8
+}
 
-struct usbi_pollfd {
+type usbi_pollfd struct {
 	/* must come first */
-	struct libusb_pollfd pollfd;
-
-	struct list_head list;
-};
+	pollfd libusb_pollfd
+	list list_head
+}
 
 /* device discovery */
 
@@ -205,8 +203,8 @@ struct usbi_pollfd {
  * which grows when required. it can be freed once discovery has completed,
  * eliminating the need for a list node in the libusb_device structure
  * itself. */
-struct discovered_devs {
-	size_t len;
-	size_t capacity;
-	struct libusb_device *devices
-};
+type discovered_devs struct {
+	len int
+	capacity int
+	devices []libusb_device
+}

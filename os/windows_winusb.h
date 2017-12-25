@@ -52,10 +52,10 @@ const GUID GUID_DEVINTERFACE_LIBUSB0_FILTER = { 0xF9F3FF14, 0xAE21, 0x48A0, {0x8
 #define WINUSBX_DRV_NAMES	{"libusbK", "libusb0", "WinUSB"}
 
 struct windows_usb_api_backend {
-	const uint8_t id;
+	const uint8 id;
 	const char *designation;
 	const char **driver_name_list; // Driver name, without .sys, e.g. "usbccgp"
-	const uint8_t nb_driver_names;
+	const uint8 nb_driver_names;
 	int (*init)(int sub_api, struct libusb_context *ctx);
 	int (*exit)(int sub_api);
 	int (*open)(int sub_api, struct libusb_device_handle *dev_handle);
@@ -64,14 +64,14 @@ struct windows_usb_api_backend {
 	int (*claim_interface)(int sub_api, struct libusb_device_handle *dev_handle, int iface);
 	int (*set_interface_altsetting)(int sub_api, struct libusb_device_handle *dev_handle, int iface, int altsetting);
 	int (*release_interface)(int sub_api, struct libusb_device_handle *dev_handle, int iface);
-	int (*clear_halt)(int sub_api, struct libusb_device_handle *dev_handle, unsigned char endpoint);
+	int (*clear_halt)(int sub_api, struct libusb_device_handle *dev_handle, uint8 endpoint);
 	int (*reset_device)(int sub_api, struct libusb_device_handle *dev_handle);
 	int (*submit_bulk_transfer)(int sub_api, struct usbi_transfer *itransfer);
 	int (*submit_iso_transfer)(int sub_api, struct usbi_transfer *itransfer);
 	int (*submit_control_transfer)(int sub_api, struct usbi_transfer *itransfer);
 	int (*abort_control)(int sub_api, struct usbi_transfer *itransfer);
 	int (*abort_transfers)(int sub_api, struct usbi_transfer *itransfer);
-	int (*copy_transfer_data)(int sub_api, struct usbi_transfer *itransfer, uint32_t io_size);
+	int (*copy_transfer_data)(int sub_api, struct usbi_transfer *itransfer, uint32 io_size);
 };
 
 /*
@@ -81,12 +81,12 @@ struct windows_usb_api_backend {
 
 // TODO (v2+): move hid desc to libusb.h?
 struct libusb_hid_descriptor {
-	uint8_t bLength;
-	uint8_t bDescriptorType;
+	uint8 bLength;
+	uint8 bDescriptorType;
 	uint16_t bcdHID;
-	uint8_t bCountryCode;
-	uint8_t bNumDescriptors;
-	uint8_t bClassDescriptorType;
+	uint8 bCountryCode;
+	uint8 bNumDescriptors;
+	uint8 bClassDescriptorType;
 	uint16_t wClassDescriptorLength;
 };
 
@@ -119,20 +119,20 @@ struct libusb_hid_descriptor {
 struct hid_device_priv {
 	uint16_t vid;
 	uint16_t pid;
-	uint8_t config;
-	uint8_t nb_interfaces;
+	uint8 config;
+	uint8 nb_interfaces;
 	bool uses_report_ids[3]; // input, ouptput, feature
 	uint16_t input_report_size;
 	uint16_t output_report_size;
 	uint16_t feature_report_size;
 	WCHAR string[3][MAX_USB_STRING_LENGTH];
-	uint8_t string_index[3]; // man, prod, ser
+	uint8 string_index[3]; // man, prod, ser
 };
 
 struct windows_device_priv {
-	uint8_t depth; // distance to HCD
-	uint8_t port;  // port number on the hub
-	uint8_t active_config;
+	uint8 depth; // distance to HCD
+	uint8 port;  // port number on the hub
+	uint8 active_config;
 	struct windows_usb_api_backend const *apib;
 	char *path;  // device interface path
 	int sub_api; // for WinUSB-like APIs
@@ -141,13 +141,13 @@ struct windows_device_priv {
 		struct windows_usb_api_backend const *apib; // an API backend (multiple drivers support),
 		int sub_api;
 		int8_t nb_endpoints; // and a set of endpoint addresses (USB_MAXENDPOINTS)
-		uint8_t *endpoint;
+		uint8 *endpoint;
 		bool restricted_functionality;  // indicates if the interface functionality is restricted
                                                 // by Windows (eg. HID keyboards or mice cannot do R/W)
 	} usb_interface[USB_MAXINTERFACES];
 	struct hid_device_priv *hid;
 	USB_DEVICE_DESCRIPTOR dev_descriptor;
-	unsigned char **config_descriptor; // list of pointers to the cached config descriptors
+	uint8 **config_descriptor; // list of pointers to the cached config descriptors
 };
 
 static  struct windows_device_priv *_device_priv(struct libusb_device *dev)
@@ -206,10 +206,10 @@ static  struct windows_device_handle_priv *_device_handle_priv(
 // used for async polling functions
 struct windows_transfer_priv {
 	struct winfd pollable_fd;
-	uint8_t interface_number;
-	uint8_t *hid_buffer; // 1 byte extended data buffer, required for HID
-	uint8_t *hid_dest;   // transfer buffer destination, required for HID
-	size_t hid_expected_size;
+	uint8 interface_number;
+	uint8 *hid_buffer; // 1 byte extended data buffer, required for HID
+	uint8 *hid_dest;   // transfer buffer destination, required for HID
+	int hid_expected_size;
 };
 
 // used to match a device driver (including filter drivers) against a supported API

@@ -33,14 +33,14 @@
 
 /* set host_endian if the w values are already in host endian format,
  * as opposed to bus endian. */
-int usbi_parse_descriptor(const unsigned char *source, const char *descriptor,
+int usbi_parse_descriptor(const uint8 *source, const char *descriptor,
 	void *dest, int host_endian)
 {
-	const unsigned char *sp = source;
-	unsigned char *dp = dest;
+	const uint8 *sp = source;
+	uint8 *dp = dest;
 	uint16_t w;
 	const char *cp;
-	uint32_t d;
+	uint32 d;
 
 	for (cp = descriptor; *cp; cp++) {
 		switch (*cp) {
@@ -67,7 +67,7 @@ int usbi_parse_descriptor(const unsigned char *source, const char *descriptor,
 				} else {
 					d = (sp[3] << 24) | (sp[2] << 16) |
 						(sp[1] << 8) | sp[0];
-					*((uint32_t *)dp) = d;
+					*((uint32 *)dp) = d;
 				}
 				sp += 4;
 				dp += 4;
@@ -89,12 +89,12 @@ static void clear_endpoint(struct libusb_endpoint_descriptor *endpoint)
 }
 
 static int parse_endpoint(struct libusb_context *ctx,
-	struct libusb_endpoint_descriptor *endpoint, unsigned char *buffer,
+	struct libusb_endpoint_descriptor *endpoint, uint8 *buffer,
 	int size, int host_endian)
 {
 	struct usb_descriptor_header header;
-	unsigned char *extra;
-	unsigned char *begin;
+	uint8 *extra;
+	uint8 *begin;
 	int parsed = 0;
 	int len;
 
@@ -199,7 +199,7 @@ static void clear_interface(struct libusb_interface *usb_interface)
 }
 
 static int parse_interface(libusb_context *ctx,
-	struct libusb_interface *usb_interface, unsigned char *buffer, int size,
+	struct libusb_interface *usb_interface, uint8 *buffer, int size,
 	int host_endian)
 {
 	int i;
@@ -209,7 +209,7 @@ static int parse_interface(libusb_context *ctx,
 	int interface_number = -1;
 	struct usb_descriptor_header header;
 	struct libusb_interface_descriptor *ifp;
-	unsigned char *begin;
+	uint8 *begin;
 
 	usb_interface->num_altsetting = 0;
 
@@ -301,7 +301,7 @@ static int parse_interface(libusb_context *ctx,
 				r = LIBUSB_ERROR_NO_MEM;
 				goto err;
 			}
-			memcpy((unsigned char *) ifp->extra, begin, len);
+			memcpy((uint8 *) ifp->extra, begin, len);
 			ifp->extra_length = len;
 		}
 
@@ -320,7 +320,7 @@ static int parse_interface(libusb_context *ctx,
 				if (r < 0)
 					goto err;
 				if (r == 0) {
-					ifp->bNumEndpoints = (uint8_t)i;
+					ifp->bNumEndpoints = (uint8)i;
 					break;;
 				}
 
@@ -355,7 +355,7 @@ static void clear_configuration(struct libusb_config_descriptor *config)
 }
 
 static int parse_configuration(struct libusb_context *ctx,
-	struct libusb_config_descriptor *config, unsigned char *buffer,
+	struct libusb_config_descriptor *config, uint8 *buffer,
 	int size, int host_endian)
 {
 	int i;
@@ -402,7 +402,7 @@ static int parse_configuration(struct libusb_context *ctx,
 
 	for (i = 0; i < config->bNumInterfaces; i++) {
 		int len;
-		unsigned char *begin;
+		uint8 *begin;
 
 		/* Skip over the rest of the Class Specific or Vendor */
 		/*  Specific descriptors */
@@ -420,7 +420,7 @@ static int parse_configuration(struct libusb_context *ctx,
 				// usbi_warn(ctx,
 					  "short extra config desc read %d/%d",
 					  size, header.bLength);
-				config->bNumInterfaces = (uint8_t)i;
+				config->bNumInterfaces = (uint8)i;
 				return size;
 			}
 
@@ -448,7 +448,7 @@ static int parse_configuration(struct libusb_context *ctx,
 					goto err;
 				}
 
-				memcpy((unsigned char *) config->extra, begin, len);
+				memcpy((uint8 *) config->extra, begin, len);
 				config->extra_length = len;
 			}
 		}
@@ -457,7 +457,7 @@ static int parse_configuration(struct libusb_context *ctx,
 		if (r < 0)
 			goto err;
 		if (r == 0) {
-			config->bNumInterfaces = (uint8_t)i;
+			config->bNumInterfaces = (uint8)i;
 			break;
 		}
 
@@ -473,7 +473,7 @@ err:
 }
 
 static int raw_desc_to_config(struct libusb_context *ctx,
-	unsigned char *buf, int size, int host_endian,
+	uint8 *buf, int size, int host_endian,
 	struct libusb_config_descriptor **config)
 {
 	struct libusb_config_descriptor *_config = malloc(sizeof(*_config));
@@ -498,7 +498,7 @@ int usbi_device_cache_descriptor(libusb_device *dev)
 {
 	int r, host_endian = 0;
 
-	r = usbi_backend->get_device_descriptor(dev, (unsigned char *) &dev->device_descriptor,
+	r = usbi_backend->get_device_descriptor(dev, (uint8 *) &dev->device_descriptor,
 						&host_endian);
 	if (r < 0)
 		return r;
@@ -529,7 +529,7 @@ int  libusb_get_device_descriptor(libusb_device *dev,
 	struct libusb_device_descriptor *desc)
 {
 	// usbi_dbg("");
-	memcpy((unsigned char *) desc, (unsigned char *) &dev->device_descriptor,
+	memcpy((uint8 *) desc, (uint8 *) &dev->device_descriptor,
 	       sizeof (dev->device_descriptor));
 	return 0;
 }
@@ -552,8 +552,8 @@ int  libusb_get_active_config_descriptor(libusb_device *dev,
 	struct libusb_config_descriptor **config)
 {
 	struct libusb_config_descriptor _config;
-	unsigned char tmp[LIBUSB_DT_CONFIG_SIZE];
-	unsigned char *buf = NULL;
+	uint8 tmp[LIBUSB_DT_CONFIG_SIZE];
+	uint8 *buf = NULL;
 	int host_endian = 0;
 	int r;
 
@@ -598,11 +598,11 @@ int  libusb_get_active_config_descriptor(libusb_device *dev,
  * \see libusb_get_config_descriptor_by_value()
  */
 int  libusb_get_config_descriptor(libusb_device *dev,
-	uint8_t config_index, struct libusb_config_descriptor **config)
+	uint8 config_index, struct libusb_config_descriptor **config)
 {
 	struct libusb_config_descriptor _config;
-	unsigned char tmp[LIBUSB_DT_CONFIG_SIZE];
-	unsigned char *buf = NULL;
+	uint8 tmp[LIBUSB_DT_CONFIG_SIZE];
+	uint8 *buf = NULL;
 	int host_endian = 0;
 	int r;
 
@@ -640,13 +640,13 @@ int  libusb_get_config_descriptor(libusb_device *dev,
  * returns 0 on success or a LIBUSB_ERROR code
  */
 int usbi_get_config_index_by_value(struct libusb_device *dev,
-	uint8_t bConfigurationValue, int *idx)
+	uint8 bConfigurationValue, int *idx)
 {
-	uint8_t i;
+	uint8 i;
 
 	// usbi_dbg("value %d", bConfigurationValue);
 	for (i = 0; i < dev->num_configurations; i++) {
-		unsigned char tmp[6];
+		uint8 tmp[6];
 		int host_endian;
 		int r = usbi_backend->get_config_descriptor(dev, i, tmp, sizeof(tmp),
 			&host_endian);
@@ -682,10 +682,10 @@ int usbi_get_config_index_by_value(struct libusb_device *dev,
  * \see libusb_get_config_descriptor()
  */
 int  libusb_get_config_descriptor_by_value(libusb_device *dev,
-	uint8_t bConfigurationValue, struct libusb_config_descriptor **config)
+	uint8 bConfigurationValue, struct libusb_config_descriptor **config)
 {
 	int r, idx, host_endian;
-	unsigned char *buf = NULL;
+	uint8 *buf = NULL;
 
 	if (usbi_backend->get_config_descriptor_by_value) {
 		r = usbi_backend->get_config_descriptor_by_value(dev,
@@ -701,7 +701,7 @@ int  libusb_get_config_descriptor_by_value(libusb_device *dev,
 	else if (idx == -1)
 		return LIBUSB_ERROR_NOT_FOUND;
 	else
-		return libusb_get_config_descriptor(dev, (uint8_t) idx, config);
+		return libusb_get_config_descriptor(dev, (uint8) idx, config);
 }
 
 /** \ingroup libusb_desc
@@ -742,7 +742,7 @@ int  libusb_get_ss_endpoint_companion_descriptor(
 {
 	struct usb_descriptor_header header;
 	int size = endpoint->extra_length;
-	const unsigned char *buffer = endpoint->extra;
+	const uint8 *buffer = endpoint->extra;
 
 	*ep_comp = NULL;
 
@@ -788,7 +788,7 @@ void  libusb_free_ss_endpoint_companion_descriptor(
 
 static int parse_bos(struct libusb_context *ctx,
 	struct libusb_bos_descriptor **bos,
-	unsigned char *buffer, int size, int host_endian)
+	uint8 *buffer, int size, int host_endian)
 {
 	struct libusb_bos_descriptor bos_header, *_bos;
 	struct libusb_bos_dev_capability_descriptor dev_cap;
@@ -859,7 +859,7 @@ static int parse_bos(struct libusb_context *ctx,
 		buffer += dev_cap.bLength;
 		size -= dev_cap.bLength;
 	}
-	_bos->bNumDeviceCaps = (uint8_t)i;
+	_bos->bNumDeviceCaps = (uint8)i;
 	*bos = _bos;
 
 	return LIBUSB_SUCCESS;
@@ -880,8 +880,8 @@ int  libusb_get_bos_descriptor(libusb_device_handle *dev_handle,
 	struct libusb_bos_descriptor **bos)
 {
 	struct libusb_bos_descriptor _bos;
-	uint8_t bos_header[LIBUSB_DT_BOS_SIZE] = {0};
-	unsigned char *bos_data = NULL;
+	uint8 bos_header[LIBUSB_DT_BOS_SIZE] = {0};
+	uint8 *bos_data = NULL;
 	const int host_endian = 0;
 	int r;
 
@@ -970,7 +970,7 @@ int  libusb_get_usb_2_0_extension_descriptor(
 	if (!_usb_2_0_extension)
 		return LIBUSB_ERROR_NO_MEM;
 
-	usbi_parse_descriptor((unsigned char *)dev_cap, "bbbd",
+	usbi_parse_descriptor((uint8 *)dev_cap, "bbbd",
 			      _usb_2_0_extension, host_endian);
 
 	*usb_2_0_extension = _usb_2_0_extension;
@@ -1028,7 +1028,7 @@ int  libusb_get_ss_usb_device_capability_descriptor(
 	if (!_ss_usb_device_cap)
 		return LIBUSB_ERROR_NO_MEM;
 
-	usbi_parse_descriptor((unsigned char *)dev_cap, "bbbbwbbw",
+	usbi_parse_descriptor((uint8 *)dev_cap, "bbbbwbbw",
 			      _ss_usb_device_cap, host_endian);
 
 	*ss_usb_device_cap = _ss_usb_device_cap;
@@ -1085,7 +1085,7 @@ int  libusb_get_container_id_descriptor(struct libusb_context *ctx,
 	if (!_container_id)
 		return LIBUSB_ERROR_NO_MEM;
 
-	usbi_parse_descriptor((unsigned char *)dev_cap, "bbbbu",
+	usbi_parse_descriptor((uint8 *)dev_cap, "bbbbu",
 			      _container_id, host_endian);
 
 	*container_id = _container_id;
@@ -1119,9 +1119,9 @@ void  libusb_free_container_id_descriptor(
  * \returns number of bytes returned in data, or LIBUSB_ERROR code on failure
  */
 int  libusb_get_string_descriptor_ascii(libusb_device_handle *dev_handle,
-	uint8_t desc_index, unsigned char *data, int length)
+	uint8 desc_index, uint8 *data, int length)
 {
-	unsigned char tbuf[255]; /* Some devices choke on size > 255 */
+	uint8 tbuf[255]; /* Some devices choke on size > 255 */
 	int r, si, di;
 	uint16_t langid;
 

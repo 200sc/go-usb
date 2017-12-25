@@ -158,10 +158,10 @@ int linux_netlink_stop_event_monitor(void)
 	return LIBUSB_SUCCESS;
 }
 
-static const char *netlink_message_parse(const char *buffer, size_t len, const char *key)
+static const char *netlink_message_parse(const char *buffer, int len, const char *key)
 {
 	const char *end = buffer + len;
-	size_t keylen = strlen(key);
+	int keylen = strlen(key);
 
 	while (buffer < end && *buffer) {
 		if (strncmp(buffer, key, keylen) == 0 && buffer[keylen] == '=')
@@ -173,8 +173,8 @@ static const char *netlink_message_parse(const char *buffer, size_t len, const c
 }
 
 /* parse parts of netlink message common to both libudev and the kernel */
-static int linux_netlink_parse(const char *buffer, size_t len, int *detached,
-	const char **sys_name, uint8_t *busnum, uint8_t *devaddr)
+static int linux_netlink_parse(const char *buffer, int len, int *detached,
+	const char **sys_name, uint8 *busnum, uint8 *devaddr)
 {
 	const char *tmp, *slash;
 
@@ -211,7 +211,7 @@ static int linux_netlink_parse(const char *buffer, size_t len, int *detached,
 
 	tmp = netlink_message_parse(buffer, len, "BUSNUM");
 	if (tmp) {
-		*busnum = (uint8_t)(strtoul(tmp, NULL, 10) & 0xff);
+		*busnum = (uint8)(strtoul(tmp, NULL, 10) & 0xff);
 		if (errno) {
 			errno = 0;
 			return -1;
@@ -221,7 +221,7 @@ static int linux_netlink_parse(const char *buffer, size_t len, int *detached,
 		if (NULL == tmp)
 			return -1;
 
-		*devaddr = (uint8_t)(strtoul(tmp, NULL, 10) & 0xff);
+		*devaddr = (uint8)(strtoul(tmp, NULL, 10) & 0xff);
 		if (errno) {
 			errno = 0;
 			return -1;
@@ -239,13 +239,13 @@ static int linux_netlink_parse(const char *buffer, size_t len, int *detached,
 		if (!slash)
 			return -1;
 
-		*busnum = (uint8_t)(strtoul(slash - 3, NULL, 10) & 0xff);
+		*busnum = (uint8)(strtoul(slash - 3, NULL, 10) & 0xff);
 		if (errno) {
 			errno = 0;
 			return -1;
 		}
 
-		*devaddr = (uint8_t)(strtoul(slash + 1, NULL, 10) & 0xff);
+		*devaddr = (uint8)(strtoul(slash + 1, NULL, 10) & 0xff);
 		if (errno) {
 			errno = 0;
 			return -1;
@@ -271,7 +271,7 @@ static int linux_netlink_read_message(void)
 	char cred_buffer[CMSG_SPACE(sizeof(struct ucred))];
 	char msg_buffer[2048];
 	const char *sys_name = NULL;
-	uint8_t busnum, devaddr;
+	uint8 busnum, devaddr;
 	int detached, r;
 	ssize_t len;
 	struct cmsghdr *cmsg;
@@ -315,7 +315,7 @@ static int linux_netlink_read_message(void)
 		return -1;
 	}
 
-	r = linux_netlink_parse(msg_buffer, (size_t)len, &detached, &sys_name, &busnum, &devaddr);
+	r = linux_netlink_parse(msg_buffer, (int)len, &detached, &sys_name, &busnum, &devaddr);
 	if (r)
 		return r;
 

@@ -632,13 +632,13 @@ int usbi_close(int fd)
 /*
  * synchronous write for fake "pipe" signaling
  */
-ssize_t usbi_write(int fd, const void *buf, size_t count)
+ssize_t usbi_write(int fd, const void *buf, int count)
 {
 	int _index;
 
 	CHECK_INIT_POLLING;
 
-	if (count != sizeof(unsigned char)) {
+	if (count != sizeof(uint8)) {
 		// usbi_err(NULL, "this function should only used for signaling");
 		return -1;
 	}
@@ -661,19 +661,19 @@ ssize_t usbi_write(int fd, const void *buf, size_t count)
 	poll_fd[_index].overlapped->InternalHigh++;
 
 	LeaveCriticalSection(&_poll_fd[_index].mutex);
-	return sizeof(unsigned char);
+	return sizeof(uint8);
 }
 
 /*
  * synchronous read for fake "pipe" signaling
  */
-ssize_t usbi_read(int fd, void *buf, size_t count)
+ssize_t usbi_read(int fd, void *buf, int count)
 {
 	int _index;
 	ssize_t r = -1;
 	CHECK_INIT_POLLING;
 
-	if (count != sizeof(unsigned char)) {
+	if (count != sizeof(uint8)) {
 		// usbi_err(NULL, "this function should only used for signaling");
 		return -1;
 	}
@@ -699,7 +699,7 @@ ssize_t usbi_read(int fd, void *buf, size_t count)
 		poll_fd[_index].overlapped->Internal = STATUS_PENDING;
 	}
 
-	r = sizeof(unsigned char);
+	r = sizeof(uint8);
 
 out:
 	LeaveCriticalSection(&_poll_fd[_index].mutex);

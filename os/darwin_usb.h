@@ -129,10 +129,10 @@ struct darwin_device_handle_priv {
 
   struct darwin_interface {
     usb_interface_t    **interface;
-    uint8_t              num_endpoints;
+    uint8              num_endpoints;
     CFRunLoopSourceRef   cfSource;
     uint64_t             frames[256];
-    uint8_t              endpoint_addrs[USB_MAXENDPOINTS];
+    uint8              endpoint_addrs[USB_MAXENDPOINTS];
   } interfaces[USB_MAXINTERFACES];
 };
 

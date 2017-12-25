@@ -91,6 +91,6 @@ struct wince_device_priv {
 
 struct wince_transfer_priv {
 	struct winfd pollable_fd;
-	uint8_t interface_number;
+	uint8 interface_number;
 };
 

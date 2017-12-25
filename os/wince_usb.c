@@ -95,7 +95,7 @@ static void exit_dllimports(void)
 
 static int init_device(
 	struct libusb_device *dev, UKW_DEVICE drv_dev,
-	unsigned char bus_addr, unsigned char dev_addr)
+	uint8 bus_addr, uint8 dev_addr)
 {
 	struct wince_device_priv *priv = _device_priv(dev);
 	int r = LIBUSB_SUCCESS;
@@ -229,8 +229,8 @@ static int wince_get_device_list(
 	struct discovered_devs *new_devices = *discdevs;
 	DWORD count = 0, i;
 	struct libusb_device *dev = NULL;
-	unsigned char bus_addr, dev_addr;
-	unsigned long session_id;
+	uint8 bus_addr, dev_addr;
+	uint64 session_id;
 	BOOL success;
 	DWORD release_list_offset = 0;
 	int r = LIBUSB_SUCCESS;
@@ -312,7 +312,7 @@ static void wince_close(struct libusb_device_handle *handle)
 
 static int wince_get_device_descriptor(
 	struct libusb_device *device,
-	unsigned char *buffer, int *host_endian)
+	uint8 *buffer, int *host_endian)
 {
 	struct wince_device_priv *priv = _device_priv(device);
 
@@ -323,7 +323,7 @@ static int wince_get_device_descriptor(
 
 static int wince_get_active_config_descriptor(
 	struct libusb_device *device,
-	unsigned char *buffer, size_t len, int *host_endian)
+	uint8 *buffer, int len, int *host_endian)
 {
 	struct wince_device_priv *priv = _device_priv(device);
 	DWORD actualSize = len;
@@ -337,8 +337,8 @@ static int wince_get_active_config_descriptor(
 
 static int wince_get_config_descriptor(
 	struct libusb_device *device,
-	uint8_t config_index,
-	unsigned char *buffer, size_t len, int *host_endian)
+	uint8 config_index,
+	uint8 *buffer, int len, int *host_endian)
 {
 	struct wince_device_priv *priv = _device_priv(device);
 	DWORD actualSize = len;
@@ -420,7 +420,7 @@ static int wince_set_interface_altsetting(
 
 static int wince_clear_halt(
 	struct libusb_device_handle *handle,
-	unsigned char endpoint)
+	uint8 endpoint)
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 
@@ -596,7 +596,7 @@ static int wince_submit_transfer(struct usbi_transfer *itransfer)
 
 static void wince_transfer_callback(
 	struct usbi_transfer *itransfer,
-	uint32_t io_result, uint32_t io_size)
+	uint32 io_result, uint32 io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
@@ -688,7 +688,7 @@ static void wince_transfer_callback(
 
 static void wince_handle_callback(
 	struct usbi_transfer *itransfer,
-	uint32_t io_result, uint32_t io_size)
+	uint32 io_result, uint32 io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 

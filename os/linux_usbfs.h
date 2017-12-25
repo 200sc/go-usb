@@ -22,13 +22,13 @@
 
 struct usbfs_ctrltransfer {
 	/* keep in sync with usbdevice_fs.h:usbdevfs_ctrltransfer */
-	uint8_t  bmRequestType;
-	uint8_t  bRequest;
+	uint8  bmRequestType;
+	uint8  bRequest;
 	uint16_t wValue;
 	uint16_t wIndex;
 	uint16_t wLength;
 
-	uint32_t timeout;	/* in milliseconds */
+	uint32 timeout;	/* in milliseconds */
 
 	/* pointer to data */
 	void *data;
@@ -74,8 +74,8 @@ struct usbfs_iso_packet_desc {
 #define MAX_CTRL_BUFFER_LENGTH		4096
 
 struct usbfs_urb {
-	unsigned char type;
-	unsigned char endpoint;
+	uint8 type;
+	uint8 endpoint;
 	int status;
 	unsigned int flags;
 	void *buffer;
@@ -94,7 +94,7 @@ struct usbfs_urb {
 
 struct usbfs_connectinfo {
 	unsigned int devnum;
-	unsigned char slow;
+	uint8 slow;
 };
 
 struct usbfs_ioctl {
@@ -105,8 +105,8 @@ struct usbfs_ioctl {
 };
 
 struct usbfs_hub_portinfo {
-	unsigned char numports;
-	unsigned char port[127];	/* port to device num mapping */
+	uint8 numports;
+	uint8 port[127];	/* port to device num mapping */
 };
 
 #define USBFS_CAP_ZERO_PACKET		0x01
@@ -127,7 +127,7 @@ struct usbfs_disconnect_claim {
 struct usbfs_streams {
 	unsigned int num_streams; /* Not used by USBDEVFS_FREE_STREAMS */
 	unsigned int num_eps;
-	unsigned char eps[0];
+	uint8 eps[0];
 };
 
 #define IOCTL_USBFS_CONTROL	_IOWR('U', 0, struct usbfs_ctrltransfer)
@@ -162,13 +162,13 @@ int linux_netlink_start_event_monitor(void);
 int linux_netlink_stop_event_monitor(void);
 void linux_netlink_hotplug_poll(void);
 
-void linux_hotplug_enumerate(uint8_t busnum, uint8_t devaddr, const char *sys_name);
-void linux_device_disconnected(uint8_t busnum, uint8_t devaddr);
+void linux_hotplug_enumerate(uint8 busnum, uint8 devaddr, const char *sys_name);
+void linux_device_disconnected(uint8 busnum, uint8 devaddr);
 
 int linux_get_device_address (struct libusb_context *ctx, int detached,
-	uint8_t *busnum, uint8_t *devaddr, const char *dev_node,
+	uint8 *busnum, uint8 *devaddr, const char *dev_node,
 	const char *sys_name);
 int linux_enumerate_device(struct libusb_context *ctx,
-	uint8_t busnum, uint8_t devaddr, const char *sysfs_dir);
+	uint8 busnum, uint8 devaddr, const char *sysfs_dir);
 
 #endif

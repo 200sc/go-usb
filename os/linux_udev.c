@@ -174,8 +174,8 @@ static void *linux_udev_event_thread_main(void *arg)
 }
 
 static int udev_device_info(struct libusb_context *ctx, int detached,
-			    struct udev_device *udev_dev, uint8_t *busnum,
-			    uint8_t *devaddr, const char **sys_name) {
+			    struct udev_device *udev_dev, uint8 *busnum,
+			    uint8 *devaddr, const char **sys_name) {
 	const char *dev_node;
 
 	dev_node = udev_device_get_devnode(udev_dev);
@@ -196,7 +196,7 @@ static void udev_hotplug_event(struct udev_device* udev_dev)
 {
 	const char* udev_action;
 	const char* sys_name = NULL;
-	uint8_t busnum = 0, devaddr = 0;
+	uint8 busnum = 0, devaddr = 0;
 	int detached;
 	int r;
 
@@ -250,7 +250,7 @@ int linux_udev_scan_devices(struct libusb_context *ctx)
 
 	udev_list_entry_foreach(entry, devices) {
 		const char *path = udev_list_entry_get_name(entry);
-		uint8_t busnum = 0, devaddr = 0;
+		uint8 busnum = 0, devaddr = 0;
 
 		udev_dev = udev_device_new_from_syspath(udev_ctx, path);
 

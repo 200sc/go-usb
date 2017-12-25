@@ -119,7 +119,7 @@ var (
 
 int  libusb_setlocale(const char *locale)
 {
-	size_t i;
+	int i;
 
 	if ( (locale == NULL) || (strlen(locale) < 2)
 	  || ((strlen(locale) > 2) && (locale[2] != '-') && (locale[2] != '_') && (locale[2] != '.')) )

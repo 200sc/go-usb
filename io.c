@@ -74,7 +74,7 @@
  * In our input device example, to read button presses you might write code
  * in the following style:
 \code
-unsigned char data[4];
+uint8 data[4];
 int actual_length;
 int r = libusb_bulk_transfer(dev_handle, LIBUSB_ENDPOINT_IN, data, sizeof(data), &actual_length, 0);
 if (r == 0 && actual_length == sizeof(data)) {
@@ -782,7 +782,7 @@ void cb(struct libusb_transfer *transfer)
 
 void myfunc() {
 	struct libusb_transfer *transfer;
-	unsigned char buffer[LIBUSB_CONTROL_SETUP_SIZE] __attribute__ ((aligned (2)));
+	uint8 buffer[LIBUSB_CONTROL_SETUP_SIZE] __attribute__ ((aligned (2)));
 	int completed = 0;
 
 	transfer = libusb_alloc_transfer(0);
@@ -1549,7 +1549,7 @@ out:
  * \see libusb_alloc_streams()
  */
 void  libusb_transfer_set_stream_id(
-	struct libusb_transfer *transfer, uint32_t stream_id)
+	struct libusb_transfer *transfer, uint32 stream_id)
 {
 	struct usbi_transfer *itransfer =
 		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
@@ -1565,7 +1565,7 @@ void  libusb_transfer_set_stream_id(
  * \param transfer the transfer to get the stream id for
  * \returns the stream id for the transfer
  */
-uint32_t  libusb_transfer_get_stream_id(
+uint32  libusb_transfer_get_stream_id(
 	struct libusb_transfer *transfer)
 {
 	struct usbi_transfer *itransfer =
@@ -1588,7 +1588,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 	struct libusb_transfer *transfer =
 		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 	struct libusb_device_handle *dev_handle = transfer->dev_handle;
-	uint8_t flags;
+	uint8 flags;
 	int r;
 
 	r = remove_from_flying_list(itransfer);
@@ -1630,7 +1630,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 int usbi_handle_transfer_cancellation(struct usbi_transfer *transfer)
 {
 	struct libusb_context *ctx = ITRANSFER_CTX(transfer);
-	uint8_t timed_out;
+	uint8 timed_out;
 
 	usbi_mutex_lock(&ctx->flying_transfers_lock);
 	timed_out = transfer->timeout_flags & USBI_TRANSFER_TIMED_OUT;
@@ -1697,6 +1697,7 @@ int  libusb_try_lock_events(libusb_context *ctx)
 		return 1;
 	}
 
+	// GO problem: sync.Mutex doesn't have an equivalent to this
 	r = usbi_mutex_trylock(&ctx->events_lock);
 	if (r)
 		return 1;
@@ -2662,7 +2663,7 @@ const struct libusb_pollfd **  libusb_get_pollfds(
 #ifndef OS_WINDOWS
 	struct libusb_pollfd **ret = NULL;
 	struct usbi_pollfd *ipollfd;
-	size_t i = 0;
+	int i = 0;
 	USBI_GET_CONTEXT(ctx);
 
 	usbi_mutex_lock(&ctx->event_data_lock);

@@ -53,7 +53,7 @@ static char *darwin_device_class = kIOUSBDeviceClassName;
 /* async event thread */
 static pthread_t libusb_darwin_at;
 
-static int darwin_get_config_descriptor(struct libusb_device *dev, uint8_t config_index, unsigned char *buffer, size_t len, int *host_endian);
+static int darwin_get_config_descriptor(struct libusb_device *dev, uint8 config_index, uint8 *buffer, int len, int *host_endian);
 static int darwin_claim_interface(struct libusb_device_handle *dev_handle, int iface);
 static int darwin_release_interface(struct libusb_device_handle *dev_handle, int iface);
 static int darwin_reset_device(struct libusb_device_handle *dev_handle);
@@ -103,7 +103,7 @@ static void darwin_ref_cached_device(struct darwin_cached_device *cached_dev) {
   cached_dev->refcount++;
 }
 
-static int ep_to_pipeRef(struct libusb_device_handle *dev_handle, uint8_t ep, uint8_t *pipep, uint8_t *ifcp, struct darwin_interface **interface_out) {
+static int ep_to_pipeRef(struct libusb_device_handle *dev_handle, uint8 ep, uint8 *pipep, uint8 *ifcp, struct darwin_interface **interface_out) {
   struct darwin_device_handle_priv *priv = (struct darwin_device_handle_priv *)dev_handle->os_priv;
 
   /* current interface */
@@ -281,7 +281,7 @@ static void darwin_devices_detached (void *ptr, io_iterator_t rem_devices) {
     list_for_each_entry(ctx, &active_contexts_list, list, struct libusb_context) {
       // usbi_dbg ("notifying context %p of device disconnect", ctx);
 
-      dev = usbi_get_device_by_session_id(ctx, (unsigned long) session);
+      dev = usbi_get_device_by_session_id(ctx, (uint64) session);
       if (dev) {
         /* signal the core that this device has been disconnected. the core will tear down this device
            when the reference count reaches 0 */
@@ -436,7 +436,7 @@ static void darwin_check_version (void) {
   int sysctl_args[] = {CTL_KERN, KERN_OSRELEASE};
   long version;
   char version_string[256] = {'\0',};
-  size_t length = 256;
+  int length = 256;
 
   sysctl(sysctl_args, 2, version_string, &length, NULL, 0);
 
@@ -492,7 +492,7 @@ static void darwin_exit (void) {
   }
 }
 
-static int darwin_get_device_descriptor(struct libusb_device *dev, unsigned char *buffer, int *host_endian) {
+static int darwin_get_device_descriptor(struct libusb_device *dev, uint8 *buffer, int *host_endian) {
   struct darwin_cached_device *priv = DARWIN_CACHED_DEVICE(dev);
 
   /* return cached copy */
@@ -525,7 +525,7 @@ static int get_configuration_index (struct libusb_device *dev, int config_value)
   return LIBUSB_ERROR_NOT_FOUND;
 }
 
-static int darwin_get_active_config_descriptor(struct libusb_device *dev, unsigned char *buffer, size_t len, int *host_endian) {
+static int darwin_get_active_config_descriptor(struct libusb_device *dev, uint8 *buffer, int len, int *host_endian) {
   struct darwin_cached_device *priv = DARWIN_CACHED_DEVICE(dev);
   int config_index;
 
@@ -539,7 +539,7 @@ static int darwin_get_active_config_descriptor(struct libusb_device *dev, unsign
   return darwin_get_config_descriptor (dev, config_index, buffer, len, host_endian);
 }
 
-static int darwin_get_config_descriptor(struct libusb_device *dev, uint8_t config_index, unsigned char *buffer, size_t len, int *host_endian) {
+static int darwin_get_config_descriptor(struct libusb_device *dev, uint8 config_index, uint8 *buffer, int len, int *host_endian) {
   struct darwin_cached_device *priv = DARWIN_CACHED_DEVICE(dev);
   IOUSBConfigurationDescriptorPtr desc;
   IOReturn kresult;
@@ -633,7 +633,7 @@ static int darwin_check_configuration (struct libusb_context *ctx, struct darwin
   return 0;
 }
 
-static int darwin_request_descriptor (usb_device_t **device, UInt8 desc, UInt8 desc_index, void *buffer, size_t buffer_size) {
+static int darwin_request_descriptor (usb_device_t **device, UInt8 desc, UInt8 desc_index, void *buffer, int buffer_size) {
   IOUSBDevRequestTO req;
 
   memset (buffer, 0, buffer_size);
@@ -912,7 +912,7 @@ static int process_new_device (struct libusb_context *ctx, io_service_t service)
     // usbi_dbg ("allocating new device in context %p for with session 0x%" PRIx64,
               ctx, cached_device->session);
 
-    dev = usbi_alloc_device(ctx, (unsigned long) cached_device->session);
+    dev = usbi_alloc_device(ctx, (uint64) cached_device->session);
     if (!dev) {
       return LIBUSB_ERROR_NO_MEM;
     }
@@ -923,7 +923,7 @@ static int process_new_device (struct libusb_context *ctx, io_service_t service)
     darwin_ref_cached_device (priv->dev);
 
     if (cached_device->parent_session > 0) {
-      dev->parent_dev = usbi_get_device_by_session_id (ctx, (unsigned long) cached_device->parent_session);
+      dev->parent_dev = usbi_get_device_by_session_id (ctx, (uint64) cached_device->parent_session);
     } else {
       dev->parent_dev = NULL;
     }
@@ -1103,7 +1103,7 @@ static int darwin_set_configuration(struct libusb_device_handle *dev_handle, int
   return 0;
 }
 
-static int darwin_get_interface (usb_device_t **darwin_device, uint8_t ifc, io_service_t *usbInterfacep) {
+static int darwin_get_interface (usb_device_t **darwin_device, uint8 ifc, io_service_t *usbInterfacep) {
   IOUSBFindInterfaceRequest request;
   kern_return_t             kresult;
   io_iterator_t             interface_iterator;
@@ -1363,11 +1363,11 @@ static int darwin_set_interface_altsetting(struct libusb_device_handle *dev_hand
   return darwin_to_libusb (kresult);
 }
 
-static int darwin_clear_halt(struct libusb_device_handle *dev_handle, unsigned char endpoint) {
+static int darwin_clear_halt(struct libusb_device_handle *dev_handle, uint8 endpoint) {
   /* current interface */
   struct darwin_interface *cInterface;
   IOReturn kresult;
-  uint8_t pipeRef;
+  uint8 pipeRef;
 
   /* determine the interface/endpoint to use */
   if (ep_to_pipeRef (dev_handle, endpoint, &pipeRef, NULL, &cInterface) != 0) {
@@ -1487,9 +1487,9 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer) {
   struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 
   IOReturn               ret;
-  uint8_t                transferType;
+  uint8                transferType;
   /* None of the values below are used in libusbx for bulk transfers */
-  uint8_t                direction, number, interval, pipeRef;
+  uint8                direction, number, interval, pipeRef;
   uint16_t               maxPacketSize;
 
   struct darwin_interface *cInterface;
@@ -1547,7 +1547,7 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer) {
 static int submit_stream_transfer(struct usbi_transfer *itransfer) {
   struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
   struct darwin_interface *cInterface;
-  uint8_t pipeRef;
+  uint8 pipeRef;
   IOReturn ret;
 
   if (ep_to_pipeRef (transfer->dev_handle, transfer->endpoint, &pipeRef, NULL, &cInterface) != 0) {
@@ -1580,7 +1580,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer) {
   struct darwin_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
 
   IOReturn kresult;
-  uint8_t direction, number, interval, pipeRef, transferType;
+  uint8 direction, number, interval, pipeRef, transferType;
   uint16_t maxPacketSize;
   UInt64 frame;
   AbsoluteTime atTime;
@@ -1690,7 +1690,7 @@ static int submit_control_transfer(struct usbi_transfer *itransfer) {
 
   if (transfer->endpoint) {
     struct darwin_interface *cInterface;
-    uint8_t                 pipeRef;
+    uint8                 pipeRef;
 
     if (ep_to_pipeRef (transfer->dev_handle, transfer->endpoint, &pipeRef, NULL, &cInterface) != 0) {
       // usbi_err (TRANSFER_CTX (transfer), "endpoint not found on any open interface");
@@ -1752,7 +1752,7 @@ static int darwin_abort_transfers (struct usbi_transfer *itransfer) {
   struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
   struct darwin_cached_device *dpriv = DARWIN_CACHED_DEVICE(transfer->dev_handle->dev);
   struct darwin_interface *cInterface;
-  uint8_t pipeRef, iface;
+  uint8 pipeRef, iface;
   IOReturn kresult;
 
   if (ep_to_pipeRef (transfer->dev_handle, transfer->endpoint, &pipeRef, &iface, &cInterface) != 0) {
@@ -1818,7 +1818,7 @@ static void darwin_async_io_callback (void *refcon, IOReturn result, void *arg0)
   /* if requested write a zero packet */
   if (kIOReturnSuccess == result && IS_XFEROUT(transfer) && transfer->flags & LIBUSB_TRANSFER_ADD_ZERO_PACKET) {
     struct darwin_interface *cInterface;
-    uint8_t pipeRef;
+    uint8 pipeRef;
 
     (void) ep_to_pipeRef (transfer->dev_handle, transfer->endpoint, &pipeRef, NULL, &cInterface);
 
@@ -1918,11 +1918,11 @@ static int darwin_clock_gettime(int clk_id, struct timespec *tp) {
 }
 
 #if InterfaceVersion >= 550
-static int darwin_alloc_streams (struct libusb_device_handle *dev_handle, uint32_t num_streams, unsigned char *endpoints,
+static int darwin_alloc_streams (struct libusb_device_handle *dev_handle, uint32 num_streams, uint8 *endpoints,
                                  int num_endpoints) {
   struct darwin_interface *cInterface;
   UInt32 supportsStreams;
-  uint8_t pipeRef;
+  uint8 pipeRef;
   int rc, i;
 
   /* find the mimimum number of supported streams on the endpoint list */
@@ -1952,10 +1952,10 @@ static int darwin_alloc_streams (struct libusb_device_handle *dev_handle, uint32
   return num_streams;
 }
 
-static int darwin_free_streams (struct libusb_device_handle *dev_handle, unsigned char *endpoints, int num_endpoints) {
+static int darwin_free_streams (struct libusb_device_handle *dev_handle, uint8 *endpoints, int num_endpoints) {
   struct darwin_interface *cInterface;
   UInt32 supportsStreams;
-  uint8_t pipeRef;
+  uint8 pipeRef;
   int rc;
 
   for (int i = 0 ; i < num_endpoints ; ++i) {

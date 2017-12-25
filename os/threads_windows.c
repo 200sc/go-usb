@@ -41,66 +41,6 @@ int usbi_mutex_static_unlock(usbi_mutex_static_t *mutex)
 	return 0;
 }
 
-int usbi_mutex_init(usbi_mutex_t *mutex)
-{
-	if (!mutex)
-		return EINVAL;
-	*mutex = CreateMutex(NULL, FALSE, NULL);
-	if (!*mutex)
-		return ENOMEM;
-	return 0;
-}
-
-int usbi_mutex_lock(usbi_mutex_t *mutex)
-{
-	DWORD result;
-
-	if (!mutex)
-		return EINVAL;
-	result = WaitForSingleObject(*mutex, INFINITE);
-	if (result == WAIT_OBJECT_0 || result == WAIT_ABANDONED)
-		return 0; // acquired (ToDo: check that abandoned is ok)
-	else
-		return EINVAL; // don't know how this would happen
-			       //   so don't know proper errno
-}
-
-int usbi_mutex_unlock(usbi_mutex_t *mutex)
-{
-	if (!mutex)
-		return EINVAL;
-	if (ReleaseMutex(*mutex))
-		return 0;
-	else
-		return EPERM;
-}
-
-int usbi_mutex_trylock(usbi_mutex_t *mutex)
-{
-	DWORD result;
-
-	if (!mutex)
-		return EINVAL;
-	result = WaitForSingleObject(*mutex, 0);
-	if (result == WAIT_OBJECT_0 || result == WAIT_ABANDONED)
-		return 0; // acquired (ToDo: check that abandoned is ok)
-	else if (result == WAIT_TIMEOUT)
-		return EBUSY;
-	else
-		return EINVAL; // don't know how this would happen
-			       //   so don't know proper error
-}
-
-int usbi_mutex_destroy(usbi_mutex_t *mutex)
-{
-	// It is not clear if CloseHandle failure is due to failure to unlock.
-	//   If so, this should be errno=EBUSY.
-	if (!mutex || !CloseHandle(*mutex))
-		return EINVAL;
-	*mutex = NULL;
-	return 0;
-}
-
 int usbi_cond_init(usbi_cond_t *cond)
 {
 	if (!cond)

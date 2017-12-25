@@ -58,19 +58,19 @@ static unsigned __stdcall windows_clock_gettime_threaded(void *param);
 #define HTAB_SIZE 1021
 
 typedef struct htab_entry {
-	unsigned long used;
+	uint64 used;
 	char *str;
 } htab_entry;
 
 static htab_entry *htab_table = NULL;
 static usbi_mutex_t htab_write_mutex = NULL;
-static unsigned long htab_size, htab_filled;
+static uint64 htab_size, htab_filled;
 
 /* For the used double hash method the table size has to be a prime. To
    correct the user given table size we need a prime test.  This trivial
    algorithm is adequate because the code is called only during init and
    the number is likely to be small  */
-static int isprime(unsigned long number)
+static int isprime(uint64 number)
 {
 	// no even number will be passed
 	unsigned int divider = 3;
@@ -85,7 +85,7 @@ static int isprime(unsigned long number)
    We allocate one element more as the found prime number says.
    This is done for more effective indexing as explained in the
    comment for the hash function.  */
-static bool htab_create(struct libusb_context *ctx, unsigned long nel)
+static bool htab_create(struct libusb_context *ctx, uint64 nel)
 {
 	if (htab_table != NULL) {
 		// usbi_err(ctx, "hash table already allocated");
@@ -117,7 +117,7 @@ static bool htab_create(struct libusb_context *ctx, unsigned long nel)
 /* After using the hash table it has to be destroyed.  */
 static void htab_destroy(void)
 {
-	unsigned long i;
+	uint64 i;
 
 	if (htab_table == NULL)
 		return;
@@ -133,11 +133,11 @@ static void htab_destroy(void)
    The used field can be used as a first fast comparison for equality of
    the stored and the parameter value. This helps to prevent unnecessary
    expensive calls of strcmp.  */
-unsigned long htab_hash(const char *str)
+uint64 htab_hash(const char *str)
 {
-	unsigned long hval, hval2;
-	unsigned long idx;
-	unsigned long r = 5381;
+	uint64 hval, hval2;
+	uint64 idx;
+	uint64 r = 5381;
 	int c;
 	const char *sz = str;
 
@@ -409,7 +409,7 @@ int windows_clock_gettime(int clk_id, struct timespec *tp)
 	}
 }
 
-static void windows_transfer_callback(struct usbi_transfer *itransfer, uint32_t io_result, uint32_t io_size)
+static void windows_transfer_callback(struct usbi_transfer *itransfer, uint32 io_result, uint32 io_size)
 {
 	int status, istatus;
 
@@ -447,7 +447,7 @@ static void windows_transfer_callback(struct usbi_transfer *itransfer, uint32_t 
 		usbi_handle_transfer_completion(itransfer, (libusb_transfer_status)status);
 }
 
-void windows_handle_callback(struct usbi_transfer *itransfer, uint32_t io_result, uint32_t io_size)
+void windows_handle_callback(struct usbi_transfer *itransfer, uint32 io_result, uint32 io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 

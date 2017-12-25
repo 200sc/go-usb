@@ -60,7 +60,7 @@ struct usbdk_device_priv {
 	USB_DK_DEVICE_INFO info;
 	PUSB_CONFIGURATION_DESCRIPTOR *config_descriptors;
 	HANDLE redirector_handle;
-	uint8_t active_configuration;
+	uint8 active_configuration;
 };
 
 struct usbdk_transfer_priv {
@@ -216,7 +216,7 @@ init_exit:
 }
 
 static int usbdk_get_session_id_for_device(struct libusb_context *ctx,
-	PUSB_DK_DEVICE_ID id, unsigned long *session_id)
+	PUSB_DK_DEVICE_ID id, uint64 *session_id)
 {
 	char dev_identity[ARRAYSIZE(id->DeviceID) + ARRAYSIZE(id->InstanceID)];
 
@@ -230,9 +230,9 @@ static int usbdk_get_session_id_for_device(struct libusb_context *ctx,
 	return LIBUSB_SUCCESS;
 }
 
-static void usbdk_release_config_descriptors(struct usbdk_device_priv *p, uint8_t count)
+static void usbdk_release_config_descriptors(struct usbdk_device_priv *p, uint8 count)
 {
-	uint8_t i;
+	uint8 i;
 
 	for (i = 0; i < count; i++)
 		usbdk_helper.ReleaseConfigurationDescriptor(p->config_descriptors[i]);
@@ -243,7 +243,7 @@ static void usbdk_release_config_descriptors(struct usbdk_device_priv *p, uint8_
 static int usbdk_cache_config_descriptors(struct libusb_context *ctx,
 	struct usbdk_device_priv *p, PUSB_DK_DEVICE_INFO info)
 {
-	uint8_t i;
+	uint8 i;
 	USB_DK_CONFIG_DESCRIPTOR_REQUEST Request;
 	Request.ID = info->ID;
 
@@ -279,12 +279,12 @@ static  int usbdk_device_priv_init(struct libusb_context *ctx, struct libusb_dev
 
 static void usbdk_device_init(libusb_device *dev, PUSB_DK_DEVICE_INFO info)
 {
-	dev->bus_number = (uint8_t)info->FilterID;
-	dev->port_number = (uint8_t)info->Port;
+	dev->bus_number = (uint8)info->FilterID;
+	dev->port_number = (uint8)info->Port;
 	dev->parent_dev = NULL;
 
 	//Addresses in libusb are 1-based
-	dev->device_address = (uint8_t)(info->Port + 1);
+	dev->device_address = (uint8)(info->Port + 1);
 
 	dev->num_configurations = info->DeviceDescriptor.bNumConfigurations;
 	dev->device_descriptor = info->DeviceDescriptor;
@@ -321,7 +321,7 @@ static int usbdk_get_device_list(struct libusb_context *ctx, struct discovered_d
 		return LIBUSB_ERROR_OTHER;
 
 	for (i = 0; i < dev_number; i++) {
-		unsigned long session_id;
+		uint64 session_id;
 		struct libusb_device *dev = NULL;
 
 		if (usbdk_get_session_id_for_device(ctx, &devices[i].ID, &session_id))
@@ -367,7 +367,7 @@ static void usbdk_exit(void)
 	}
 }
 
-static int usbdk_get_device_descriptor(struct libusb_device *dev, unsigned char *buffer, int *host_endian)
+static int usbdk_get_device_descriptor(struct libusb_device *dev, uint8 *buffer, int *host_endian)
 {
 	struct usbdk_device_priv *priv = _usbdk_device_priv(dev);
 
@@ -377,7 +377,7 @@ static int usbdk_get_device_descriptor(struct libusb_device *dev, unsigned char 
 	return LIBUSB_SUCCESS;
 }
 
-static int usbdk_get_config_descriptor(struct libusb_device *dev, uint8_t config_index, unsigned char *buffer, size_t len, int *host_endian)
+static int usbdk_get_config_descriptor(struct libusb_device *dev, uint8 config_index, uint8 *buffer, int len, int *host_endian)
 {
 	struct usbdk_device_priv *priv = _usbdk_device_priv(dev);
 	PUSB_CONFIGURATION_DESCRIPTOR config_header;
@@ -397,7 +397,7 @@ static int usbdk_get_config_descriptor(struct libusb_device *dev, uint8_t config
 	return (int)size;
 }
 
-static  int usbdk_get_active_config_descriptor(struct libusb_device *dev, unsigned char *buffer, size_t len, int *host_endian)
+static  int usbdk_get_active_config_descriptor(struct libusb_device *dev, uint8 *buffer, int len, int *host_endian)
 {
 	return usbdk_get_config_descriptor(dev, _usbdk_device_priv(dev)->active_configuration,
 			buffer, len, host_endian);
@@ -461,7 +461,7 @@ static int usbdk_release_interface(struct libusb_device_handle *dev_handle, int 
 	return LIBUSB_SUCCESS;
 }
 
-static int usbdk_clear_halt(struct libusb_device_handle *dev_handle, unsigned char endpoint)
+static int usbdk_clear_halt(struct libusb_device_handle *dev_handle, uint8 endpoint)
 {
 	struct libusb_context *ctx = DEVICE_CTX(dev_handle->dev);
 	struct usbdk_device_priv *priv = _usbdk_device_priv(dev_handle->dev);
@@ -745,7 +745,7 @@ static int usbdk_cancel_transfer(struct usbi_transfer *itransfer)
 	}
 }
 
-int windows_copy_transfer_data(struct usbi_transfer *itransfer, uint32_t io_size)
+int windows_copy_transfer_data(struct usbi_transfer *itransfer, uint32 io_size)
 {
 	itransfer->transferred += io_size;
 	return LIBUSB_TRANSFER_COMPLETED;

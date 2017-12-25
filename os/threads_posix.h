@@ -23,11 +23,9 @@
 #define usbi_mutex_static_lock		pthread_mutex_lock
 #define usbi_mutex_static_unlock	pthread_mutex_unlock
 
-#define usbi_mutex_t			pthread_mutex_t
 #define usbi_mutex_init(mutex)		pthread_mutex_init((mutex), NULL)
 #define usbi_mutex_lock			pthread_mutex_lock
 #define usbi_mutex_unlock		pthread_mutex_unlock
-#define usbi_mutex_trylock		pthread_mutex_trylock
 #define usbi_mutex_destroy		pthread_mutex_destroy
 
 #define usbi_cond_t			pthread_cond_t

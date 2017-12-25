@@ -66,8 +66,8 @@ extern const struct winfd INVALID_WINFD;
 
 int usbi_pipe(int pipefd[2]);
 int usbi_poll(struct pollfd *fds, unsigned int nfds, int timeout);
-ssize_t usbi_write(int fd, const void *buf, size_t count);
-ssize_t usbi_read(int fd, void *buf, size_t count);
+ssize_t usbi_write(int fd, const void *buf, int count);
+ssize_t usbi_read(int fd, void *buf, int count);
 int usbi_close(int fd);
 
 void init_polling(void);

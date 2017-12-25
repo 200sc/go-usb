@@ -445,7 +445,7 @@ static struct discovered_devs *discovered_devs_alloc(void)
 
 static void discovered_devs_free(struct discovered_devs *discdevs)
 {
-	size_t i;
+	int i;
 
 	for (i = 0; i < discdevs->len; i++)
 		libusb_unref_device(discdevs->devices[i]);
@@ -456,8 +456,8 @@ static void discovered_devs_free(struct discovered_devs *discdevs)
 struct discovered_devs *discovered_devs_append(
 	struct discovered_devs *discdevs, struct libusb_device *dev)
 {
-	size_t len = discdevs->len;
-	size_t capacity;
+	int len = discdevs->len;
+	int capacity;
 	struct discovered_devs *new_discdevs;
 
 	/* if there is space, just append the device */
@@ -490,9 +490,9 @@ struct discovered_devs *discovered_devs_append(
 /* Allocate a new device with a specific session ID. The returned device has
  * a reference count of 1. */
 struct libusb_device *usbi_alloc_device(struct libusb_context *ctx,
-	unsigned long session_id)
+	uint64 session_id)
 {
-	size_t priv_size = usbi_backend->device_priv_size;
+	int priv_size = usbi_backend->device_priv_size;
 	struct libusb_device *dev = calloc(1, sizeof(*dev) + priv_size);
 	int r;
 
@@ -561,7 +561,7 @@ void usbi_disconnect_device(struct libusb_device *dev)
 int usbi_sanitize_device(struct libusb_device *dev)
 {
 	int r;
-	uint8_t num_configurations;
+	uint8 num_configurations;
 
 	r = usbi_device_cache_descriptor(dev);
 	if (r < 0)
@@ -582,7 +582,7 @@ int usbi_sanitize_device(struct libusb_device *dev)
  * a specific session ID. Returns the matching device if it was found, and
  * NULL otherwise. */
 struct libusb_device *usbi_get_device_by_session_id(struct libusb_context *ctx,
-	unsigned long session_id)
+	uint64 session_id)
 {
 	struct libusb_device *dev;
 	struct libusb_device *ret = NULL;
@@ -713,7 +713,7 @@ void  libusb_free_device_list(libusb_device **list,
  * \returns LIBUSB_ERROR_OVERFLOW if the array is too small
  */
 int  libusb_get_port_numbers(libusb_device *dev,
-	uint8_t* port_numbers, int port_numbers_len)
+	uint8* port_numbers, int port_numbers_len)
 {
 	int i = port_numbers_len;
 	struct libusb_context *ctx = DEVICE_CTX(dev);
@@ -739,13 +739,13 @@ int  libusb_get_port_numbers(libusb_device *dev,
  * Deprecated please use libusb_get_port_numbers instead.
  */
 int  libusb_get_port_path(libusb_context *ctx, libusb_device *dev,
-	uint8_t* port_numbers, uint8_t port_numbers_len)
+	uint8* port_numbers, uint8 port_numbers_len)
 {
 	return libusb_get_port_numbers(dev, port_numbers, port_numbers_len);
 }
 
 static const struct libusb_endpoint_descriptor *find_endpoint(
-	struct libusb_config_descriptor *config, unsigned char endpoint)
+	struct libusb_config_descriptor *config, uint8 endpoint)
 {
 	int iface_idx;
 	for (iface_idx = 0; iface_idx < config->bNumInterfaces; iface_idx++) {
@@ -786,7 +786,7 @@ static const struct libusb_endpoint_descriptor *find_endpoint(
  * \returns LIBUSB_ERROR_OTHER on other failure
  */
 int  libusb_get_max_packet_size(libusb_device *dev,
-	unsigned char endpoint)
+	uint8 endpoint)
 {
 	struct libusb_config_descriptor *config;
 	const struct libusb_endpoint_descriptor *ep;
@@ -839,7 +839,7 @@ out:
  * \returns LIBUSB_ERROR_OTHER on other failure
  */
 int  libusb_get_max_iso_packet_size(libusb_device *dev,
-	unsigned char endpoint)
+	uint8 endpoint)
 {
 	struct libusb_config_descriptor *config;
 	const struct libusb_endpoint_descriptor *ep;
@@ -926,7 +926,7 @@ void  libusb_unref_device(libusb_device *dev)
  */
 int usbi_signal_event(struct libusb_context *ctx)
 {
-	unsigned char dummy = 1;
+	uint8 dummy = 1;
 	ssize_t r;
 
 	/* write some data on event pipe to interrupt event handlers */
@@ -945,7 +945,7 @@ int usbi_signal_event(struct libusb_context *ctx)
  */
 int usbi_clear_event(struct libusb_context *ctx)
 {
-	unsigned char dummy;
+	uint8 dummy;
 	ssize_t r;
 
 	/* read some data on event pipe to clear it */
@@ -982,7 +982,7 @@ int  libusb_open(libusb_device *dev,
 {
 	struct libusb_context *ctx = DEVICE_CTX(dev);
 	struct libusb_device_handle *_dev_handle;
-	size_t priv_size = usbi_backend->device_handle_priv_size;
+	int priv_size = usbi_backend->device_handle_priv_size;
 	int r;
 	// usbi_dbg("open %d.%d", dev->bus_number, dev->device_address);
 
@@ -1044,7 +1044,7 @@ libusb_device_handle *  libusb_open_device_with_vid_pid(
 	struct libusb_device *found = NULL;
 	struct libusb_device *dev;
 	struct libusb_device_handle *dev_handle = NULL;
-	size_t i = 0;
+	int i = 0;
 	int r;
 
 	if (libusb_get_device_list(ctx, &devs) < 0)
@@ -1218,7 +1218,7 @@ int  libusb_get_configuration(libusb_device_handle *dev_handle,
 		r = usbi_backend->get_configuration(dev_handle, config);
 
 	if (r == LIBUSB_ERROR_NOT_SUPPORTED) {
-		uint8_t tmp = 0;
+		uint8 tmp = 0;
 		// usbi_dbg("falling back to control message");
 		r = libusb_control_transfer(dev_handle, LIBUSB_ENDPOINT_IN,
 			LIBUSB_REQUEST_GET_CONFIGURATION, 0, 0, &tmp, 1, 1000);
@@ -1450,7 +1450,7 @@ int  libusb_set_interface_alt_setting(libusb_device_handle *dev_handle,
  * \returns another LIBUSB_ERROR code on other failure
  */
 int  libusb_clear_halt(libusb_device_handle *dev_handle,
-	unsigned char endpoint)
+	uint8 endpoint)
 {
 	// usbi_dbg("endpoint %x", endpoint);
 	if (!dev_handle->dev->attached)
@@ -1509,7 +1509,7 @@ int  libusb_reset_device(libusb_device_handle *dev_handle)
  * \returns number of streams allocated, or a LIBUSB_ERROR code on failure
  */
 int  libusb_alloc_streams(libusb_device_handle *dev_handle,
-	uint32_t num_streams, unsigned char *endpoints, int num_endpoints)
+	uint32 num_streams, uint8 *endpoints, int num_endpoints)
 {
 	// usbi_dbg("streams %u eps %d", (unsigned) num_streams, num_endpoints);
 
@@ -1536,7 +1536,7 @@ int  libusb_alloc_streams(libusb_device_handle *dev_handle,
  * \returns LIBUSB_SUCCESS, or a LIBUSB_ERROR code on failure
  */
 int  libusb_free_streams(libusb_device_handle *dev_handle,
-	unsigned char *endpoints, int num_endpoints)
+	uint8 *endpoints, int num_endpoints)
 {
 	// usbi_dbg("eps %d", num_endpoints);
 
@@ -1575,8 +1575,8 @@ int  libusb_free_streams(libusb_device_handle *dev_handle,
  * \returns a pointer to the newly allocated memory, or NULL on failure
  */
 
-unsigned char *  libusb_dev_mem_alloc(libusb_device_handle *dev_handle,
-        size_t length)
+uint8 *  libusb_dev_mem_alloc(libusb_device_handle *dev_handle,
+        int length)
 {
 	if (!dev_handle->dev->attached)
 		return NULL;
@@ -1596,7 +1596,7 @@ unsigned char *  libusb_dev_mem_alloc(libusb_device_handle *dev_handle,
  * \returns LIBUSB_SUCCESS, or a LIBUSB_ERROR code on failure
  */
 int  libusb_dev_mem_free(libusb_device_handle *dev_handle,
-	unsigned char *buffer, size_t length)
+	uint8 *buffer, int length)
 {
 	if (usbi_backend->dev_mem_free)
 		return usbi_backend->dev_mem_free(dev_handle, buffer, length);
@@ -1960,7 +1960,7 @@ void  libusb_exit(struct libusb_context *ctx)
  * \param capability the \ref libusb_capability to check for
  * \returns nonzero if the running library has the capability, 0 otherwise
  */
-int  libusb_has_capability(uint32_t capability)
+int  libusb_has_capability(uint32 capability)
 {
 	switch (capability) {
 	case LIBUSB_CAP_HAS_CAPABILITY:
