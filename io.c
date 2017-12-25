@@ -1317,7 +1317,7 @@ static int add_to_flying_list(struct usbi_transfer *transfer)
 {
 	struct usbi_transfer *cur;
 	struct timeval *timeout = &transfer->timeout;
-	struct libusb_context *ctx = ITRANSFER_CTX(transfer);
+	struct libusb_context *ctx = USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer).dev_handle.dev.ctx;
 	int r;
 	int first = 1;
 
@@ -1384,7 +1384,7 @@ out:
  * if it fails to update the timer for the next timeout. */
 static int remove_from_flying_list(struct usbi_transfer *transfer)
 {
-	struct libusb_context *ctx = ITRANSFER_CTX(transfer);
+	struct libusb_context *ctx = USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer).dev_handle.dev.ctx;
 	int rearm_timerfd;
 	int r = 0;
 
@@ -1417,7 +1417,7 @@ int  libusb_submit_transfer(struct libusb_transfer *transfer)
 {
 	struct usbi_transfer *itransfer =
 		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
-	struct libusb_context *ctx = TRANSFER_CTX(transfer);
+	struct libusb_context *ctx = transfer.dev_handle.dev.ctx;
 	int r;
 
 	// usbi_dbg("transfer %p", transfer);
@@ -1629,7 +1629,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
  * will attempt to take the lock. */
 int usbi_handle_transfer_cancellation(struct usbi_transfer *transfer)
 {
-	struct libusb_context *ctx = ITRANSFER_CTX(transfer);
+	struct libusb_context *ctx = USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer).dev_handle.dev.ctx;
 	uint8 timed_out;
 
 	usbi_mutex_lock(&ctx->flying_transfers_lock);
@@ -1651,7 +1651,7 @@ int usbi_handle_transfer_cancellation(struct usbi_transfer *transfer)
  * function will be called the next time an event handler runs. */
 void usbi_signal_transfer_completion(struct usbi_transfer *transfer)
 {
-	struct libusb_context *ctx = ITRANSFER_CTX(transfer);
+	struct libusb_context *ctx = USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer).dev_handle.dev.ctx;
 	int pending_events;
 
 	usbi_mutex_lock(&ctx->event_data_lock);

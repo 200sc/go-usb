@@ -1816,7 +1816,7 @@ static void darwin_async_io_callback (void *refcon, IOReturn result, void *arg0)
   // usbi_dbg ("an async io operation has completed");
 
   /* if requested write a zero packet */
-  if (kIOReturnSuccess == result && IS_XFEROUT(transfer) && transfer->flags & LIBUSB_TRANSFER_ADD_ZERO_PACKET) {
+  if (kIOReturnSuccess == result && !IS_XFERIN(transfer) && transfer->flags & LIBUSB_TRANSFER_ADD_ZERO_PACKET) {
     struct darwin_interface *cInterface;
     uint8 pipeRef;
 

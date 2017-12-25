@@ -16,15 +16,6 @@ static  void *usbi_reallocf(void *ptr, int size)
 
 #define TIMESPEC_IS_SET(ts) ((ts)->tv_sec != 0 || (ts)->tv_nsec != 0)
 
-/* Some platforms don't have this define */
-#ifndef TIMESPEC_TO_TIMEVAL
-#define TIMESPEC_TO_TIMEVAL(tv, ts)					\
-	do {								\
-		(tv)->tv_sec = (int64) (ts)->tv_sec;	\
-		(tv)->tv_usec = (ts)->tv_nsec / 1000;			\
-	} while (0)
-#endif
-
 #if !defined(_MSC_VER) || _MSC_VER >= 1400
 
 #else /* !defined(_MSC_VER) || _MSC_VER >= 1400 */
@@ -36,14 +27,8 @@ static  void *usbi_reallocf(void *ptr, int size)
 			(ctx) = usbi_default_context;	\
 	} while(0)
 
-#define TRANSFER_CTX(transfer)	((transfer)->dev_handle).dev.ctx
-#define ITRANSFER_CTX(transfer) \
-	(TRANSFER_CTX(USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)))
-
 #define IS_EPIN(ep)		(0 != ((ep) & LIBUSB_ENDPOINT_IN))
-#define IS_EPOUT(ep)		(!IS_EPIN(ep))
 #define IS_XFERIN(xfer)		(0 != ((xfer)->endpoint & LIBUSB_ENDPOINT_IN))
-#define IS_XFEROUT(xfer)	(!IS_XFERIN(xfer))
 
 /* Forward declaration for use in context (fully defined inside poll abstraction) */
 /* Macros for managing event handling state */
