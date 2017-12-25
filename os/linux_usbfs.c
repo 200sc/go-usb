@@ -2628,13 +2628,11 @@ static int op_clock_gettime(int clk_id, struct timespec *tp)
   }
 }
 
-#ifdef USBI_TIMERFD_AVAILABLE
 static clockid_t op_get_timerfd_clockid(void)
 {
 	return monotonic_clkid;
 
 }
-#endif
 
 const struct usbi_os_backend linux_usbfs_backend = {
 	.name = "Linux usbfs",
@@ -2679,9 +2677,7 @@ const struct usbi_os_backend linux_usbfs_backend = {
 
 	.clock_gettime = op_clock_gettime,
 
-#ifdef USBI_TIMERFD_AVAILABLE
 	.get_timerfd_clockid = op_get_timerfd_clockid,
-#endif
 
 	.device_priv_size = sizeof(struct linux_device_priv),
 	.device_handle_priv_size = sizeof(struct linux_device_handle_priv),

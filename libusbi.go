@@ -144,6 +144,10 @@ type libusb_context struct {
 	/* A list of pending completed transfers. Protected by event_data_lock. */
 	completed_transfers list_head 
 
+	/* used for timeout handling, if supported by OS.
+	 * this timerfd is maintained to trigger on the next pending timeout */
+	timerfd int
+
 	list list_head 
 }
 

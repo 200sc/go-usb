@@ -1,5 +1,4 @@
 
-
 #if !defined(ARRAYSIZE)
 #define ARRAYSIZE(array) (sizeof(array) / sizeof(array[0]))
 #endif
@@ -15,11 +14,6 @@ static  void *usbi_reallocf(void *ptr, int size)
 	(type *)( (char *)mptr - offsetof(type,member) );})
 
 #define TIMESPEC_IS_SET(ts) ((ts)->tv_sec != 0 || (ts)->tv_nsec != 0)
-
-#if !defined(_MSC_VER) || _MSC_VER >= 1400
-
-#else /* !defined(_MSC_VER) || _MSC_VER >= 1400 */
-#endif /* !defined(_MSC_VER) || _MSC_VER >= 1400 */
 
 #define USBI_GET_CONTEXT(ctx)				\
 	do {						\
@@ -46,11 +40,7 @@ static  void *usbi_reallocf(void *ptr, int size)
 	((ctx)->event_flags || (ctx)->device_close \
 	 || !list_empty(&(ctx)->hotplug_msgs) || !list_empty(&(ctx)->completed_transfers))
 
-#ifdef USBI_TIMERFD_AVAILABLE
 #define usbi_using_timerfd(ctx) ((ctx)->timerfd >= 0)
-#else
-#define usbi_using_timerfd(ctx) (0)
-#endif
 
 #define USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)			\
 	((struct libusb_transfer *)(((uint8 *)(transfer))	\

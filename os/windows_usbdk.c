@@ -861,9 +861,7 @@ const struct usbi_os_backend usbdk_backend = {
 	NULL,
 
 	usbdk_clock_gettime,
-#if defined(USBI_TIMERFD_AVAILABLE)
 	NULL,
-#endif
 	sizeof(struct usbdk_device_priv),
 	0,
 	sizeof(struct usbdk_transfer_priv),

@@ -1984,9 +1984,7 @@ const struct usbi_os_backend windows_backend = {
 	NULL,
 
 	windows_clock_gettime,
-#if defined(USBI_TIMERFD_AVAILABLE)
 	NULL,
-#endif
 	sizeof(struct windows_device_priv),
 	sizeof(struct windows_device_handle_priv),
 	sizeof(struct windows_transfer_priv),
