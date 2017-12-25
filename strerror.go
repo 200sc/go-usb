@@ -125,11 +125,11 @@ int  libusb_setlocale(const char *locale)
 	  || ((strlen(locale) > 2) && (locale[2] != '-') && (locale[2] != '_') && (locale[2] != '.')) )
 		return LIBUSB_ERROR_INVALID_PARAM;
 
-	for (i=0; i<ARRAYSIZE(usbi_locale_supported); i++) {
+	for (i=0; i<len(usbi_locale_supported); i++) {
 		if (strncasecmp(usbi_locale_supported[i], locale, 2) == 0)
 			break;
 	}
-	if (i >= ARRAYSIZE(usbi_locale_supported)) {
+	if (i >= len(usbi_locale_supported)) {
 		return LIBUSB_ERROR_NOT_FOUND;
 	}
 

@@ -1271,12 +1271,12 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				// being listed under the "NUSB3" PnP Symbolic Name rather than "USB".
 				// The Intel USB 3.0 driver behaves similar, but uses "IUSB3"
 				// The Intel Alpine Ridge USB 3.1 driver uses "IARUSB3"
-				for (; class_index < ARRAYSIZE(usb_class); class_index++) {
+				for (; class_index < len(usb_class); class_index++) {
 					if (get_devinfo_data(ctx, &dev_info, &dev_info_data, usb_class[class_index], i))
 						break;
 					i = 0;
 				}
-				if (class_index >= ARRAYSIZE(usb_class))
+				if (class_index >= len(usb_class))
 					break;
 			}
 
@@ -2111,7 +2111,7 @@ const struct windows_usb_api_backend usb_api_backend[USB_API_MAX] = {
 		USB_API_HUB,
 		"HUB API",
 		hub_driver_names,
-		ARRAYSIZE(hub_driver_names),
+		len(hub_driver_names),
 		unsupported_init,
 		unsupported_exit,
 		unsupported_open,
@@ -2133,7 +2133,7 @@ const struct windows_usb_api_backend usb_api_backend[USB_API_MAX] = {
 		USB_API_COMPOSITE,
 		"Composite API",
 		composite_driver_names,
-		ARRAYSIZE(composite_driver_names),
+		len(composite_driver_names),
 		composite_init,
 		composite_exit,
 		composite_open,
@@ -2155,7 +2155,7 @@ const struct windows_usb_api_backend usb_api_backend[USB_API_MAX] = {
 		USB_API_WINUSBX,
 		"WinUSB-like APIs",
 		winusbx_driver_names,
-		ARRAYSIZE(winusbx_driver_names),
+		len(winusbx_driver_names),
 		winusbx_init,
 		winusbx_exit,
 		winusbx_open,
@@ -2177,7 +2177,7 @@ const struct windows_usb_api_backend usb_api_backend[USB_API_MAX] = {
 		USB_API_HID,
 		"HID API",
 		hid_driver_names,
-		ARRAYSIZE(hid_driver_names),
+		len(hid_driver_names),
 		hid_init,
 		hid_exit,
 		hid_open,

@@ -1,8 +1,3 @@
-
-#if !defined(ARRAYSIZE)
-#define ARRAYSIZE(array) (sizeof(array) / sizeof(array[0]))
-#endif
-
 static  void *usbi_reallocf(void *ptr, int size)
 {
 	void *ret = realloc(ptr, size);
