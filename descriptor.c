@@ -167,10 +167,6 @@ static int parse_endpoint(struct libusb_context *ctx,
 
 	extra = malloc(len);
 	endpoint->extra = extra;
-	if (!extra) {
-		endpoint->extra_length = 0;
-		return LIBUSB_ERROR_NO_MEM;
-	}
 
 	memcpy(extra, begin, len);
 	endpoint->extra_length = len;
@@ -219,10 +215,7 @@ static int parse_interface(libusb_context *ctx,
 		altsetting = make(..., ???)
 			// sizeof(struct libusb_interface_descriptor) *
 			// (usb_interface->num_altsetting + 1));
-		if (!altsetting) {
-			r = LIBUSB_ERROR_NO_MEM;
-			goto err;
-		}
+
 		usb_interface->altsetting = altsetting;
 
 		ifp = altsetting + usb_interface->num_altsetting;
@@ -297,10 +290,7 @@ static int parse_interface(libusb_context *ctx,
 		len = (int)(buffer - begin);
 		if (len) {
 			ifp->extra = malloc(len);
-			if (!ifp->extra) {
-				r = LIBUSB_ERROR_NO_MEM;
-				goto err;
-			}
+
 			memcpy((uint8 *) ifp->extra, begin, len);
 			ifp->extra_length = len;
 		}
@@ -309,10 +299,6 @@ static int parse_interface(libusb_context *ctx,
 			struct libusb_endpoint_descriptor *endpoint;
 			endpoint = calloc(ifp->bNumEndpoints, sizeof(struct libusb_endpoint_descriptor));
 			ifp->endpoint = endpoint;
-			if (!endpoint) {
-				r = LIBUSB_ERROR_NO_MEM;
-				goto err;
-			}
 
 			for (i = 0; i < ifp->bNumEndpoints; i++) {
 				r = parse_endpoint(ctx, endpoint + i, buffer, size,
@@ -391,8 +377,6 @@ static int parse_configuration(struct libusb_context *ctx,
 
 	usb_interface = calloc(config->bNumInterfaces, sizeof(struct libusb_interface));
 	config->interface = usb_interface;
-	if (!usb_interface)
-		return LIBUSB_ERROR_NO_MEM;
 
 	buffer += config->bLength;
 	size -= config->bLength;
@@ -443,10 +427,6 @@ static int parse_configuration(struct libusb_context *ctx,
 			/* FIXME: We should realloc and append here */
 			if (!config->extra_length) {
 				config->extra = malloc(len);
-				if (!config->extra) {
-					r = LIBUSB_ERROR_NO_MEM;
-					goto err;
-				}
 
 				memcpy((uint8 *) config->extra, begin, len);
 				config->extra_length = len;
@@ -479,9 +459,6 @@ static int raw_desc_to_config(struct libusb_context *ctx,
 	struct libusb_config_descriptor *_config = malloc(sizeof(*_config));
 	int r;
 	
-	if (!_config)
-		return LIBUSB_ERROR_NO_MEM;
-
 	r = parse_configuration(ctx, _config, buf, size, host_endian);
 	if (r < 0) {
 		// usbi_err(ctx, "parse_configuration failed with error %d", r);
@@ -569,8 +546,6 @@ int  libusb_get_active_config_descriptor(libusb_device *dev,
 
 	usbi_parse_descriptor(tmp, "bbw", &_config, host_endian);
 	buf = malloc(_config.wTotalLength);
-	if (!buf)
-		return LIBUSB_ERROR_NO_MEM;
 
 	r = usbi_backend->get_active_config_descriptor(dev, buf,
 		_config.wTotalLength, &host_endian);
@@ -622,8 +597,6 @@ int  libusb_get_config_descriptor(libusb_device *dev,
 
 	usbi_parse_descriptor(tmp, "bbw", &_config, host_endian);
 	buf = malloc(_config.wTotalLength);
-	if (!buf)
-		return LIBUSB_ERROR_NO_MEM;
 
 	r = usbi_backend->get_config_descriptor(dev, config_index, buf,
 		_config.wTotalLength, &host_endian);
@@ -764,8 +737,7 @@ int  libusb_get_ss_endpoint_companion_descriptor(
 			return LIBUSB_ERROR_IO;
 		}
 		*ep_comp = malloc(sizeof(**ep_comp));
-		if (*ep_comp == NULL)
-			return LIBUSB_ERROR_NO_MEM;
+
 		usbi_parse_descriptor(buffer, "bbbbw", *ep_comp, 0);
 		return LIBUSB_SUCCESS;
 	}
@@ -818,8 +790,6 @@ static int parse_bos(struct libusb_context *ctx,
 
 	_bos = calloc (1,
 		sizeof(*_bos) + bos_header.bNumDeviceCaps * sizeof(void *));
-	if (!_bos)
-		return LIBUSB_ERROR_NO_MEM;
 
 	usbi_parse_descriptor(buffer, "bbwb", _bos, host_endian);
 	buffer += bos_header.bLength;
@@ -851,10 +821,7 @@ static int parse_bos(struct libusb_context *ctx,
 		}
 
 		_bos->dev_capability[i] = malloc(dev_cap.bLength);
-		if (!_bos->dev_capability[i]) {
-			libusb_free_bos_descriptor(_bos);
-			return LIBUSB_ERROR_NO_MEM;
-		}
+
 		memcpy(_bos->dev_capability[i], buffer, dev_cap.bLength);
 		buffer += dev_cap.bLength;
 		size -= dev_cap.bLength;
@@ -904,8 +871,6 @@ int  libusb_get_bos_descriptor(libusb_device_handle *dev_handle,
 	// usbi_dbg("found BOS descriptor: size %d bytes, %d capabilities",
 		 _bos.wTotalLength, _bos.bNumDeviceCaps);
 	bos_data = calloc(_bos.wTotalLength, 1);
-	if (bos_data == NULL)
-		return LIBUSB_ERROR_NO_MEM;
 
 	r = libusb_get_descriptor(dev_handle, LIBUSB_DT_BOS, 0, bos_data,
 				  _bos.wTotalLength);
@@ -967,8 +932,6 @@ int  libusb_get_usb_2_0_extension_descriptor(
 	}
 
 	_usb_2_0_extension = malloc(sizeof(*_usb_2_0_extension));
-	if (!_usb_2_0_extension)
-		return LIBUSB_ERROR_NO_MEM;
 
 	usbi_parse_descriptor((uint8 *)dev_cap, "bbbd",
 			      _usb_2_0_extension, host_endian);
@@ -1025,8 +988,6 @@ int  libusb_get_ss_usb_device_capability_descriptor(
 	}
 
 	_ss_usb_device_cap = malloc(sizeof(*_ss_usb_device_cap));
-	if (!_ss_usb_device_cap)
-		return LIBUSB_ERROR_NO_MEM;
 
 	usbi_parse_descriptor((uint8 *)dev_cap, "bbbbwbbw",
 			      _ss_usb_device_cap, host_endian);
@@ -1082,8 +1043,6 @@ int  libusb_get_container_id_descriptor(struct libusb_context *ctx,
 	}
 
 	_container_id = malloc(sizeof(*_container_id));
-	if (!_container_id)
-		return LIBUSB_ERROR_NO_MEM;
 
 	usbi_parse_descriptor((uint8 *)dev_cap, "bbbbu",
 			      _container_id, host_endian);

@@ -120,10 +120,6 @@ static int wince_init(struct libusb_context *ctx)
 
 	_stprintf(sem_name, _T("libusb_init%08X"), (unsigned int)(GetCurrentProcessId() & 0xFFFFFFFF));
 	semaphore = CreateSemaphore(NULL, 1, 1, sem_name);
-	if (semaphore == NULL) {
-		// usbi_err(ctx, "could not create semaphore: %s", windows_error_str(0));
-		return LIBUSB_ERROR_NO_MEM;
-	}
 
 	// A successful wait brings our semaphore count to 0 (unsignaled)
 	// => any concurent wait stalls until the semaphore's release
@@ -263,10 +259,6 @@ static int wince_get_device_list(
 			// usbi_dbg("allocating new device for %u/%u (session %lu)",
 					bus_addr, dev_addr, session_id);
 			dev = usbi_alloc_device(ctx, session_id);
-			if (!dev) {
-				r = LIBUSB_ERROR_NO_MEM;
-				goto err_out;
-			}
 
 			r = init_device(dev, devices[i], bus_addr, dev_addr);
 			if (r < 0)
@@ -278,10 +270,6 @@ static int wince_get_device_list(
 		}
 
 		new_devices = discovered_devs_append(new_devices, dev);
-		if (!discdevs) {
-			r = LIBUSB_ERROR_NO_MEM;
-			goto err_out;
-		}
 
 		safe_unref_device(dev);
 	}
@@ -535,16 +523,9 @@ static int wince_submit_control_or_bulk_transfer(struct usbi_transfer *itransfer
 	flags |= UKW_TF_SHORT_TRANSFER_OK;
 
 	eventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
-	if (eventHandle == NULL) {
-		// usbi_err(ctx, "Failed to create event for async transfer");
-		return LIBUSB_ERROR_NO_MEM;
-	}
+
 
 	wfd = usbi_create_fd(eventHandle, direction_in ? RW_READ : RW_WRITE, itransfer, &wince_cancel_transfer);
-	if (wfd.fd < 0) {
-		CloseHandle(eventHandle);
-		return LIBUSB_ERROR_NO_MEM;
-	}
 
 	transfer_priv->pollable_fd = wfd;
 	if (control_transfer) {

@@ -453,10 +453,6 @@ static int windows_assign_endpoints(struct libusb_device_handle *dev_handle, int
 	}
 
 	priv->usb_interface[iface].endpoint = malloc(if_desc->bNumEndpoints);
-	if (priv->usb_interface[iface].endpoint == NULL) {
-		libusb_free_config_descriptor(conf_desc);
-		return LIBUSB_ERROR_NO_MEM;
-	}
 
 	priv->usb_interface[iface].nb_endpoints = if_desc->bNumEndpoints;
 	for (i = 0; i < if_desc->bNumEndpoints; i++) {
@@ -693,10 +689,6 @@ static int windows_init(struct libusb_context *ctx)
 
 	sprintf(sem_name, "libusb_init%08X", (unsigned int)(GetCurrentProcessId() & 0xFFFFFFFF));
 	semaphore = CreateSemaphoreA(NULL, 1, 1, sem_name);
-	if (semaphore == NULL) {
-		// usbi_err(ctx, "could not create semaphore: %s", windows_error_str(0));
-		return LIBUSB_ERROR_NO_MEM;
-	}
 
 	// A successful wait brings our semaphore count to 0 (unsignaled)
 	// => any concurent wait stalls until the semaphore's release
@@ -814,8 +806,6 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 		return LIBUSB_ERROR_INVALID_PARAM;
 
 	priv->config_descriptor = calloc(dev->num_configurations, sizeof(uint8 *));
-	if (priv->config_descriptor == NULL)
-		return LIBUSB_ERROR_NO_MEM;
 
 	for (i = 0; i < dev->num_configurations; i++)
 		priv->config_descriptor[i] = NULL;
@@ -852,10 +842,6 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 
 		size = sizeof(USB_DESCRIPTOR_REQUEST) + cd_buf_short.data.wTotalLength;
 		cd_buf_actual = calloc(1, size);
-		if (cd_buf_actual == NULL) {
-			// usbi_err(ctx, "could not allocate configuration descriptor buffer for '%s'.", device_id);
-			LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
-		}
 
 		// Actual call
 		cd_buf_actual->ConnectionIndex = (uint64)priv->port;
@@ -888,8 +874,6 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 
 		// Cache the descriptor
 		priv->config_descriptor[i] = malloc(cd_data->wTotalLength);
-		if (priv->config_descriptor[i] == NULL)
-			LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
 		memcpy(priv->config_descriptor[i], cd_data, cd_data->wTotalLength);
 	}
 	return LIBUSB_SUCCESS;
@@ -1144,8 +1128,6 @@ static int set_composite_interface(struct libusb_context *ctx, struct libusb_dev
 	priv->usb_interface[interface_number].sub_api = sub_api;
 	if ((api == USB_API_HID) && (priv->hid == NULL)) {
 		priv->hid = calloc(1, sizeof(struct hid_device_priv));
-		if (priv->hid == NULL)
-			return LIBUSB_ERROR_NO_MEM;
 	}
 
 	return LIBUSB_SUCCESS;
@@ -1236,8 +1218,6 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 	nb_guids = HID_PASS + 1;
 
 	unref_list = calloc(unref_size, sizeof(libusb_device *));
-	if (unref_list == NULL)
-		return LIBUSB_ERROR_NO_MEM;
 
 	for (pass = 0; ((pass < nb_guids) && (r == LIBUSB_SUCCESS)); pass++) {
 		for (i = 0; ; i++) {
@@ -1337,10 +1317,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 							LOOP_BREAK(LIBUSB_ERROR_OVERFLOW);
 						}
 						if_guid = calloc(1, sizeof(GUID));
-						if (if_guid == NULL) {
-							// usbi_err(ctx, "could not calloc for if_guid: not enough memory");
-							LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
-						}
+
 						pCLSIDFromString(guid_string_w, if_guid);
 						guid[nb_guids++] = if_guid;
 						// usbi_dbg("extra GUID: %s", guid_to_string(if_guid));
@@ -1412,8 +1389,6 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 
 					// usbi_dbg("allocating new device for session [%lX]", session_id);
 					dev = usbi_alloc_device(ctx, session_id);
-					if (dev == NULL)
-						LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
 
 					priv = windows_device_priv_init(dev);
 				} else {
@@ -1478,8 +1453,6 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 					break;
 				case USB_API_HID:
 					priv->hid = calloc(1, sizeof(struct hid_device_priv));
-					if (priv->hid == NULL)
-						LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
 
 					priv->hid->nb_interfaces = 0;
 					break;
@@ -1501,8 +1474,6 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				if (r == LIBUSB_SUCCESS) {
 					// Append device to the list of discovered devices
 					discdevs = discovered_devs_append(*_discdevs, dev);
-					if (!discdevs)
-						LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
 
 					*_discdevs = discdevs;
 				} else if (r == LIBUSB_ERROR_NO_DEVICE) {
@@ -2621,8 +2592,6 @@ static int winusbx_submit_control_transfer(int sub_api, struct usbi_transfer *it
 
 	wfd = usbi_create_fd(winusb_handle, RW_READ, NULL, NULL);
 	// Always use the handle returned from usbi_create_fd (wfd.handle)
-	if (wfd.fd < 0)
-		return LIBUSB_ERROR_NO_MEM;
 
 	// Sending of set configuration control requests from WinUSB creates issues
 	if (((setup->request_type & (0x03 << 5)) == LIBUSB_REQUEST_TYPE_STANDARD)
@@ -2708,8 +2677,7 @@ static int winusbx_submit_bulk_transfer(int sub_api, struct usbi_transfer *itran
 
 	wfd = usbi_create_fd(winusb_handle, IS_XFERIN(transfer) ? RW_READ : RW_WRITE, NULL, NULL);
 	// Always use the handle returned from usbi_create_fd (wfd.handle)
-	if (wfd.fd < 0)
-		return LIBUSB_ERROR_NO_MEM;
+
 
 	if (IS_XFERIN(transfer)) {
 		// usbi_dbg("reading %d bytes", transfer->length);
@@ -3187,8 +3155,6 @@ static int _hid_get_report(struct hid_device_priv *dev, HANDLE hid_handle, int i
 
 	// Add a trailing byte to detect overflows
 	buf = calloc(1, expected_size + 1);
-	if (buf == NULL)
-		return LIBUSB_ERROR_NO_MEM;
 
 	buf[0] = (uint8)id; // Must be set always
 	// usbi_dbg("report ID: 0x%02X", buf[0]);
@@ -3269,8 +3235,6 @@ static int _hid_set_report(struct hid_device_priv *dev, HANDLE hid_handle, int i
 		write_size++;
 
 	buf = malloc(write_size);
-	if (buf == NULL)
-		return LIBUSB_ERROR_NO_MEM;
 
 	if (id == 0) {
 		buf[0] = 0;
@@ -3720,8 +3684,6 @@ static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer
 
 	wfd = usbi_create_fd(hid_handle, direction_in?RW_READ:RW_WRITE, NULL, NULL);
 	// Always use the handle returned from usbi_create_fd (wfd.handle)
-	if (wfd.fd < 0)
-		return LIBUSB_ERROR_NO_MEM;
 
 	// If report IDs are not in use, an extra prefix byte must be added
 	if (((direction_in) && (!priv->hid->uses_report_ids[0]))
@@ -3732,9 +3694,6 @@ static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer
 
 	// Add a trailing byte to detect overflows on input
 	transfer_priv->hid_buffer = calloc(1, length + 1);
-	if (transfer_priv->hid_buffer == NULL)
-		return LIBUSB_ERROR_NO_MEM;
-
 	transfer_priv->hid_expected_size = length;
 
 	if (direction_in) {

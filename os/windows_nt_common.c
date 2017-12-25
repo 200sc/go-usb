@@ -368,8 +368,6 @@ int windows_clock_gettime(int clk_id, struct timespec *tp)
 		if (timer_thread) {
 			request.tp = tp;
 			request.event = CreateEvent(NULL, FALSE, FALSE, NULL);
-			if (request.event == NULL)
-				return LIBUSB_ERROR_NO_MEM;
 
 			if (!pPostThreadMessageA(timer_thread_id, WM_TIMER_REQUEST, 0, (LPARAM)&request)) {
 				// usbi_err(NULL, "PostThreadMessage failed for timer thread: %s", windows_error_str(0));

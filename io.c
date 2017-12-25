@@ -1136,7 +1136,7 @@ int usbi_io_init(struct libusb_context *ctx)
 		// usbi_dbg("timerfd not available (code %d error %d)", ctx->timerfd, errno);
 		ctx->timerfd = -1;
 	}
-	
+
 	return 0;
 
 err_close_timerfd:
@@ -2042,11 +2042,6 @@ static int handle_events(struct libusb_context *ctx, struct timeval *tv)
 		assert(ctx->pollfds_cnt >= internal_nfds);
 
 		ctx->pollfds = calloc(ctx->pollfds_cnt, sizeof(*ctx->pollfds));
-		if (!ctx->pollfds) {
-			usbi_mutex_unlock(&ctx->event_data_lock);
-			r = LIBUSB_ERROR_NO_MEM;
-			goto done;
-		}
 
 		list_for_each_entry(ipollfd, &ctx->ipollfds, list, struct usbi_pollfd) {
 			struct libusb_pollfd *pollfd = &ipollfd->pollfd;
@@ -2573,8 +2568,6 @@ static void usbi_fd_notification(struct libusb_context *ctx)
 int usbi_add_pollfd(struct libusb_context *ctx, int fd, short events)
 {
 	struct usbi_pollfd *ipollfd = malloc(sizeof(*ipollfd));
-	if (!ipollfd)
-		return LIBUSB_ERROR_NO_MEM;
 
 	// usbi_dbg("add fd %d events %d", fd, events);
 	ipollfd->pollfd.fd = fd;

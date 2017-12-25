@@ -866,8 +866,6 @@ static int initialize_device(struct libusb_device *dev, uint8 busnum,
 
 	if (sysfs_dir) {
 		priv->sysfs_dir = strdup(sysfs_dir);
-		if (!priv->sysfs_dir)
-			return LIBUSB_ERROR_NO_MEM;
 
 		/* Note speed can contain 1.5, in this case __read_sysfs_attr
 		   will stop parsing at the '.' and return 1 */
@@ -962,9 +960,7 @@ static int linux_get_parent_info(struct libusb_device *dev, const char *sysfs_di
 	}
 
 	parent_sysfs_dir = strdup(sysfs_dir);
-	if (NULL == parent_sysfs_dir) {
-		return LIBUSB_ERROR_NO_MEM;
-	}
+
 	if (NULL != (tmp = strrchr(parent_sysfs_dir, '.')) ||
 	    NULL != (tmp = strrchr(parent_sysfs_dir, '-'))) {
 	        dev->port_number = atoi(tmp + 1);
@@ -981,9 +977,6 @@ static int linux_get_parent_info(struct libusb_device *dev, const char *sysfs_di
 		tmp = parent_sysfs_dir;
 		ret = asprintf (&parent_sysfs_dir, "usb%s", tmp);
 		free (tmp);
-		if (0 > ret) {
-			return LIBUSB_ERROR_NO_MEM;
-		}
 	}
 
 retry:
@@ -1039,8 +1032,6 @@ int linux_enumerate_device(struct libusb_context *ctx,
 	// usbi_dbg("allocating new device for %d/%d (session %ld)",
 		 busnum, devaddr, session_id);
 	dev = usbi_alloc_device(ctx, session_id);
-	if (!dev)
-		return LIBUSB_ERROR_NO_MEM;
 
 	r = initialize_device(dev, busnum, devaddr, sysfs_dir);
 	if (r < 0)
@@ -1480,8 +1471,6 @@ static int do_streams_ioctl(struct libusb_device_handle *handle, long req,
 		return LIBUSB_ERROR_INVALID_PARAM;
 
 	streams = malloc(sizeof(struct usbfs_streams) + num_endpoints);
-	if (!streams)
-		return LIBUSB_ERROR_NO_MEM;
 
 	streams->num_streams = num_streams;
 	streams->num_eps = num_endpoints;
@@ -1817,8 +1806,7 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 	// usbi_dbg("need %d urbs for new transfer with length %d", num_urbs,
 		transfer->length);
 	urbs = calloc(num_urbs, sizeof(struct usbfs_urb));
-	if (!urbs)
-		return LIBUSB_ERROR_NO_MEM;
+=
 	tpriv->urbs = urbs;
 	tpriv->num_urbs = num_urbs;
 	tpriv->num_retired = 0;
@@ -1958,8 +1946,6 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 	// usbi_dbg("need %d %dk URBs for transfer", num_urbs, MAX_ISO_BUFFER_LENGTH / 1024);
 
 	urbs = calloc(num_urbs, sizeof(*urbs));
-	if (!urbs)
-		return LIBUSB_ERROR_NO_MEM;
 
 	tpriv->iso_urbs = urbs;
 	tpriv->num_urbs = num_urbs;
@@ -1994,10 +1980,6 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 		alloc_size = sizeof(*urb)
 			+ (urb_packet_offset * sizeof(struct usbfs_iso_packet_desc));
 		urb = calloc(1, alloc_size);
-		if (!urb) {
-			free_iso_urbs(tpriv);
-			return LIBUSB_ERROR_NO_MEM;
-		}
 		urbs[i] = urb;
 
 		/* populate packet lengths */
@@ -2083,8 +2065,7 @@ static int submit_control_transfer(struct usbi_transfer *itransfer)
 		return LIBUSB_ERROR_INVALID_PARAM;
 
 	urb = calloc(1, sizeof(struct usbfs_urb));
-	if (!urb)
-		return LIBUSB_ERROR_NO_MEM;
+
 	tpriv->urbs = urb;
 	tpriv->num_urbs = 1;
 	tpriv->reap_action = NORMAL;

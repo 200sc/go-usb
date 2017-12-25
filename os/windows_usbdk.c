@@ -248,10 +248,6 @@ static int usbdk_cache_config_descriptors(struct libusb_context *ctx,
 	Request.ID = info->ID;
 
 	p->config_descriptors = calloc(info->DeviceDescriptor.bNumConfigurations, sizeof(PUSB_CONFIGURATION_DESCRIPTOR));
-	if (p->config_descriptors == NULL) {
-		// usbi_err(ctx, "failed to allocate configuration descriptors holder");
-		return LIBUSB_ERROR_NO_MEM;
-	}
 
 	for (i = 0; i < info->DeviceDescriptor.bNumConfigurations; i++) {
 		uint64 Length;
@@ -344,11 +340,6 @@ static int usbdk_get_device_list(struct libusb_context *ctx, struct discovered_d
 
 		discdevs = discovered_devs_append(*_discdevs, dev);
 		libusb_unref_device(dev);
-		if (!discdevs) {
-			// usbi_err(ctx, "cannot append new device to list");
-			r = LIBUSB_ERROR_NO_MEM;
-			goto func_exit;
-		}
 
 		*_discdevs = discdevs;
 	}
@@ -533,8 +524,6 @@ static int usbdk_do_control_transfer(struct usbi_transfer *itransfer)
 
 	wfd = usbi_create_fd(sysHandle, RW_READ, NULL, NULL);
 	// Always use the handle returned from usbi_create_fd (wfd.handle)
-	if (wfd.fd < 0)
-		return LIBUSB_ERROR_NO_MEM;
 
 	transfer_priv->request.Buffer = (PVOID64)(uintptr_t)transfer->buffer;
 	transfer_priv->request.BufferLength = transfer->length;
@@ -599,8 +588,6 @@ static int usbdk_do_bulk_transfer(struct usbi_transfer *itransfer)
 
 	wfd = usbi_create_fd(sysHandle, IS_XFERIN(transfer) ? RW_READ : RW_WRITE, NULL, NULL);
 	// Always use the handle returned from usbi_create_fd (wfd.handle)
-	if (wfd.fd < 0)
-		return LIBUSB_ERROR_NO_MEM;
 
 	if (IS_XFERIN(transfer))
 		transferRes = usbdk_helper.ReadPipe(priv->redirector_handle, &transfer_priv->request, wfd.overlapped);
@@ -663,10 +650,6 @@ static int usbdk_do_iso_transfer(struct usbi_transfer *itransfer)
 	sysHandle = usbdk_helper.GetRedirectorSystemHandle(priv->redirector_handle);
 
 	wfd = usbi_create_fd(sysHandle, IS_XFERIN(transfer) ? RW_READ : RW_WRITE, NULL, NULL);
-	// Always use the handle returned from usbi_create_fd (wfd.handle)
-	if (wfd.fd < 0) {
-		return LIBUSB_ERROR_NO_MEM;
-	}
 
 	if (IS_XFERIN(transfer))
 		transferRes = usbdk_helper.ReadPipe(priv->redirector_handle, &transfer_priv->request, wfd.overlapped);

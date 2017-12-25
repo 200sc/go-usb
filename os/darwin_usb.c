@@ -848,10 +848,6 @@ static int darwin_get_cached_device(struct libusb_context *ctx, io_service_t ser
     }
 
     new_device = calloc (1, sizeof (*new_device));
-    if (!new_device) {
-      ret = LIBUSB_ERROR_NO_MEM;
-      break;
-    }
 
     /* add this device to the cached device list */
     list_add(&new_device->list, &darwin_cached_devices);
@@ -913,9 +909,6 @@ static int process_new_device (struct libusb_context *ctx, io_service_t service)
               ctx, cached_device->session);
 
     dev = usbi_alloc_device(ctx, (uint64) cached_device->session);
-    if (!dev) {
-      return LIBUSB_ERROR_NO_MEM;
-    }
 
     priv = (struct darwin_device_priv *)dev->os_priv;
 
@@ -1597,8 +1590,6 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer) {
   if (!tpriv->isoc_framelist) {
     tpriv->num_iso_packets = transfer->num_iso_packets;
     tpriv->isoc_framelist = (IOUSBIsocFrame*) calloc (transfer->num_iso_packets, sizeof(IOUSBIsocFrame));
-    if (!tpriv->isoc_framelist)
-      return LIBUSB_ERROR_NO_MEM;
   }
 
   /* copy the frame list from the libusb descriptor (the structures differ only is member order) */

@@ -628,9 +628,6 @@ ssize_t  libusb_get_device_list(libusb_context *ctx,
 	USBI_GET_CONTEXT(ctx);
 	// usbi_dbg("");
 
-	if (!discdevs)
-		return LIBUSB_ERROR_NO_MEM;
-
 	if (libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
 		/* backend provides hotplug support */
 		struct libusb_device *dev;
@@ -641,11 +638,6 @@ ssize_t  libusb_get_device_list(libusb_context *ctx,
 		usbi_mutex_lock(&ctx->usb_devs_lock);
 		list_for_each_entry(dev, &ctx->usb_devs, list, struct libusb_device) {
 			discdevs = discovered_devs_append(discdevs, dev);
-
-			if (!discdevs) {
-				r = LIBUSB_ERROR_NO_MEM;
-				break;
-			}
 		}
 		usbi_mutex_unlock(&ctx->usb_devs_lock);
 	} else {
@@ -661,10 +653,6 @@ ssize_t  libusb_get_device_list(libusb_context *ctx,
 	/* convert discovered_devs into a list */
 	len = discdevs->len;
 	ret = calloc(len + 1, sizeof(struct libusb_device *));
-	if (!ret) {
-		len = LIBUSB_ERROR_NO_MEM;
-		goto out;
-	}
 
 	ret[len] = NULL;
 	for (i = 0; i < len; i++) {
@@ -991,8 +979,6 @@ int  libusb_open(libusb_device *dev,
 	}
 
 	_dev_handle = malloc(sizeof(*_dev_handle) + priv_size);
-	if (!_dev_handle)
-		return LIBUSB_ERROR_NO_MEM;
 
 	r = usbi_mutex_init(&_dev_handle->lock);
 	if (r) {
@@ -1803,10 +1789,7 @@ int  libusb_init(libusb_context **context)
 	}
 
 	ctx = calloc(1, sizeof(*ctx));
-	if (!ctx) {
-		r = LIBUSB_ERROR_NO_MEM;
-		goto err_unlock;
-	}
+
 
 	if (dbg) {
 		ctx->debug = atoi(dbg);
