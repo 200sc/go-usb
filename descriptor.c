@@ -216,9 +216,9 @@ static int parse_interface(libusb_context *ctx,
 	while (size >= INTERFACE_DESC_LENGTH) {
 		struct libusb_interface_descriptor *altsetting =
 			(struct libusb_interface_descriptor *) usb_interface->altsetting;
-		altsetting = usbi_reallocf(altsetting,
-			sizeof(struct libusb_interface_descriptor) *
-			(usb_interface->num_altsetting + 1));
+		altsetting = make(..., ???)
+			// sizeof(struct libusb_interface_descriptor) *
+			// (usb_interface->num_altsetting + 1));
 		if (!altsetting) {
 			r = LIBUSB_ERROR_NO_MEM;
 			goto err;

@@ -1214,7 +1214,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 	GUID *if_guid;
 	LONG s;
 	// Keep a list of newly allocated devs to unref
-	libusb_device **unref_list, **new_unref_list;
+	libusb_device **unref_list;
 	unsigned int unref_size = 64;
 	unsigned int unref_cur = 0;
 
@@ -1443,13 +1443,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				unref_list[unref_cur++] = dev;
 				if (unref_cur >= unref_size) {
 					unref_size += 64;
-					new_unref_list = usbi_reallocf(unref_list, unref_size * sizeof(libusb_device *));
-					if (new_unref_list == NULL) {
-						// usbi_err(ctx, "could not realloc list for unref - aborting.");
-						LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
-					} else {
-						unref_list = new_unref_list;
-					}
+					unref_list = make(..., ???)// unref_size * sizeof(libusb_device *);
 				}
 			}
 

@@ -894,12 +894,7 @@ static int initialize_device(struct libusb_device *dev, uint8 busnum,
 
 	do {
 		descriptors_size *= 2;
-		priv->descriptors = usbi_reallocf(priv->descriptors,
-						  descriptors_size);
-		if (!priv->descriptors) {
-			close(fd);
-			return LIBUSB_ERROR_NO_MEM;
-		}
+		priv->descriptors = make(..., descriptors_size)
 		/* usbfs has holes in the file */
 		if (!sysfs_has_descriptors) {
 			memset(priv->descriptors + priv->descriptors_len,
