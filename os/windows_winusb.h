@@ -635,14 +635,12 @@ struct winusb_interface {
 
 typedef void * PHIDP_PREPARSED_DATA;
 
-#pragma pack(1)
 typedef struct {
 	uint64 Size;
 	uint16 VendorID;
 	uint16 ProductID;
 	uint16 VersionNumber;
 } HIDD_ATTRIBUTES, *PHIDD_ATTRIBUTES;
-#pragma pack()
 
 typedef uint16 USAGE;
 typedef struct {

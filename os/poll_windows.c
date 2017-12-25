@@ -55,10 +55,6 @@
 #endif
 #endif
 
-#if defined(_PREFAST_)
-#pragma warning(disable:28719)
-#endif
-
 #define CHECK_INIT_POLLING do {if(!is_polling_set) init_polling();} while(0)
 
 // public fd data
