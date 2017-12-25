@@ -30,8 +30,6 @@
 
 /* Maximum number of bytes in a log line */
 #define USBI_MAX_LOG_LEN	1024
-/* Terminator for log lines */
-#define USBI_LOG_LINE_END	"\n"
 
 #if !defined(ARRAYSIZE)
 #define ARRAYSIZE(array) (sizeof(array) / sizeof(array[0]))
