@@ -101,18 +101,6 @@
 	} while(0)
 
 
-/*
- * Macros for handling functions within a DLL
- */
-#define DLL_DECLARE_FUNC_PREFIXNAME(api, ret, prefixname, name, args)	\
-	typedef ret (api * __dll_##name##_func_t)args;			\
-	static __dll_##name##_func_t prefixname = NULL
-
-#define DLL_DECLARE_FUNC(api, ret, name, args)				\
-	DLL_DECLARE_FUNC_PREFIXNAME(api, ret, name, name, args)
-#define DLL_DECLARE_FUNC_PREFIXED(api, ret, prefix, name, args)		\
-	DLL_DECLARE_FUNC_PREFIXNAME(api, ret, prefix##name, name, args)
-
 #define DLL_LOAD_FUNC_PREFIXNAME(dll, prefixname, name, ret_on_failure)	\
 	do {								\
 		HMODULE h = __dll_##dll##_handle;			\

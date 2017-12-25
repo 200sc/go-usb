@@ -32,14 +32,14 @@
 #endif
 
 typedef struct USB_CONFIGURATION_DESCRIPTOR {
-  UCHAR  bLength;
-  UCHAR  bDescriptorType;
-  USHORT wTotalLength;
-  UCHAR  bNumInterfaces;
-  UCHAR  bConfigurationValue;
-  UCHAR  iConfiguration;
-  UCHAR  bmAttributes;
-  UCHAR  MaxPower;
+  uint8  bLength;
+  uint8  bDescriptorType;
+  uint16 wTotalLength;
+  uint8  bNumInterfaces;
+  uint8  bConfigurationValue;
+  uint8  iConfiguration;
+  uint8  bmAttributes;
+  uint8  MaxPower;
 } USB_CONFIGURATION_DESCRIPTOR, *PUSB_CONFIGURATION_DESCRIPTOR;
 
 typedef struct libusb_device_descriptor USB_DEVICE_DESCRIPTOR, *PUSB_DEVICE_DESCRIPTOR;

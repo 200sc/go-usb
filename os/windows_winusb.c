@@ -130,7 +130,7 @@ static bool api_hid_available = false;
 			return LIBUSB_ERROR_ACCESS;	\
 	} while (0)
 
-static  BOOLEAN guid_eq(const GUID *guid1, const GUID *guid2)
+static  bool guid_eq(const GUID *guid1, const GUID *guid2)
 {
 	if ((guid1 != NULL) && (guid2 != NULL))
 		return (memcmp(guid1, guid2, sizeof(GUID)) == 0);
@@ -896,12 +896,12 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 		size = sizeof(USB_CONFIGURATION_DESCRIPTOR_SHORT);
 		memset(&cd_buf_short, 0, size);
 
-		cd_buf_short.req.ConnectionIndex = (ULONG)priv->port;
+		cd_buf_short.req.ConnectionIndex = (uint64)priv->port;
 		cd_buf_short.req.SetupPacket.bmRequest = LIBUSB_ENDPOINT_IN;
 		cd_buf_short.req.SetupPacket.bRequest = USB_REQUEST_GET_DESCRIPTOR;
 		cd_buf_short.req.SetupPacket.wValue = (USB_CONFIGURATION_DESCRIPTOR_TYPE << 8) | i;
 		cd_buf_short.req.SetupPacket.wIndex = 0;
-		cd_buf_short.req.SetupPacket.wLength = (USHORT)(size - sizeof(USB_DESCRIPTOR_REQUEST));
+		cd_buf_short.req.SetupPacket.wLength = (uint16)(size - sizeof(USB_DESCRIPTOR_REQUEST));
 
 		// Dummy call to get the required data size. Initial failures are reported as info rather
 		// than error as they can occur for non-penalizing situations, such as with some hubs.
@@ -925,12 +925,12 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 		}
 
 		// Actual call
-		cd_buf_actual->ConnectionIndex = (ULONG)priv->port;
+		cd_buf_actual->ConnectionIndex = (uint64)priv->port;
 		cd_buf_actual->SetupPacket.bmRequest = LIBUSB_ENDPOINT_IN;
 		cd_buf_actual->SetupPacket.bRequest = USB_REQUEST_GET_DESCRIPTOR;
 		cd_buf_actual->SetupPacket.wValue = (USB_CONFIGURATION_DESCRIPTOR_TYPE << 8) | i;
 		cd_buf_actual->SetupPacket.wIndex = 0;
-		cd_buf_actual->SetupPacket.wLength = (USHORT)(size - sizeof(USB_DESCRIPTOR_REQUEST));
+		cd_buf_actual->SetupPacket.wLength = (uint16)(size - sizeof(USB_DESCRIPTOR_REQUEST));
 
 		if (!DeviceIoControl(hub_handle, IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION, cd_buf_actual, size,
 			cd_buf_actual, size, &ret_size, NULL)) {
@@ -938,7 +938,7 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 			LOOP_BREAK(LIBUSB_ERROR_IO);
 		}
 
-		cd_data = (PUSB_CONFIGURATION_DESCRIPTOR)((UCHAR *)cd_buf_actual + sizeof(USB_DESCRIPTOR_REQUEST));
+		cd_data = (PUSB_CONFIGURATION_DESCRIPTOR)((uint8 *)cd_buf_actual + sizeof(USB_DESCRIPTOR_REQUEST));
 
 		if ((size != ret_size) || (cd_data->wTotalLength != cd_buf_short.data.wTotalLength)) {
 			usbi_err(ctx, "unexpected configuration descriptor size (actual) for '%s'.", device_id);
@@ -1037,7 +1037,7 @@ static int init_device(struct libusb_device *dev, struct libusb_device *parent_d
 		}
 
 		size = sizeof(conn_info);
-		conn_info.ConnectionIndex = (ULONG)port_number;
+		conn_info.ConnectionIndex = (uint64)port_number;
 		// coverity[tainted_data_argument]
 		if (!DeviceIoControl(handle, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX, &conn_info, size,
 			&conn_info, size, &size, NULL)) {
@@ -1068,7 +1068,7 @@ static int init_device(struct libusb_device *dev, struct libusb_device *parent_d
 		if (windows_version >= WINDOWS_8) {
 			memset(&conn_info_v2, 0, sizeof(conn_info_v2));
 			size = sizeof(conn_info_v2);
-			conn_info_v2.ConnectionIndex = (ULONG)port_number;
+			conn_info_v2.ConnectionIndex = (uint64)port_number;
 			conn_info_v2.Length = size;
 			conn_info_v2.SupportedUsbProtocols.Usb300 = 1;
 			if (!DeviceIoControl(handle, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX_V2,
@@ -1853,11 +1853,6 @@ static int windows_detach_kernel_driver(struct libusb_device_handle *dev_handle,
 	return LIBUSB_ERROR_NOT_SUPPORTED;
 }
 
-static void windows_destroy_device(struct libusb_device *dev)
-{
-	windows_device_priv_release(dev);
-}
-
 void windows_clear_transfer_priv(struct usbi_transfer *itransfer)
 {
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
@@ -2041,7 +2036,7 @@ const struct usbi_os_backend windows_backend = {
 	windows_detach_kernel_driver,
 	windows_attach_kernel_driver,
 
-	windows_destroy_device,
+	NULL,
 
 	windows_submit_transfer,
 	windows_cancel_transfer,
@@ -2454,8 +2449,8 @@ static int winusbx_configure_endpoints(int sub_api, struct libusb_device_handle 
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(dev_handle);
 	struct windows_device_priv *priv = _device_priv(dev_handle->dev);
 	HANDLE winusb_handle = handle_priv->interface_handle[iface].api_handle;
-	UCHAR policy;
-	ULONG timeout = 0;
+	uint8 policy;
+	uint64 timeout = 0;
 	uint8_t endpoint_address;
 	int i;
 
@@ -2466,7 +2461,7 @@ static int winusbx_configure_endpoints(int sub_api, struct libusb_device_handle 
 	for (i = -1; i < priv->usb_interface[iface].nb_endpoints; i++) {
 		endpoint_address = (i == -1) ? 0 : priv->usb_interface[iface].endpoint[i];
 		if (!WinUSBX[sub_api].SetPipePolicy(winusb_handle, endpoint_address,
-			PIPE_TRANSFER_TIMEOUT, sizeof(ULONG), &timeout))
+			PIPE_TRANSFER_TIMEOUT, sizeof(uint64), &timeout))
 			usbi_dbg("failed to set PIPE_TRANSFER_TIMEOUT for control endpoint %02X", endpoint_address);
 
 		if ((i == -1) || (sub_api == SUB_API_LIBUSB0))
@@ -2474,22 +2469,22 @@ static int winusbx_configure_endpoints(int sub_api, struct libusb_device_handle 
 
 		policy = false;
 		if (!WinUSBX[sub_api].SetPipePolicy(winusb_handle, endpoint_address,
-			SHORT_PACKET_TERMINATE, sizeof(UCHAR), &policy))
+			SHORT_PACKET_TERMINATE, sizeof(uint8), &policy))
 			usbi_dbg("failed to disable SHORT_PACKET_TERMINATE for endpoint %02X", endpoint_address);
 
 		if (!WinUSBX[sub_api].SetPipePolicy(winusb_handle, endpoint_address,
-			IGNORE_SHORT_PACKETS, sizeof(UCHAR), &policy))
+			IGNORE_SHORT_PACKETS, sizeof(uint8), &policy))
 			usbi_dbg("failed to disable IGNORE_SHORT_PACKETS for endpoint %02X", endpoint_address);
 
 		policy = true;
 		/* ALLOW_PARTIAL_READS must be enabled due to likely libusbK bug. See:
 		   https://sourceforge.net/mailarchive/message.php?msg_id=29736015 */
 		if (!WinUSBX[sub_api].SetPipePolicy(winusb_handle, endpoint_address,
-			ALLOW_PARTIAL_READS, sizeof(UCHAR), &policy))
+			ALLOW_PARTIAL_READS, sizeof(uint8), &policy))
 			usbi_dbg("failed to enable ALLOW_PARTIAL_READS for endpoint %02X", endpoint_address);
 
 		if (!WinUSBX[sub_api].SetPipePolicy(winusb_handle, endpoint_address,
-			AUTO_CLEAR_STALL, sizeof(UCHAR), &policy))
+			AUTO_CLEAR_STALL, sizeof(uint8), &policy))
 			usbi_dbg("failed to enable AUTO_CLEAR_STALL for endpoint %02X", endpoint_address);
 	}
 
@@ -2576,7 +2571,7 @@ static int winusbx_claim_interface(int sub_api, struct libusb_device_handle *dev
 				return LIBUSB_ERROR_ACCESS;
 			}
 		}
-		if (!WinUSBX[sub_api].GetAssociatedInterface(winusb_handle, (UCHAR)(iface - 1),
+		if (!WinUSBX[sub_api].GetAssociatedInterface(winusb_handle, (uint8)(iface - 1),
 			&handle_priv->interface_handle[iface].api_handle)) {
 			handle_priv->interface_handle[iface].api_handle = INVALID_HANDLE_VALUE;
 			switch(GetLastError()) {
@@ -2670,7 +2665,7 @@ static int winusbx_submit_control_transfer(int sub_api, struct usbi_transfer *it
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
 	WINUSB_SETUP_PACKET *setup = (WINUSB_SETUP_PACKET *)transfer->buffer;
-	ULONG size;
+	uint64 size;
 	HANDLE winusb_handle;
 	int current_interface;
 	struct winfd wfd;
@@ -2747,7 +2742,7 @@ static int winusbx_set_interface_altsetting(int sub_api, struct libusb_device_ha
 		return LIBUSB_ERROR_NOT_FOUND;
 	}
 
-	if (!WinUSBX[sub_api].SetCurrentAlternateSetting(winusb_handle, (UCHAR)altsetting)) {
+	if (!WinUSBX[sub_api].SetCurrentAlternateSetting(winusb_handle, (uint8)altsetting)) {
 		usbi_err(ctx, "SetCurrentAlternateSetting failed: %s", windows_error_str(0));
 		return LIBUSB_ERROR_IO;
 	}
@@ -3224,7 +3219,7 @@ static int _hid_get_descriptor(struct hid_device_priv *dev, HANDLE hid_handle, i
 		return LIBUSB_ERROR_INVALID_PARAM;
 	case LIBUSB_DT_PHYSICAL:
 		usbi_dbg("LIBUSB_DT_PHYSICAL");
-		if (HidD_GetPhysicalDescriptor(hid_handle, data, (ULONG)*size))
+		if (HidD_GetPhysicalDescriptor(hid_handle, data, (uint64)*size))
 			return LIBUSB_COMPLETED;
 		return LIBUSB_ERROR_OTHER;
 	}
@@ -3446,7 +3441,7 @@ static int hid_open(int sub_api, struct libusb_device_handle *dev_handle)
 	HANDLE hid_handle = INVALID_HANDLE_VALUE;
 	int i, j;
 	// report IDs handling
-	ULONG size[3];
+	uint64 size[3];
 	int nb_ids[2]; // zero and nonzero report IDs
 
 	CHECK_HID_AVAILABLE;

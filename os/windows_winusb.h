@@ -20,21 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#pragma once
-
-#include "windows_common.h"
-#include "windows_nt_common.h"
-
-#if defined(_MSC_VER)
-// disable /W4 MSVC warnings that are benign
-#pragma warning(disable:4100)  // unreferenced formal parameter
-#pragma warning(disable:4127)  // conditional expression is constant
-#pragma warning(disable:4201)  // nameless struct/union
-#pragma warning(disable:4214)  // bit field types other than int
-#pragma warning(disable:4996)  // deprecated API calls
-#pragma warning(disable:28159) // more deprecated API calls
-#endif
-
 // Missing from MSVC6 setupapi.h
 #if !defined(SPDRP_ADDRESS)
 #define SPDRP_ADDRESS		28
@@ -42,16 +27,6 @@
 #if !defined(SPDRP_INSTALL_STATE)
 #define SPDRP_INSTALL_STATE	34
 #endif
-
-#define MAX_CTRL_BUFFER_LENGTH	4096
-#define MAX_USB_DEVICES		256
-#define MAX_USB_STRING_LENGTH	128
-#define MAX_HID_REPORT_SIZE	1024
-#define MAX_HID_DESCRIPTOR_SIZE	256
-#define MAX_GUID_STRING_LENGTH	40
-#define MAX_PATH_LENGTH		128
-#define MAX_KEY_LENGTH		256
-#define LIST_SEPARATOR		';'
 
 // Handle code for HID interface that have been claimed ("dibs")
 #define INTERFACE_CLAIMED	((HANDLE)(intptr_t)0xD1B5)
@@ -73,27 +48,6 @@ const GUID GUID_DEVINTERFACE_USB_HUB = { 0xF18A0E88, 0xC30C, 0x11D0, {0x88, 0x15
 #if !defined(GUID_DEVINTERFACE_LIBUSB0_FILTER)
 const GUID GUID_DEVINTERFACE_LIBUSB0_FILTER = { 0xF9F3FF14, 0xAE21, 0x48A0, {0x8A, 0x25, 0x80, 0x11, 0xA7, 0xA9, 0x31, 0xD9} };
 #endif
-
-
-/*
- * Multiple USB API backend support
- */
-#define USB_API_UNSUPPORTED	0
-#define USB_API_HUB		1
-#define USB_API_COMPOSITE	2
-#define USB_API_WINUSBX		3
-#define USB_API_HID		4
-#define USB_API_MAX		5
-// The following is used to indicate if the HID or composite extra props have already been set.
-#define USB_API_SET		(1 << USB_API_MAX)
-
-// Sub-APIs for WinUSB-like driver APIs (WinUSB, libusbK, libusb-win32 through the libusbK DLL)
-// Must have the same values as the KUSB_DRVID enum from libusbk.h
-#define SUB_API_NOTSET		-1
-#define SUB_API_LIBUSBK		0
-#define SUB_API_LIBUSB0		1
-#define SUB_API_WINUSB		2
-#define SUB_API_MAX		3
 
 #define WINUSBX_DRV_NAMES	{"libusbK", "libusb0", "WinUSB"}
 
@@ -272,34 +226,6 @@ struct driver_lookup {
 	const char* designation;       // internal designation (for debug output)
 };
 
-/* OLE32 dependency */
-DLL_DECLARE_HANDLE(OLE32);
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, HRESULT, p, CLSIDFromString, (LPCOLESTR, LPCLSID));
-
-/* Kernel32 dependencies */
-DLL_DECLARE_HANDLE(Kernel32);
-/* This call is only available from XP SP2 */
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, BOOL, p, IsWow64Process, (HANDLE, PBOOL));
-
-/* SetupAPI dependencies */
-DLL_DECLARE_HANDLE(SetupAPI);
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, HDEVINFO, p, SetupDiGetClassDevsA, (const GUID*, PCSTR, HWND, DWORD));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, BOOL, p, SetupDiEnumDeviceInfo, (HDEVINFO, DWORD, PSP_DEVINFO_DATA));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, BOOL, p, SetupDiEnumDeviceInterfaces, (HDEVINFO, PSP_DEVINFO_DATA,
-			const GUID*, DWORD, PSP_DEVICE_INTERFACE_DATA));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, BOOL, p, SetupDiGetDeviceInterfaceDetailA, (HDEVINFO, PSP_DEVICE_INTERFACE_DATA,
-			PSP_DEVICE_INTERFACE_DETAIL_DATA_A, DWORD, PDWORD, PSP_DEVINFO_DATA));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, BOOL, p, SetupDiDestroyDeviceInfoList, (HDEVINFO));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, HKEY, p, SetupDiOpenDevRegKey, (HDEVINFO, PSP_DEVINFO_DATA, DWORD, DWORD, DWORD, REGSAM));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, BOOL, p, SetupDiGetDeviceRegistryPropertyA, (HDEVINFO,
-			PSP_DEVINFO_DATA, DWORD, PDWORD, PBYTE, DWORD, PDWORD));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, HKEY, p, SetupDiOpenDeviceInterfaceRegKey, (HDEVINFO, PSP_DEVICE_INTERFACE_DATA, DWORD, DWORD));
-
-/* AdvAPI32 dependencies */
-DLL_DECLARE_HANDLE(AdvAPI32);
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, LONG, p, RegQueryValueExW, (HKEY, LPCWSTR, LPDWORD, LPDWORD, LPBYTE, LPDWORD));
-DLL_DECLARE_FUNC_PREFIXED(WINAPI, LONG, p, RegCloseKey, (HKEY));
-
 /*
  * Windows DDK API definitions. Most of it copied from MinGW's includes
  */
@@ -308,31 +234,6 @@ typedef DEVNODE *PDEVNODE, *PDEVINST;
 typedef DWORD RETURN_TYPE;
 typedef RETURN_TYPE CONFIGRET;
 
-#define CR_SUCCESS				0x00000000
-#define CR_NO_SUCH_DEVNODE			0x0000000D
-
-#define USB_DEVICE_DESCRIPTOR_TYPE		LIBUSB_DT_DEVICE
-#define USB_CONFIGURATION_DESCRIPTOR_TYPE	LIBUSB_DT_CONFIG
-#define USB_STRING_DESCRIPTOR_TYPE		LIBUSB_DT_STRING
-#define USB_INTERFACE_DESCRIPTOR_TYPE		LIBUSB_DT_INTERFACE
-#define USB_ENDPOINT_DESCRIPTOR_TYPE		LIBUSB_DT_ENDPOINT
-
-#define USB_REQUEST_GET_STATUS			LIBUSB_REQUEST_GET_STATUS
-#define USB_REQUEST_CLEAR_FEATURE		LIBUSB_REQUEST_CLEAR_FEATURE
-#define USB_REQUEST_SET_FEATURE			LIBUSB_REQUEST_SET_FEATURE
-#define USB_REQUEST_SET_ADDRESS			LIBUSB_REQUEST_SET_ADDRESS
-#define USB_REQUEST_GET_DESCRIPTOR		LIBUSB_REQUEST_GET_DESCRIPTOR
-#define USB_REQUEST_SET_DESCRIPTOR		LIBUSB_REQUEST_SET_DESCRIPTOR
-#define USB_REQUEST_GET_CONFIGURATION		LIBUSB_REQUEST_GET_CONFIGURATION
-#define USB_REQUEST_SET_CONFIGURATION		LIBUSB_REQUEST_SET_CONFIGURATION
-#define USB_REQUEST_GET_INTERFACE		LIBUSB_REQUEST_GET_INTERFACE
-#define USB_REQUEST_SET_INTERFACE		LIBUSB_REQUEST_SET_INTERFACE
-#define USB_REQUEST_SYNC_FRAME			LIBUSB_REQUEST_SYNCH_FRAME
-
-#define USB_GET_NODE_INFORMATION		258
-#define USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION	260
-#define USB_GET_NODE_CONNECTION_NAME		261
-#define USB_GET_HUB_CAPABILITIES		271
 #if !defined(USB_GET_NODE_CONNECTION_INFORMATION_EX)
 #define USB_GET_NODE_CONNECTION_INFORMATION_EX	274
 #endif
@@ -361,13 +262,6 @@ typedef RETURN_TYPE CONFIGRET;
 	(((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
 #endif
 
-/* Cfgmgr32.dll interface */
-DLL_DECLARE_HANDLE(Cfgmgr32);
-DLL_DECLARE_FUNC(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE_FUNC(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE_FUNC(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE_FUNC(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
-
 #define IOCTL_USB_GET_HUB_CAPABILITIES_EX \
 	CTL_CODE( FILE_DEVICE_USB, USB_GET_HUB_CAPABILITIES_EX, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
@@ -395,85 +289,82 @@ DLL_DECLARE_FUNC(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, U
 #define IOCTL_USB_GET_NODE_CONNECTION_NAME \
 	CTL_CODE(FILE_DEVICE_USB, USB_GET_NODE_CONNECTION_NAME, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
-// Most of the structures below need to be packed
-#pragma pack(push, 1)
-
 typedef struct USB_INTERFACE_DESCRIPTOR {
-	UCHAR bLength;
-	UCHAR bDescriptorType;
-	UCHAR bInterfaceNumber;
-	UCHAR bAlternateSetting;
-	UCHAR bNumEndpoints;
-	UCHAR bInterfaceClass;
-	UCHAR bInterfaceSubClass;
-	UCHAR bInterfaceProtocol;
-	UCHAR iInterface;
+	uint8 bLength;
+	uint8 bDescriptorType;
+	uint8 bInterfaceNumber;
+	uint8 bAlternateSetting;
+	uint8 bNumEndpoints;
+	uint8 bInterfaceClass;
+	uint8 bInterfaceSubClass;
+	uint8 bInterfaceProtocol;
+	uint8 iInterface;
 } USB_INTERFACE_DESCRIPTOR, *PUSB_INTERFACE_DESCRIPTOR;
 
 typedef struct USB_CONFIGURATION_DESCRIPTOR_SHORT {
 	struct {
-		ULONG ConnectionIndex;
+		uint64 ConnectionIndex;
 		struct {
-			UCHAR bmRequest;
-			UCHAR bRequest;
-			USHORT wValue;
-			USHORT wIndex;
-			USHORT wLength;
+			uint8 bmRequest;
+			uint8 bRequest;
+			uint16 wValue;
+			uint16 wIndex;
+			uint16 wLength;
 		} SetupPacket;
 	} req;
 	USB_CONFIGURATION_DESCRIPTOR data;
 } USB_CONFIGURATION_DESCRIPTOR_SHORT;
 
 typedef struct USB_ENDPOINT_DESCRIPTOR {
-	UCHAR bLength;
-	UCHAR bDescriptorType;
-	UCHAR bEndpointAddress;
-	UCHAR bmAttributes;
-	USHORT wMaxPacketSize;
-	UCHAR bInterval;
+	uint8 bLength;
+	uint8 bDescriptorType;
+	uint8 bEndpointAddress;
+	uint8 bmAttributes;
+	uint16 wMaxPacketSize;
+	uint8 bInterval;
 } USB_ENDPOINT_DESCRIPTOR, *PUSB_ENDPOINT_DESCRIPTOR;
 
 typedef struct USB_DESCRIPTOR_REQUEST {
-	ULONG ConnectionIndex;
+	uint64 ConnectionIndex;
 	struct {
-		UCHAR bmRequest;
-		UCHAR bRequest;
-		USHORT wValue;
-		USHORT wIndex;
-		USHORT wLength;
+		uint8 bmRequest;
+		uint8 bRequest;
+		uint16 wValue;
+		uint16 wIndex;
+		uint16 wLength;
 	} SetupPacket;
-//	UCHAR Data[0];
+//	uint8 Data[0];
 } USB_DESCRIPTOR_REQUEST, *PUSB_DESCRIPTOR_REQUEST;
 
 typedef struct USB_HUB_DESCRIPTOR {
-	UCHAR bDescriptorLength;
-	UCHAR bDescriptorType;
-	UCHAR bNumberOfPorts;
-	USHORT wHubCharacteristics;
-	UCHAR bPowerOnToPowerGood;
-	UCHAR bHubControlCurrent;
-	UCHAR bRemoveAndPowerMask[64];
+	uint8 bDescriptorLength;
+	uint8 bDescriptorType;
+	uint8 bNumberOfPorts;
+	uint16 wHubCharacteristics;
+	uint8 bPowerOnToPowerGood;
+	uint8 bHubControlCurrent;
+	uint8 bRemoveAndPowerMask[64];
 } USB_HUB_DESCRIPTOR, *PUSB_HUB_DESCRIPTOR;
 
 typedef struct USB_ROOT_HUB_NAME {
-	ULONG ActualLength;
+	uint64 ActualLength;
 	WCHAR RootHubName[1];
 } USB_ROOT_HUB_NAME, *PUSB_ROOT_HUB_NAME;
 
 typedef struct USB_ROOT_HUB_NAME_FIXED {
-	ULONG ActualLength;
+	uint64 ActualLength;
 	WCHAR RootHubName[MAX_PATH_LENGTH];
 } USB_ROOT_HUB_NAME_FIXED;
 
 typedef struct USB_NODE_CONNECTION_NAME {
-	ULONG ConnectionIndex;
-	ULONG ActualLength;
+	uint64 ConnectionIndex;
+	uint64 ActualLength;
 	WCHAR NodeName[1];
 } USB_NODE_CONNECTION_NAME, *PUSB_NODE_CONNECTION_NAME;
 
 typedef struct USB_NODE_CONNECTION_NAME_FIXED {
-	ULONG ConnectionIndex;
-	ULONG ActualLength;
+	uint64 ConnectionIndex;
+	uint64 ActualLength;
 	WCHAR NodeName[MAX_PATH_LENGTH];
 } USB_NODE_CONNECTION_NAME_FIXED;
 
@@ -486,11 +377,11 @@ typedef struct USB_HUB_NAME_FIXED {
 
 typedef struct USB_HUB_INFORMATION {
 	USB_HUB_DESCRIPTOR HubDescriptor;
-	BOOLEAN HubIsBusPowered;
+	bool HubIsBusPowered;
 } USB_HUB_INFORMATION, *PUSB_HUB_INFORMATION;
 
 typedef struct USB_MI_PARENT_INFORMATION {
-	ULONG NumberOfInterfaces;
+	uint64 NumberOfInterfaces;
 } USB_MI_PARENT_INFORMATION, *PUSB_MI_PARENT_INFORMATION;
 
 typedef struct USB_NODE_INFORMATION {
@@ -503,125 +394,104 @@ typedef struct USB_NODE_INFORMATION {
 
 typedef struct USB_PIPE_INFO {
 	USB_ENDPOINT_DESCRIPTOR EndpointDescriptor;
-	ULONG ScheduleOffset;
+	uint64 ScheduleOffset;
 } USB_PIPE_INFO, *PUSB_PIPE_INFO;
 
 typedef struct USB_NODE_CONNECTION_INFORMATION_EX {
-	ULONG ConnectionIndex;
+	uint64 ConnectionIndex;
 	USB_DEVICE_DESCRIPTOR DeviceDescriptor;
-	UCHAR CurrentConfigurationValue;
-	UCHAR Speed;
-	BOOLEAN DeviceIsHub;
-	USHORT DeviceAddress;
-	ULONG NumberOfOpenPipes;
+	uint8 CurrentConfigurationValue;
+	uint8 Speed;
+	bool DeviceIsHub;
+	uint16 DeviceAddress;
+	uint64 NumberOfOpenPipes;
 	USB_CONNECTION_STATUS ConnectionStatus;
 //	USB_PIPE_INFO PipeList[0];
 } USB_NODE_CONNECTION_INFORMATION_EX, *PUSB_NODE_CONNECTION_INFORMATION_EX;
 
 typedef union _USB_PROTOCOLS {
-	ULONG ul;
+	uint64 ul;
 	struct {
-		ULONG Usb110:1;
-		ULONG Usb200:1;
-		ULONG Usb300:1;
-		ULONG ReservedMBZ:29;
+		uint64 Usb110:1;
+		uint64 Usb200:1;
+		uint64 Usb300:1;
+		uint64 ReservedMBZ:29;
 	};
 } USB_PROTOCOLS, *PUSB_PROTOCOLS;
 
 typedef union _USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS {
-	ULONG ul;
+	uint64 ul;
 	struct {
-		ULONG DeviceIsOperatingAtSuperSpeedOrHigher:1;
-		ULONG DeviceIsSuperSpeedCapableOrHigher:1;
-		ULONG ReservedMBZ:30;
+		uint64 DeviceIsOperatingAtSuperSpeedOrHigher:1;
+		uint64 DeviceIsSuperSpeedCapableOrHigher:1;
+		uint64 ReservedMBZ:30;
 	};
 } USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS, *PUSB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS;
 
 typedef struct _USB_NODE_CONNECTION_INFORMATION_EX_V2 {
-	ULONG ConnectionIndex;
-	ULONG Length;
+	uint64 ConnectionIndex;
+	uint64 Length;
 	USB_PROTOCOLS SupportedUsbProtocols;
 	USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS Flags;
 } USB_NODE_CONNECTION_INFORMATION_EX_V2, *PUSB_NODE_CONNECTION_INFORMATION_EX_V2;
 
 typedef struct USB_HUB_CAP_FLAGS {
-	ULONG HubIsHighSpeedCapable:1;
-	ULONG HubIsHighSpeed:1;
-	ULONG HubIsMultiTtCapable:1;
-	ULONG HubIsMultiTt:1;
-	ULONG HubIsRoot:1;
-	ULONG HubIsArmedWakeOnConnect:1;
-	ULONG ReservedMBZ:26;
+	uint64 HubIsHighSpeedCapable:1;
+	uint64 HubIsHighSpeed:1;
+	uint64 HubIsMultiTtCapable:1;
+	uint64 HubIsMultiTt:1;
+	uint64 HubIsRoot:1;
+	uint64 HubIsArmedWakeOnConnect:1;
+	uint64 ReservedMBZ:26;
 } USB_HUB_CAP_FLAGS, *PUSB_HUB_CAP_FLAGS;
 
 typedef struct USB_HUB_CAPABILITIES {
-	ULONG HubIs2xCapable:1;
+	uint64 HubIs2xCapable:1;
 } USB_HUB_CAPABILITIES, *PUSB_HUB_CAPABILITIES;
 
 typedef struct USB_HUB_CAPABILITIES_EX {
 	USB_HUB_CAP_FLAGS CapabilityFlags;
 } USB_HUB_CAPABILITIES_EX, *PUSB_HUB_CAPABILITIES_EX;
 
-#pragma pack(pop)
-
-/* winusb.dll interface */
-
-#define SHORT_PACKET_TERMINATE	0x01
-#define AUTO_CLEAR_STALL	0x02
-#define PIPE_TRANSFER_TIMEOUT	0x03
-#define IGNORE_SHORT_PACKETS	0x04
-#define ALLOW_PARTIAL_READS	0x05
-#define AUTO_FLUSH		0x06
-#define RAW_IO			0x07
-#define MAXIMUM_TRANSFER_SIZE	0x08
-#define AUTO_SUSPEND		0x81
-#define SUSPEND_DELAY		0x83
-#define DEVICE_SPEED		0x01
-#define LowSpeed		0x01
-#define FullSpeed		0x02
-#define HighSpeed		0x03
-
 typedef struct {
 	USBD_PIPE_TYPE PipeType;
-	UCHAR PipeId;
-	USHORT MaximumPacketSize;
-	UCHAR Interval;
+	uint8 PipeId;
+	uint16 MaximumPacketSize;
+	uint8 Interval;
 } WINUSB_PIPE_INFORMATION, *PWINUSB_PIPE_INFORMATION;
 
-#pragma pack(1)
 typedef struct {
-	UCHAR request_type;
-	UCHAR request;
-	USHORT value;
-	USHORT index;
-	USHORT length;
+	uint8 request_type;
+	uint8 request;
+	uint16 value;
+	uint16 index;
+	uint16 length;
 } WINUSB_SETUP_PACKET, *PWINUSB_SETUP_PACKET;
-#pragma pack()
 
 typedef void *WINUSB_INTERFACE_HANDLE, *PWINUSB_INTERFACE_HANDLE;
 
 typedef BOOL (WINAPI *WinUsb_AbortPipe_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR PipeID
+	uint8 PipeID
 );
 typedef BOOL (WINAPI *WinUsb_ControlTransfer_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
 	WINUSB_SETUP_PACKET SetupPacket,
 	PUCHAR Buffer,
-	ULONG BufferLength,
+	uint64 BufferLength,
 	PULONG LengthTransferred,
 	LPOVERLAPPED Overlapped
 );
 typedef BOOL (WINAPI *WinUsb_FlushPipe_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR PipeID
+	uint8 PipeID
 );
 typedef BOOL (WINAPI *WinUsb_Free_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle
 );
 typedef BOOL (WINAPI *WinUsb_GetAssociatedInterface_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR AssociatedInterfaceIndex,
+	uint8 AssociatedInterfaceIndex,
 	PWINUSB_INTERFACE_HANDLE AssociatedInterfaceHandle
 );
 typedef BOOL (WINAPI *WinUsb_GetCurrentAlternateSetting_t)(
@@ -630,11 +500,11 @@ typedef BOOL (WINAPI *WinUsb_GetCurrentAlternateSetting_t)(
 );
 typedef BOOL (WINAPI *WinUsb_GetDescriptor_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR DescriptorType,
-	UCHAR Index,
-	USHORT LanguageID,
+	uint8 DescriptorType,
+	uint8 Index,
+	uint16 LanguageID,
 	PUCHAR Buffer,
-	ULONG BufferLength,
+	uint64 BufferLength,
 	PULONG LengthTransferred
 );
 typedef BOOL (WINAPI *WinUsb_GetOverlappedResult_t)(
@@ -645,14 +515,14 @@ typedef BOOL (WINAPI *WinUsb_GetOverlappedResult_t)(
 );
 typedef BOOL (WINAPI *WinUsb_GetPipePolicy_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR PipeID,
-	ULONG PolicyType,
+	uint8 PipeID,
+	uint64 PolicyType,
 	PULONG ValueLength,
 	PVOID Value
 );
 typedef BOOL (WINAPI *WinUsb_GetPowerPolicy_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	ULONG PolicyType,
+	uint64 PolicyType,
 	PULONG ValueLength,
 	PVOID Value
 );
@@ -662,55 +532,55 @@ typedef BOOL (WINAPI *WinUsb_Initialize_t)(
 );
 typedef BOOL (WINAPI *WinUsb_QueryDeviceInformation_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	ULONG InformationType,
+	uint64 InformationType,
 	PULONG BufferLength,
 	PVOID Buffer
 );
 typedef BOOL (WINAPI *WinUsb_QueryInterfaceSettings_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR AlternateSettingNumber,
+	uint8 AlternateSettingNumber,
 	PUSB_INTERFACE_DESCRIPTOR UsbAltInterfaceDescriptor
 );
 typedef BOOL (WINAPI *WinUsb_QueryPipe_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR AlternateInterfaceNumber,
-	UCHAR PipeIndex,
+	uint8 AlternateInterfaceNumber,
+	uint8 PipeIndex,
 	PWINUSB_PIPE_INFORMATION PipeInformation
 );
 typedef BOOL (WINAPI *WinUsb_ReadPipe_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR PipeID,
+	uint8 PipeID,
 	PUCHAR Buffer,
-	ULONG BufferLength,
+	uint64 BufferLength,
 	PULONG LengthTransferred,
 	LPOVERLAPPED Overlapped
 );
 typedef BOOL (WINAPI *WinUsb_ResetPipe_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR PipeID
+	uint8 PipeID
 );
 typedef BOOL (WINAPI *WinUsb_SetCurrentAlternateSetting_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR AlternateSetting
+	uint8 AlternateSetting
 );
 typedef BOOL (WINAPI *WinUsb_SetPipePolicy_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR PipeID,
-	ULONG PolicyType,
-	ULONG ValueLength,
+	uint8 PipeID,
+	uint64 PolicyType,
+	uint64 ValueLength,
 	PVOID Value
 );
 typedef BOOL (WINAPI *WinUsb_SetPowerPolicy_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	ULONG PolicyType,
-	ULONG ValueLength,
+	uint64 PolicyType,
+	uint64 ValueLength,
 	PVOID Value
 );
 typedef BOOL (WINAPI *WinUsb_WritePipe_t)(
 	WINUSB_INTERFACE_HANDLE InterfaceHandle,
-	UCHAR PipeID,
+	uint8 PipeID,
 	PUCHAR Buffer,
-	ULONG BufferLength,
+	uint64 BufferLength,
 	PULONG LengthTransferred,
 	LPOVERLAPPED Overlapped
 );
@@ -728,8 +598,8 @@ typedef KLIB_VERSION* PKLIB_VERSION;
 
 typedef BOOL (WINAPI *LibK_GetProcAddress_t)(
 	PVOID *ProcAddress,
-	ULONG DriverID,
-	ULONG FunctionID
+	uint64 DriverID,
+	uint64 FunctionID
 );
 
 typedef VOID (WINAPI *LibK_GetVersion_t)(
@@ -763,89 +633,70 @@ struct winusb_interface {
 
 /* hid.dll interface */
 
-#define HIDP_STATUS_SUCCESS	0x110000
 typedef void * PHIDP_PREPARSED_DATA;
 
 #pragma pack(1)
 typedef struct {
-	ULONG Size;
-	USHORT VendorID;
-	USHORT ProductID;
-	USHORT VersionNumber;
+	uint64 Size;
+	uint16 VendorID;
+	uint16 ProductID;
+	uint16 VersionNumber;
 } HIDD_ATTRIBUTES, *PHIDD_ATTRIBUTES;
 #pragma pack()
 
-typedef USHORT USAGE;
+typedef uint16 USAGE;
 typedef struct {
 	USAGE Usage;
 	USAGE UsagePage;
-	USHORT InputReportByteLength;
-	USHORT OutputReportByteLength;
-	USHORT FeatureReportByteLength;
-	USHORT Reserved[17];
-	USHORT NumberLinkCollectionNodes;
-	USHORT NumberInputButtonCaps;
-	USHORT NumberInputValueCaps;
-	USHORT NumberInputDataIndices;
-	USHORT NumberOutputButtonCaps;
-	USHORT NumberOutputValueCaps;
-	USHORT NumberOutputDataIndices;
-	USHORT NumberFeatureButtonCaps;
-	USHORT NumberFeatureValueCaps;
-	USHORT NumberFeatureDataIndices;
+	uint16 InputReportByteLength;
+	uint16 OutputReportByteLength;
+	uint16 FeatureReportByteLength;
+	uint16 Reserved[17];
+	uint16 NumberLinkCollectionNodes;
+	uint16 NumberInputButtonCaps;
+	uint16 NumberInputValueCaps;
+	uint16 NumberInputDataIndices;
+	uint16 NumberOutputButtonCaps;
+	uint16 NumberOutputValueCaps;
+	uint16 NumberOutputDataIndices;
+	uint16 NumberFeatureButtonCaps;
+	uint16 NumberFeatureValueCaps;
+	uint16 NumberFeatureDataIndices;
 } HIDP_CAPS, *PHIDP_CAPS;
 
 typedef struct _HIDP_VALUE_CAPS {
 	USAGE UsagePage;
-	UCHAR ReportID;
-	BOOLEAN IsAlias;
-	USHORT BitField;
-	USHORT LinkCollection;
+	uint8 ReportID;
+	bool IsAlias;
+	uint16 BitField;
+	uint16 LinkCollection;
 	USAGE LinkUsage;
 	USAGE LinkUsagePage;
-	BOOLEAN IsRange;
-	BOOLEAN IsStringRange;
-	BOOLEAN IsDesignatorRange;
-	BOOLEAN IsAbsolute;
-	BOOLEAN HasNull;
-	UCHAR Reserved;
-	USHORT BitSize;
-	USHORT ReportCount;
-	USHORT Reserved2[5];
-	ULONG UnitsExp;
-	ULONG Units;
+	bool IsRange;
+	bool IsStringRange;
+	bool IsDesignatorRange;
+	bool IsAbsolute;
+	bool HasNull;
+	uint8 Reserved;
+	uint16 BitSize;
+	uint16 ReportCount;
+	uint16 Reserved2[5];
+	uint64 UnitsExp;
+	uint64 Units;
 	LONG LogicalMin, LogicalMax;
 	LONG PhysicalMin, PhysicalMax;
 	union {
 		struct {
 			USAGE UsageMin, UsageMax;
-			USHORT StringMin, StringMax;
-			USHORT DesignatorMin, DesignatorMax;
-			USHORT DataIndexMin, DataIndexMax;
+			uint16 StringMin, StringMax;
+			uint16 DesignatorMin, DesignatorMax;
+			uint16 DataIndexMin, DataIndexMax;
 		} Range;
 		struct {
 			USAGE Usage, Reserved1;
-			USHORT StringIndex, Reserved2;
-			USHORT DesignatorIndex, Reserved3;
-			USHORT DataIndex, Reserved4;
+			uint16 StringIndex, Reserved2;
+			uint16 DesignatorIndex, Reserved3;
+			uint16 DataIndex, Reserved4;
 		} NotRange;
 	} u;
 } HIDP_VALUE_CAPS, *PHIDP_VALUE_CAPS;
-
-DLL_DECLARE_HANDLE(hid);
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetAttributes, (HANDLE, PHIDD_ATTRIBUTES));
-DLL_DECLARE_FUNC(WINAPI, VOID, HidD_GetHidGuid, (LPGUID));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetPreparsedData, (HANDLE, PHIDP_PREPARSED_DATA *));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_FreePreparsedData, (PHIDP_PREPARSED_DATA));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetManufacturerString, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetProductString, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetSerialNumberString, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, LONG, HidP_GetCaps, (PHIDP_PREPARSED_DATA, PHIDP_CAPS));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_SetNumInputBuffers, (HANDLE, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_SetFeature, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetFeature, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetPhysicalDescriptor, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_GetInputReport, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_SetOutputReport, (HANDLE, PVOID, ULONG));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidD_FlushQueue, (HANDLE));
-DLL_DECLARE_FUNC(WINAPI, BOOL, HidP_GetValueCaps, (HIDP_REPORT_TYPE, PHIDP_VALUE_CAPS, PULONG, PHIDP_PREPARSED_DATA));

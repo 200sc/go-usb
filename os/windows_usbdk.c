@@ -57,7 +57,7 @@ typedef LONG NTSTATUS;
 #if !defined(USBD_SUCCESS)
 typedef int32_t USBD_STATUS;
 #define USBD_SUCCESS(Status)		((USBD_STATUS) (Status) >= 0)
-#define USBD_PENDING(Status)		((ULONG) (Status) >> 30 == 1)
+#define USBD_PENDING(Status)		((uint64) (Status) >> 30 == 1)
 #define USBD_ERROR(Status)		((USBD_STATUS) (Status) < 0)
 #define USBD_STATUS_STALL_PID		((USBD_STATUS) 0xc0000004)
 #define USBD_STATUS_ENDPOINT_HALTED	((USBD_STATUS) 0xc0000030)
@@ -266,7 +266,7 @@ static int usbdk_cache_config_descriptors(struct libusb_context *ctx,
 	}
 
 	for (i = 0; i < info->DeviceDescriptor.bNumConfigurations; i++) {
-		ULONG Length;
+		uint64 Length;
 
 		Request.Index = i;
 		if (!usbdk_helper.GetConfigurationDescriptor(&Request, &p->config_descriptors[i], &Length)) {
@@ -324,9 +324,9 @@ static void usbdk_device_init(libusb_device *dev, PUSB_DK_DEVICE_INFO info)
 static int usbdk_get_device_list(struct libusb_context *ctx, struct discovered_devs **_discdevs)
 {
 	int r = LIBUSB_SUCCESS;
-	ULONG i;
+	uint64 i;
 	struct discovered_devs *discdevs = NULL;
-	ULONG dev_number;
+	uint64 dev_number;
 	PUSB_DK_DEVICE_INFO devices;
 
 	if(!usbdk_helper.GetDevicesList(&devices, &dev_number))
@@ -547,7 +547,7 @@ static int usbdk_do_control_transfer(struct usbi_transfer *itransfer)
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
 	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
 	struct winfd wfd;
-	ULONG Length;
+	uint64 Length;
 	TransferResult transResult;
 	HANDLE sysHandle;
 
@@ -562,7 +562,7 @@ static int usbdk_do_control_transfer(struct usbi_transfer *itransfer)
 	transfer_priv->request.BufferLength = transfer->length;
 	transfer_priv->request.TransferType = ControlTransferType;
 	transfer_priv->pollable_fd = INVALID_WINFD;
-	Length = (ULONG)transfer->length;
+	Length = (uint64)transfer->length;
 
 	if (IS_XFERIN(transfer))
 		transResult = usbdk_helper.ReadPipe(priv->redirector_handle, &transfer_priv->request, wfd.overlapped);

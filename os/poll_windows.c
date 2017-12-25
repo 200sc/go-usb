@@ -80,7 +80,7 @@ struct {
 } _poll_fd[MAX_FDS];
 
 // globals
-BOOLEAN is_polling_set = FALSE;
+bool is_polling_set = FALSE;
 LONG pipe_number = 0;
 static volatile LONG compat_spinlock = 0;
 

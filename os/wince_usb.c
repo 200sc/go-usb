@@ -363,7 +363,7 @@ static int wince_get_configuration(
 	int *config)
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
-	UCHAR cv = 0;
+	uint8 cv = 0;
 
 	if (!UkwGetConfig(priv->dev, &cv))
 		return translate_driver_error(GetLastError());
@@ -380,7 +380,7 @@ static int wince_set_configuration(
 	// Setting configuration 0 places the device in Address state.
 	// This should correspond to the "unconfigured state" required by
 	// libusb when the specified configuration is -1.
-	UCHAR cv = (config < 0) ? 0 : config;
+	uint8 cv = (config < 0) ? 0 : config;
 	if (!UkwSetConfig(priv->dev, cv))
 		return translate_driver_error(GetLastError());
 
