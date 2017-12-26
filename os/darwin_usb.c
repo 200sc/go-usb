@@ -1483,7 +1483,7 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer) {
   uint8                transferType;
   /* None of the values below are used in libusbx for bulk transfers */
   uint8                direction, number, interval, pipeRef;
-  uint16_t               maxPacketSize;
+  uint16               maxPacketSize;
 
   struct darwin_interface *cInterface;
 
@@ -1574,7 +1574,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer) {
 
   IOReturn kresult;
   uint8 direction, number, interval, pipeRef, transferType;
-  uint16_t maxPacketSize;
+  uint16 maxPacketSize;
   UInt64 frame;
   AbsoluteTime atTime;
   int i;

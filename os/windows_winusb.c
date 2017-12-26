@@ -350,7 +350,7 @@ static SP_DEVICE_INTERFACE_DETAIL_DATA_A *get_interface_details_filter(struct li
 				if (libusb0_symboliclink_index < 256) {
 					// libusb0.sys is connected to this device instance.
 					// If the the device interface guid is {F9F3FF14-AE21-48A0-8A25-8011A7A931D9} then it's a filter.
-					safe_sprintf(filter_path, sizeof("\\\\.\\libusb0-0000"), "\\\\.\\libusb0-%04u", (unsigned int)libusb0_symboliclink_index);
+					safe_sprintf(filter_path, sizeof("\\\\.\\libusb0-0000"), "\\\\.\\libusb0-%04u", (uint)libusb0_symboliclink_index);
 					// // usbi_dbg("assigned libusb0 symbolic link %s", filter_path);
 				} else {
 					// libusb0.sys was connected to this device instance at one time; but not anymore.
@@ -665,7 +665,7 @@ static void get_windows_version(void)
 	vlen = sizeof(windows_version_str) - sizeof("Windows ") - 1;
 	if (!w)
 		safe_sprintf(vptr, vlen, "%s %u.%u %s", (vi.dwPlatformId == VER_PLATFORM_WIN32_NT ? "NT" : "??"),
-			(unsigned int)vi.dwMajorVersion, (unsigned int)vi.dwMinorVersion, w64);
+			(uint)vi.dwMajorVersion, (uint)vi.dwMinorVersion, w64);
 	else if (vi.wServicePackMinor)
 		safe_sprintf(vptr, vlen, "%s SP%u.%u %s", w, vi.wServicePackMajor, vi.wServicePackMinor, w64);
 	else if (vi.wServicePackMajor)
@@ -687,7 +687,7 @@ static int windows_init(struct libusb_context *ctx)
 	HANDLE semaphore;
 	char sem_name[11 + 8 + 1]; // strlen("libusb_init") + (32-bit hex PID) + '\0'
 
-	sprintf(sem_name, "libusb_init%08X", (unsigned int)(GetCurrentProcessId() & 0xFFFFFFFF));
+	sprintf(sem_name, "libusb_init%08X", (uint)(GetCurrentProcessId() & 0xFFFFFFFF));
 	semaphore = CreateSemaphoreA(NULL, 1, 1, sem_name);
 
 	// A successful wait brings our semaphore count to 0 (unsignaled)
@@ -776,8 +776,8 @@ static int force_hcd_device_descriptor(struct libusb_device *dev)
 
 	parent_priv = _device_priv(dev->parent_dev);
 	if (sscanf(parent_priv->path, "\\\\.\\PCI#VEN_%04x&DEV_%04x%*s", &vid, &pid) == 2) {
-		priv->dev_descriptor.idVendor = (uint16_t)vid;
-		priv->dev_descriptor.idProduct = (uint16_t)pid;
+		priv->dev_descriptor.idVendor = (uint16)vid;
+		priv->dev_descriptor.idProduct = (uint16)pid;
 	} else {
 		// usbi_warn(ctx, "could not infer VID/PID of HCD hub from '%s'", parent_priv->path);
 		priv->dev_descriptor.idVendor = 0x1d6b; // Linux Foundation root hub
@@ -1182,7 +1182,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 	int r = LIBUSB_SUCCESS;
 	int api, sub_api;
 	int class_index = 0;
-	unsigned int nb_guids, pass, i, j, ancestor;
+	uint nb_guids, pass, i, j, ancestor;
 	char path[MAX_PATH_LENGTH];
 	char strbuf[MAX_PATH_LENGTH];
 	struct libusb_device *dev, *parent_dev;
@@ -1197,8 +1197,8 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 	LONG s;
 	// Keep a list of newly allocated devs to unref
 	libusb_device **unref_list;
-	unsigned int unref_size = 64;
-	unsigned int unref_cur = 0;
+	uint unref_size = 64;
+	uint unref_cur = 0;
 
 	// PASS 1 : (re)enumerate HCDs (allows for HCD hotplug)
 	// PASS 2 : (re)enumerate HUBS
@@ -1264,14 +1264,14 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 			// Note that if the device is plugged in a different port or hub, the Device ID changes
 			if (CM_Get_Device_IDA(dev_info_data.DevInst, path, sizeof(path), 0) != CR_SUCCESS) {
 				// usbi_warn(ctx, "could not read the device id path for devinst %X, skipping",
-					(unsigned int)dev_info_data.DevInst);
+					(uint)dev_info_data.DevInst);
 				continue;
 			}
 
 			dev_id_path = sanitize_path(path);
 			if (dev_id_path == NULL) {
 				// usbi_warn(ctx, "could not sanitize device id path for devinst %X, skipping",
-					(unsigned int)dev_info_data.DevInst);
+					(uint)dev_info_data.DevInst);
 				continue;
 			}
 #ifdef ENUM_DEBUG
@@ -1335,7 +1335,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 						dev_id_path, windows_error_str(0));
 				} else if (install_state != 0) {
 					// usbi_warn(ctx, "driver for device '%s' is reporting an issue (code: %u) - skipping",
-						dev_id_path, (unsigned int)install_state);
+						dev_id_path, (uint)install_state);
 					continue;
 				}
 				get_api_type(ctx, &dev_info, &dev_info_data, &api, &sub_api);
@@ -1526,7 +1526,7 @@ static void windows_exit(void)
 	HANDLE semaphore;
 	char sem_name[11 + 8 + 1]; // strlen("libusb_init") + (32-bit hex PID) + '\0'
 
-	sprintf(sem_name, "libusb_init%08X", (unsigned int)(GetCurrentProcessId() & 0xFFFFFFFF));
+	sprintf(sem_name, "libusb_init%08X", (uint)(GetCurrentProcessId() & 0xFFFFFFFF));
 	semaphore = CreateSemaphoreA(NULL, 1, 1, sem_name);
 	if (semaphore == NULL)
 		return;
@@ -1682,7 +1682,7 @@ static int windows_set_configuration(struct libusb_device_handle *dev_handle, in
 
 	r = libusb_control_transfer(dev_handle, LIBUSB_ENDPOINT_OUT |
 		LIBUSB_REQUEST_TYPE_STANDARD | LIBUSB_RECIPIENT_DEVICE,
-		LIBUSB_REQUEST_SET_CONFIGURATION, (uint16_t)config,
+		LIBUSB_REQUEST_SET_CONFIGURATION, (uint16)config,
 		0, NULL, 0, 1000);
 
 	if (r == LIBUSB_SUCCESS)
@@ -2867,8 +2867,8 @@ static int _hid_get_device_descriptor(struct hid_device_priv *dev, void *data, i
 	d.bDeviceSubClass = 0;
 	d.bDeviceProtocol = 0;
 	d.bMaxPacketSize0 = 64; /* fix this! */
-	d.idVendor = (uint16_t)dev->vid;
-	d.idProduct = (uint16_t)dev->pid;
+	d.idVendor = (uint16)dev->vid;
+	d.idProduct = (uint16)dev->pid;
 	d.bcdDevice = 0x0100;
 	d.iManufacturer = dev->string_index[0];
 	d.iProduct = dev->string_index[1];
@@ -2911,7 +2911,7 @@ static int _hid_get_config_descriptor(struct hid_device_priv *dev, void *data, i
 
 	cd->bLength = LIBUSB_DT_CONFIG_SIZE;
 	cd->bDescriptorType = LIBUSB_DT_CONFIG;
-	cd->wTotalLength = (uint16_t)config_total_len;
+	cd->wTotalLength = (uint16)config_total_len;
 	cd->bNumInterfaces = 1;
 	cd->bConfigurationValue = 1;
 	cd->iConfiguration = 0;
@@ -3014,7 +3014,7 @@ static int _hid_get_hid_descriptor(struct hid_device_priv *dev, void *data, int 
 	d.bCountryCode = 0;
 	d.bNumDescriptors = 1;
 	d.bClassDescriptorType = LIBUSB_DT_REPORT;
-	d.wClassDescriptorLength = (uint16_t)report_len;
+	d.wClassDescriptorLength = (uint16)report_len;
 
 	if (*size > LIBUSB_DT_HID_SIZE)
 		*size = LIBUSB_DT_HID_SIZE;
@@ -3409,7 +3409,7 @@ static int hid_open(int sub_api, struct libusb_device_handle *dev_handle)
 		size[1] = capabilities.NumberOutputValueCaps;
 		size[2] = capabilities.NumberFeatureValueCaps;
 		for (j = HidP_Input; j <= HidP_Feature; j++) {
-			// usbi_dbg("%u HID %s report value(s) found", (unsigned int)size[j], type[j]);
+			// usbi_dbg("%u HID %s report value(s) found", (uint)size[j], type[j]);
 			priv->hid->uses_report_ids[j] = false;
 			if (size[j] > 0) {
 				value_caps = calloc(size[j], sizeof(HIDP_VALUE_CAPS));

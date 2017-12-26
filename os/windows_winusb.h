@@ -83,11 +83,11 @@ struct windows_usb_api_backend {
 struct libusb_hid_descriptor {
 	uint8 bLength;
 	uint8 bDescriptorType;
-	uint16_t bcdHID;
+	uint16 bcdHID;
 	uint8 bCountryCode;
 	uint8 bNumDescriptors;
 	uint8 bClassDescriptorType;
-	uint16_t wClassDescriptorLength;
+	uint16 wClassDescriptorLength;
 };
 
 #define LIBUSB_DT_HID_SIZE		9
@@ -117,14 +117,14 @@ struct libusb_hid_descriptor {
 #define IOCTL_HID_SET_OUTPUT_REPORT	HID_IN_CTL_CODE(101)
 
 struct hid_device_priv {
-	uint16_t vid;
-	uint16_t pid;
+	uint16 vid;
+	uint16 pid;
 	uint8 config;
 	uint8 nb_interfaces;
 	bool uses_report_ids[3]; // input, ouptput, feature
-	uint16_t input_report_size;
-	uint16_t output_report_size;
-	uint16_t feature_report_size;
+	uint16 input_report_size;
+	uint16 output_report_size;
+	uint16 feature_report_size;
 	WCHAR string[3][MAX_USB_STRING_LENGTH];
 	uint8 string_index[3]; // man, prod, ser
 };

@@ -62,7 +62,7 @@ const(
 
 	/** Class is vendor-specific */
 	LIBUSB_CLASS_VENDOR_SPEC libusb_class_code = 0xff
-};
+)
 
 /** \ingroup libusb_desc
  * Descriptor types as defined by the USB specification. */
@@ -106,7 +106,7 @@ const(
 
 	/** SuperSpeed Endpoint Companion descriptor */
 	LIBUSB_DT_SS_ENDPOINT_COMPANION libusb_descriptor_type = 0x30
-};
+)
 
 /** \ingroup libusb_desc
  * Endpoint direction. Values for bit 7 of the
@@ -548,3 +548,508 @@ const (
 	LIBUSB_ISO_USAGE_TYPE_MASK = 0x30
 	LIBUSB_ISO_SYNC_TYPE_MASK = 0x0C
 )
+
+/** \ingroup libusb_desc
+ * A structure representing the standard USB device descriptor. This
+ * descriptor is documented in section 9.6.1 of the USB 3.0 specification.
+ * All multiple-byte fields are represented in host-endian format.
+ */
+ type libusb_device_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE LIBUSB_DT_DEVICE in this
+	 * context. */
+	 bDescriptorType uint8
+
+	/** USB specification release number in binary-coded decimal. A value of
+	 * 0x0200 indicates USB 2.0, 0x0110 indicates USB 1.1, etc. */
+	bcdUSB uint16
+
+	/** USB-IF class code for the device. See \ref libusb_class_code. */
+	 bDeviceClass uint8
+
+	/** USB-IF subclass code for the device, qualified by the bDeviceClass
+	 * value */
+	 bDeviceSubClass uint8
+
+	/** USB-IF protocol code for the device, qualified by the bDeviceClass and
+	 * bDeviceSubClass values */
+	 bDeviceProtocol uint8
+
+	/** Maximum packet size for endpoint 0 */
+	 bMaxPacketSize0 uint8
+
+	/** USB-IF vendor ID */
+	idVendor uint16
+
+	/** USB-IF product ID */
+	idProduct uint16
+
+	/** Device release number in binary-coded decimal */
+	bcdDevice uint16
+
+	/** Index of string descriptor describing manufacturer */
+	 iManufacturer uint8
+
+	/** Index of string descriptor describing product */
+	 iProduct uint8
+
+	/** Index of string descriptor containing device serial number */
+	 iSerialNumber uint8
+
+	/** Number of possible configurations */
+	 bNumConfigurations uint8
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the standard USB endpoint descriptor. This
+ * descriptor is documented in section 9.6.6 of the USB 3.0 specification.
+ * All multiple-byte fields are represented in host-endian format.
+ */
+type libusb_endpoint_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_ENDPOINT LIBUSB_DT_ENDPOINT in
+	 * this context. */
+	 bDescriptorType uint8
+
+	/** The address of the endpoint described by this descriptor. Bits 0:3 are
+	 * the endpoint number. Bits 4:6 are reserved. Bit 7 indicates direction,
+	 * see \ref libusb_endpoint_direction.
+	 */
+	 bEndpointAddress uint8
+
+	/** Attributes which apply to the endpoint when it is configured using
+	 * the bConfigurationValue. Bits 0:1 determine the transfer type and
+	 * correspond to \ref libusb_transfer_type. Bits 2:3 are only used for
+	 * isochronous endpoints and correspond to \ref libusb_iso_sync_type.
+	 * Bits 4:5 are also only used for isochronous endpoints and correspond to
+	 * \ref libusb_iso_usage_type. Bits 6:7 are reserved.
+	 */
+	 bmAttributes uint8
+
+	/** Maximum packet size this endpoint is capable of sending/receiving. */
+	wMaxPacketSize uint16
+
+	/** Interval for polling endpoint for data transfers. */
+	 bInterval uint8
+
+	/** For audio devices only: the rate at which synchronization feedback
+	 * is provided. */
+	 bRefresh uint8
+
+	/** For audio devices only: the address if the synch endpoint */
+	 bSynchAddress uint8
+
+	/** Extra descriptors. If libusb encounters unknown endpoint descriptors,
+	 * it will store them here, should you wish to parse them. */
+	extra []uint8
+
+	/** Length of the extra descriptors, in bytes. */
+	extra_length int
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the standard USB interface descriptor. This
+ * descriptor is documented in section 9.6.5 of the USB 3.0 specification.
+ * All multiple-byte fields are represented in host-endian format.
+ */
+type libusb_interface_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_INTERFACE LIBUSB_DT_INTERFACE
+	 * in this context. */
+	 bDescriptorType uint8
+
+	/** Number of this interface */
+	 bInterfaceNumber uint8
+
+	/** Value used to select this alternate setting for this interface */
+	 bAlternateSetting uint8
+
+	/** Number of endpoints used by this interface (excluding the control
+	 * endpoint). */
+	 bNumEndpoints uint8
+
+	/** USB-IF class code for this interface. See \ref libusb_class_code. */
+	 bInterfaceClass uint8
+
+	/** USB-IF subclass code for this interface, qualified by the
+	 * bInterfaceClass value */
+	 bInterfaceSubClass uint8
+
+	/** USB-IF protocol code for this interface, qualified by the
+	 * bInterfaceClass and bInterfaceSubClass values */
+	 bInterfaceProtocol uint8
+
+	/** Index of string descriptor describing this interface */
+	 iInterface uint8
+
+	/** Array of endpoint descriptors. This length of this array is determined
+	 * by the bNumEndpoints field. */
+	libusb_endpoint_descriptor *endpoint
+
+	/** Extra descriptors. If libusb encounters unknown interface descriptors,
+	 * it will store them here, should you wish to parse them. */
+	extra []uint8
+
+	/** Length of the extra descriptors, in bytes. */
+	extra_length int
+}
+
+/** \ingroup libusb_desc
+ * A collection of alternate settings for a particular USB interface.
+ */
+type libusb_interface struct {
+	/** Array of interface descriptors. The length of this array is determined
+	 * by the num_altsetting field. */
+	libusb_interface_descriptor *altsetting
+
+	/** The number of alternate settings that belong to this interface */
+	num_altsetting int
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the standard USB configuration descriptor. This
+ * descriptor is documented in section 9.6.3 of the USB 3.0 specification.
+ * All multiple-byte fields are represented in host-endian format.
+ */
+type libusb_config_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_CONFIG LIBUSB_DT_CONFIG
+	 * in this context. */
+	 bDescriptorType uint8
+
+	/** Total length of data returned for this configuration */
+	wTotalLength uint16
+
+	/** Number of interfaces supported by this configuration */
+	 bNumInterfaces uint8
+
+	/** Identifier value for this configuration */
+	 bConfigurationValue uint8
+
+	/** Index of string descriptor describing this configuration */
+	 iConfiguration uint8
+
+	/** Configuration characteristics */
+	 bmAttributes uint8
+
+	/** Maximum power consumption of the USB device from this bus in this
+	 * configuration when the device is fully operation. Expressed in units
+	 * of 2 mA when the device is operating in high-speed mode and in units
+	 * of 8 mA when the device is operating in super-speed mode. */
+	 MaxPower uint8
+
+	/** Array of interfaces supported by this configuration. The length of
+	 * this array is determined by the bNumInterfaces field. */
+	libusb_interface *interface
+
+	/** Extra descriptors. If libusb encounters unknown configuration
+	 * descriptors, it will store them here, should you wish to parse them. */
+	extra []uint8
+
+	/** Length of the extra descriptors, in bytes. */
+	extra_length int
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the superspeed endpoint companion
+ * descriptor. This descriptor is documented in section 9.6.7 of
+ * the USB 3.0 specification. All multiple-byte fields are represented in
+ * host-endian format.
+ */
+type libusb_ss_endpoint_companion_descriptor struct {
+
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_SS_ENDPOINT_COMPANION in
+	 * this context. */
+	 bDescriptorType uint8
+
+
+	/** The maximum number of packets the endpoint can send or
+	 *  receive as part of a burst. */
+	 bMaxBurst uint8
+
+	/** In bulk EP:	bits 4:0 represents the	maximum	number of
+	 *  streams the	EP supports. In	isochronous EP:	bits 1:0
+	 *  represents the Mult	- a zero based value that determines
+	 *  the	maximum	number of packets within a service interval  */
+	 bmAttributes uint8
+
+	/** The	total number of bytes this EP will transfer every
+	 *  service interval. valid only for periodic EPs. */
+	wBytesPerInterval uint16
+}
+
+/** \ingroup libusb_desc
+ * A generic representation of a BOS Device Capability descriptor. It is
+ * advised to check bDevCapabilityType and call the matching
+ * libusb_get_*_descriptor function to get a structure fully matching the type.
+ */
+type libusb_bos_dev_capability_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	bLength uint8
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE_CAPABILITY
+	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
+	bDescriptorType uint8
+	/** Device Capability type */
+	bDevCapabilityType uint8
+	/** Device Capability data (bLength - 3 bytes) */
+	dev_capability_data uint8
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the Binary Device Object Store (BOS) descriptor.
+ * This descriptor is documented in section 9.6.2 of the USB 3.0 specification.
+ * All multiple-byte fields are represented in host-endian format.
+ */
+type libusb_bos_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_BOS LIBUSB_DT_BOS
+	 * in this context. */
+	 bDescriptorType uint8
+
+	/** Length of this descriptor and all of its sub descriptors */
+	wTotalLength uint16
+
+	/** The number of separate device capability descriptors in
+	 * the BOS */
+	 bNumDeviceCaps uint8
+
+	/** bNumDeviceCap Device Capability Descriptors */
+	dev_capability *libusb_bos_dev_capability_descriptor
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the USB 2.0 Extension descriptor
+ * This descriptor is documented in section 9.6.2.1 of the USB 3.0 specification.
+ * All multiple-byte fields are represented in host-endian format.
+ */
+type libusb_usb_2_0_extension_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE_CAPABILITY
+	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
+	 bDescriptorType uint8
+
+	/** Capability type. Will have value
+	 * \ref libusb_capability_type::LIBUSB_BT_USB_2_0_EXTENSION
+	 * LIBUSB_BT_USB_2_0_EXTENSION in this context. */
+	 bDevCapabilityType uint8
+
+	/** Bitmap encoding of supported device level features.
+	 * A value of one in a bit location indicates a feature is
+	 * supported a value of zero indicates it is not supported.
+	 * See \ref libusb_usb_2_0_extension_attributes. */
+	bmAttributes uint32
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the SuperSpeed USB Device Capability descriptor
+ * This descriptor is documented in section 9.6.2.2 of the USB 3.0 specification.
+ * All multiple-byte fields are represented in host-endian format.
+ */
+type libusb_ss_usb_device_capability_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE_CAPABILITY
+	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
+	 bDescriptorType uint8
+
+	/** Capability type. Will have value
+	 * \ref libusb_capability_type::LIBUSB_BT_SS_USB_DEVICE_CAPABILITY
+	 * LIBUSB_BT_SS_USB_DEVICE_CAPABILITY in this context. */
+	 bDevCapabilityType uint8
+
+	/** Bitmap encoding of supported device level features.
+	 * A value of one in a bit location indicates a feature is
+	 * supported a value of zero indicates it is not supported.
+	 * See \ref libusb_ss_usb_device_capability_attributes. */
+	 bmAttributes uint8
+
+	/** Bitmap encoding of the speed supported by this device when
+	 * operating in SuperSpeed mode. See \ref libusb_supported_speed. */
+	wSpeedSupported uint16
+
+	/** The lowest speed at which all the functionality supported
+	 * by the device is available to the user. For example if the
+	 * device supports all its functionality when connected at
+	 * full speed and above then it sets this value to 1. */
+	 bFunctionalitySupport uint8
+
+	/** U1 Device Exit Latency. */
+	 bU1DevExitLat uint8
+
+	/** U2 Device Exit Latency. */
+	bU2DevExitLat uint16
+}
+
+/** \ingroup libusb_desc
+ * A structure representing the Container ID descriptor.
+ * This descriptor is documented in section 9.6.2.3 of the USB 3.0 specification.
+ * All multiple-byte fields, except UUIDs, are represented in host-endian format.
+ */
+type libusb_container_id_descriptor struct {
+	/** Size of this descriptor (in bytes) */
+	 bLength uint8
+
+	/** Descriptor type. Will have value
+	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE_CAPABILITY
+	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
+	 bDescriptorType uint8
+
+	/** Capability type. Will have value
+	 * \ref libusb_capability_type::LIBUSB_BT_CONTAINER_ID
+	 * LIBUSB_BT_CONTAINER_ID in this context. */
+	 bDevCapabilityType uint8
+
+	/** Reserved field */
+	bReserved uint8
+
+	/** 128 bit UUID */
+	 ContainerID [16]uint8
+}
+
+/** \ingroup libusb_asyncio
+ * Setup packet for control transfers. */
+type libusb_control_setup struct {
+	/** Request type. Bits 0:4 determine recipient, see
+	 * \ref libusb_request_recipient. Bits 5:6 determine type, see
+	 * \ref libusb_request_type. Bit 7 determines data transfer direction, see
+	 * \ref libusb_endpoint_direction.
+	 */
+	 bmRequestType uint8
+
+	/** Request. If the type bits of bmRequestType are equal to
+	 * \ref libusb_request_type::LIBUSB_REQUEST_TYPE_STANDARD
+	 * "LIBUSB_REQUEST_TYPE_STANDARD" then this field refers to
+	 * \ref libusb_standard_request. For other cases, use of this field is
+	 * application-specific. */
+	 bRequest uint8
+
+	/** Value. Varies according to request */
+	wValue uint16
+
+	/** Index. Varies according to request, typically used to pass an index
+	 * or offset */
+	wIndex uint16
+
+	/** Number of bytes to transfer */
+	wLength uint16
+}
+
+/** \ingroup libusb_lib
+ * Structure providing the version of the libusb runtime
+ */
+ type libusb_version struct {
+	/** Library major version. */
+	 major uint16
+
+	/** Library minor version. */
+	 minor uint16
+
+	/** Library micro version. */
+	 micro uint16
+
+	/** Library nano version. */
+	 nano uint16
+
+	/** Library release candidate suffix string, e.g. "-rc4". */
+	 rc string
+
+	/** For ABI compatibility only. */
+	 describe string
+}
+
+
+/** \ingroup libusb_asyncio
+ * Isochronous packet descriptor. */
+ type libusb_iso_packet_descriptor struct {
+	/** Length of data to request in this packet */
+	uint length
+
+	/** Amount of data that was actually transferred */
+	uint actual_length
+
+	/** Status code for this packet */
+	status libusb_transfer_status
+}
+
+/** \ingroup libusb_asyncio
+ * The generic USB transfer structure. The user populates this structure and
+ * then submits it in order to request a transfer. After the transfer has
+ * completed, the library populates the transfer with the results and passes
+ * it back to the user.
+ */
+type libusb_transfer struct {
+	/** Handle of the device that this transfer will be submitted to */
+	dev_handle *libusb_device_handle
+
+	/** A bitwise OR combination of \ref libusb_transfer_flags. */
+	flags uint8
+
+	/** Address of the endpoint where this transfer will be sent. */
+	endpoint uint8
+
+	/** Type of the endpoint from \ref libusb_transfer_type */
+	_type uint8
+
+	/** Timeout for this transfer in millseconds. A value of 0 indicates no
+	 * timeout. */
+	timeout uint
+
+	/** The status of the transfer. Read-only, and only for use within
+	 * transfer callback function.
+	 *
+	 * If this is an isochronous transfer, this field may read COMPLETED even
+	 * if there were errors in the frames. Use the
+	 * \ref libusb_iso_packet_descriptor::status "status" field in each packet
+	 * to determine if errors occurred. */
+	status libusb_transfer_status
+
+	/** Length of the data buffer */
+	length int
+ 
+	/** Actual length of data that was transferred. Read-only, and only for
+	 * use within transfer callback function. Not valid for isochronous
+	 * endpoint transfers. */
+	actual_length int
+
+	/** Callback function. This will be invoked when the transfer completes,
+	 * fails, or is cancelled. */
+	callback libusb_transfer_cb_fn
+
+	/** User context data to pass to the callback function. */
+	interface{} user_data
+
+	/** Data buffer */
+	buffer []uint8
+
+	/** Number of isochronous packets. Only used for I/O with isochronous
+	 * endpoints. */
+	num_iso_packets int
+
+	/** Isochronous packet descriptors, for isochronous transfers only. */
+	iso_packet_desc libusb_iso_packet_descriptor
+}

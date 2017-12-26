@@ -38,7 +38,7 @@ int usbi_parse_descriptor(const uint8 *source, const char *descriptor,
 {
 	const uint8 *sp = source;
 	uint8 *dp = dest;
-	uint16_t w;
+	uint16 w;
 	const char *cp;
 	uint32 d;
 
@@ -54,7 +54,7 @@ int usbi_parse_descriptor(const uint8 *source, const char *descriptor,
 					memcpy(dp, sp, 2);
 				} else {
 					w = (sp[1] << 8) | sp[0];
-					*((uint16_t *)dp) = w;
+					*((uint16 *)dp) = w;
 				}
 				sp += 2;
 				dp += 2;
@@ -1082,7 +1082,7 @@ int  libusb_get_string_descriptor_ascii(libusb_device_handle *dev_handle,
 {
 	uint8 tbuf[255]; /* Some devices choke on size > 255 */
 	int r, si, di;
-	uint16_t langid;
+	uint16 langid;
 
 	/* Asking for the zero'th index is special - it returns a string
 	 * descriptor that contains all the language IDs supported by the

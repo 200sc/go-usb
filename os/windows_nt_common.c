@@ -73,7 +73,7 @@ static uint64 htab_size, htab_filled;
 static int isprime(uint64 number)
 {
 	// no even number will be passed
-	unsigned int divider = 3;
+	uint divider = 3;
 
 	while((divider * divider < number) && (number % divider != 0))
 		divider += 2;
@@ -268,7 +268,7 @@ static bool windows_init_clock(struct libusb_context *ctx)
 		}
 
 		timer_thread = (HANDLE)_beginthreadex(NULL, 0, windows_clock_gettime_threaded, (void *)event,
-				0, (unsigned int *)&timer_thread_id);
+				0, (uint *)&timer_thread_id);
 		if (timer_thread == NULL) {
 			// usbi_err(ctx, "unable to create timer thread - aborting");
 			CloseHandle(event);

@@ -1392,7 +1392,7 @@ static int op_clear_halt(struct libusb_device_handle *handle,
 	uint8 endpoint)
 {
 	int fd = _device_handle_priv(handle)->fd;
-	unsigned int _endpoint = endpoint;
+	uint _endpoint = endpoint;
 	int r = ioctl(fd, IOCTL_USBFS_CLEAR_HALT, &_endpoint);
 	if (r) {
 		if (errno == ENOENT)
@@ -1915,7 +1915,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 	int this_urb_len = 0;
 	int num_urbs = 1;
 	int packet_offset = 0;
-	unsigned int packet_len;
+	uint packet_len;
 	uint8 *urb_buffer = transfer->buffer;
 
 	/* usbfs places arbitrary limits on iso URBs. this limit has changed
@@ -1927,7 +1927,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 
 	/* calculate how many URBs we need */
 	for (i = 0; i < num_packets; i++) {
-		unsigned int space_remaining = MAX_ISO_BUFFER_LENGTH - this_urb_len;
+		uint space_remaining = MAX_ISO_BUFFER_LENGTH - this_urb_len;
 		packet_len = transfer->iso_packet_desc[i].length;
 
 		if (packet_len > space_remaining) {
@@ -1953,7 +1953,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 	/* allocate + initialize each URB with the correct number of packets */
 	for (i = 0; i < num_urbs; i++) {
 		struct usbfs_urb *urb;
-		unsigned int space_remaining_in_urb = MAX_ISO_BUFFER_LENGTH;
+		uint space_remaining_in_urb = MAX_ISO_BUFFER_LENGTH;
 		int urb_packet_offset = 0;
 		uint8 *urb_buffer_orig = urb_buffer;
 		int j;
@@ -2520,7 +2520,7 @@ static int op_handle_events(struct libusb_context *ctx,
 	struct pollfd *fds, POLL_NFDS_TYPE nfds, int num_ready)
 {
 	int r;
-	unsigned int i = 0;
+	uint i = 0;
 
 	usbi_mutex_lock(&ctx->open_devs_lock);
 	for (i = 0; i < nfds && num_ready > 0; i++) {

@@ -782,7 +782,7 @@ void windows_get_overlapped_result(struct usbi_transfer *transfer, struct winfd 
 					break;
 				}
 
-				lib_desc->actual_length = (unsigned int)transfer_priv->IsochronousResultsArray[i].ActualLength;
+				lib_desc->actual_length = (uint)transfer_priv->IsochronousResultsArray[i].ActualLength;
 			}
 		}
 

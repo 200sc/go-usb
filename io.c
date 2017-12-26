@@ -1174,7 +1174,7 @@ static int calculate_timeout(struct usbi_transfer *transfer)
 {
 	int r;
 	struct timespec current_time;
-	unsigned int timeout = transfer.libusbTransfer->timeout;
+	uint timeout = transfer.libusbTransfer->timeout;
 
 	if (!timeout)
 		return 0;
@@ -1666,7 +1666,7 @@ void usbi_signal_transfer_completion(struct usbi_transfer *transfer)
 int  libusb_try_lock_events(libusb_context *ctx)
 {
 	int r;
-	unsigned int ru;
+	uint ru;
 	ctx = USBI_GET_CONTEXT(ctx);
 
 	/* is someone else waiting to close a device? if so, don't let this thread
@@ -1758,7 +1758,7 @@ void  libusb_unlock_events(libusb_context *ctx)
  */
 int  libusb_event_handling_ok(libusb_context *ctx)
 {
-	unsigned int r;
+	uint r;
 	ctx = USBI_GET_CONTEXT(ctx);
 
 	/* is someone else waiting to close a device? if so, don't let this thread
@@ -1786,7 +1786,7 @@ int  libusb_event_handling_ok(libusb_context *ctx)
  */
 int  libusb_event_handler_active(libusb_context *ctx)
 {
-	unsigned int r;
+	uint r;
 	ctx = USBI_GET_CONTEXT(ctx);
 
 	/* is someone else waiting to close a device? if so, don't let this thread

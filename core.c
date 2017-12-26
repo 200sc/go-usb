@@ -832,7 +832,7 @@ int  libusb_get_max_iso_packet_size(libusb_device *dev,
 	struct libusb_config_descriptor *config;
 	const struct libusb_endpoint_descriptor *ep;
 	libusb_transfer_type ep_type;
-	uint16_t val;
+	uint16 val;
 	int r;
 
 	r = libusb_get_active_config_descriptor(dev, &config);
@@ -1024,7 +1024,7 @@ int  libusb_open(libusb_device *dev,
  * or if the device could not be found. */
 
 libusb_device_handle *  libusb_open_device_with_vid_pid(
-	libusb_context *ctx, uint16_t vendor_id, uint16_t product_id)
+	libusb_context *ctx, uint16 vendor_id, uint16 product_id)
 {
 	struct libusb_device **devs;
 	struct libusb_device *found = NULL;

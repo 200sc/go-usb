@@ -118,7 +118,7 @@ static int wince_init(struct libusb_context *ctx)
 	LARGE_INTEGER li_frequency;
 	TCHAR sem_name[11 + 8 + 1]; // strlen("libusb_init") + (32-bit hex PID) + '\0'
 
-	_stprintf(sem_name, _T("libusb_init%08X"), (unsigned int)(GetCurrentProcessId() & 0xFFFFFFFF));
+	_stprintf(sem_name, _T("libusb_init%08X"), (uint)(GetCurrentProcessId() & 0xFFFFFFFF));
 	semaphore = CreateSemaphore(NULL, 1, 1, sem_name);
 
 	// A successful wait brings our semaphore count to 0 (unsignaled)
@@ -190,7 +190,7 @@ static void wince_exit(void)
 	HANDLE semaphore;
 	TCHAR sem_name[11 + 8 + 1]; // strlen("libusb_init") + (32-bit hex PID) + '\0'
 
-	_stprintf(sem_name, _T("libusb_init%08X"), (unsigned int)(GetCurrentProcessId() & 0xFFFFFFFF));
+	_stprintf(sem_name, _T("libusb_init%08X"), (uint)(GetCurrentProcessId() & 0xFFFFFFFF));
 	semaphore = CreateSemaphore(NULL, 1, 1, sem_name);
 	if (semaphore == NULL)
 		return;
@@ -243,7 +243,7 @@ static int wince_get_device_list(
 		success = UkwGetDeviceAddress(devices[i], &bus_addr, &dev_addr, &session_id);
 		if (!success) {
 			r = translate_driver_error(GetLastError());
-			// usbi_err(ctx, "could not get device address for %u: %s", (unsigned int)i, windows_error_str(0));
+			// usbi_err(ctx, "could not get device address for %u: %s", (uint)i, windows_error_str(0));
 			goto err_out;
 		}
 
@@ -542,7 +542,7 @@ static int wince_submit_control_or_bulk_transfer(struct usbi_transfer *itransfer
 	if (!ret) {
 		int libusbErr = translate_driver_error(GetLastError());
 		// usbi_err(ctx, "UkwIssue%sTransfer failed: error %u",
-			control_transfer ? "Control" : "Bulk", (unsigned int)GetLastError());
+			control_transfer ? "Control" : "Bulk", (uint)GetLastError());
 		wince_clear_transfer_priv(itransfer);
 		return libusbErr;
 	}
