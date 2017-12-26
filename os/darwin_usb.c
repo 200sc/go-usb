@@ -1570,7 +1570,7 @@ static int submit_stream_transfer(struct usbi_transfer *itransfer) {
 
 static int submit_iso_transfer(struct usbi_transfer *itransfer) {
   struct libusb_transfer *transfer = itransfer.libusbTransfer
-  struct darwin_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+  struct darwin_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 
   IOReturn kresult;
   uint8 direction, number, interval, pipeRef, transferType;
@@ -1657,7 +1657,7 @@ static int submit_control_transfer(struct usbi_transfer *itransfer) {
   struct libusb_transfer *transfer = itransfer.libusbTransfer
   struct libusb_control_setup *setup = (struct libusb_control_setup *) transfer->buffer;
   struct darwin_cached_device *dpriv = DARWIN_CACHED_DEVICE(transfer->dev_handle->dev);
-  struct darwin_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+  struct darwin_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 
   IOReturn               kresult;
 
@@ -1791,7 +1791,7 @@ static int darwin_cancel_transfer(struct usbi_transfer *itransfer) {
 
 static void darwin_clear_transfer_priv (struct usbi_transfer *itransfer) {
   struct libusb_transfer *transfer = itransfer.libusbTransfer
-  struct darwin_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+  struct darwin_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 
   if (transfer->type == LIBUSB_TRANSFER_TYPE_ISOCHRONOUS && tpriv->isoc_framelist) {
     free (tpriv->isoc_framelist);
@@ -1802,7 +1802,7 @@ static void darwin_clear_transfer_priv (struct usbi_transfer *itransfer) {
 static void darwin_async_io_callback (void *refcon, IOReturn result, void *arg0) {
   struct usbi_transfer *itransfer = (struct usbi_transfer *)refcon;
   struct libusb_transfer *transfer = itransfer.libusbTransfer
-  struct darwin_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+  struct darwin_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 
   // usbi_dbg ("an async io operation has completed");
 
@@ -1851,7 +1851,7 @@ static int darwin_transfer_status (struct usbi_transfer *itransfer, kern_return_
 
 static int darwin_handle_transfer_completion (struct usbi_transfer *itransfer) {
   struct libusb_transfer *transfer = itransfer.libusbTransfer
-  struct darwin_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+  struct darwin_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
   int isIsoc      = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS == transfer->type;
   int isBulk      = LIBUSB_TRANSFER_TYPE_BULK == transfer->type;
   int isControl   = LIBUSB_TRANSFER_TYPE_CONTROL == transfer->type;

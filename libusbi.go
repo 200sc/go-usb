@@ -221,6 +221,12 @@ type usbi_transfer struct {
 	 * Note paths taking both this and the flying_transfers_lock must
 	 * always take the flying_transfers_lock first */
 	lock sync.Mutex
+	tpriv interface{}
+}
+
+// this might need to be os-abstracted
+func (usbt *usbi_transfer) usbi_transfer_get_os_priv() interface{} {
+	return usbt.tpriv
 }
 
 /* All standard descriptors have these 2 fields in common */
@@ -261,4 +267,12 @@ func USBI_GET_CONTEXT(ctx *libusb_context) *libusb_context {
 		return usbi_default_context
 	}
 	return ctx
+}
+
+/* Update the following macro if new event sources are added */
+func usbi_pending_events(ctx *libusb_context) bool {
+	return ctx.event_flags != nil ||
+		 ctx.device_close != nil || 
+		 !list_empty(ctx.hotplug_msgs) || 
+		 !list_empty(ctx.completed_transfers)
 }

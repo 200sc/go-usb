@@ -478,7 +478,7 @@ static void wince_destroy_device(struct libusb_device *dev)
 
 static void wince_clear_transfer_priv(struct usbi_transfer *itransfer)
 {
-	struct wince_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
+	struct wince_transfer_priv *transfer_priv = itransfer.usbi_transfer_get_os_priv();
 	struct winfd wfd = fd_to_winfd(transfer_priv->pollable_fd.fd);
 
 	// No need to cancel transfer as it is either complete or abandoned
@@ -491,7 +491,7 @@ static int wince_cancel_transfer(struct usbi_transfer *itransfer)
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
-	struct wince_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
+	struct wince_transfer_priv *transfer_priv = itransfer.usbi_transfer_get_os_priv();
 
 	if (!UkwCancelTransfer(priv->dev, transfer_priv->pollable_fd.overlapped, UKW_TF_NO_WAIT))
 		return translate_driver_error(GetLastError());
@@ -503,7 +503,7 @@ static int wince_submit_control_or_bulk_transfer(struct usbi_transfer *itransfer
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
-	struct wince_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
+	struct wince_transfer_priv *transfer_priv = itransfer.usbi_transfer_get_os_priv();
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	BOOL direction_in, ret;
 	struct winfd wfd;
@@ -580,7 +580,7 @@ static void wince_transfer_callback(
 	uint32 io_result, uint32 io_size)
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
-	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
+	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)itransfer.usbi_transfer_get_os_priv();
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	int status;
 
@@ -712,7 +712,7 @@ static int wince_handle_events(
 		// a pollable fd is created and stored with each transfer
 		usbi_mutex_lock(&ctx->flying_transfers_lock);
 		list_for_each_entry(transfer, &ctx->flying_transfers, list, struct usbi_transfer) {
-			transfer_priv = usbi_transfer_get_os_priv(transfer);
+			transfer_priv = transfer.usbi_transfer_get_os_priv();
 			if (transfer_priv->pollable_fd.fd == fds[i].fd) {
 				found = TRUE;
 				break;

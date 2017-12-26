@@ -77,7 +77,7 @@ static  struct usbdk_device_priv *_usbdk_device_priv(struct libusb_device *dev)
 
 static  struct usbdk_transfer_priv *_usbdk_transfer_priv(struct usbi_transfer *itransfer)
 {
-	return (struct usbdk_transfer_priv *)usbi_transfer_get_os_priv(itransfer);
+	return (struct usbdk_transfer_priv *)itransfer.usbi_transfer_get_os_priv();
 }
 
 static struct {

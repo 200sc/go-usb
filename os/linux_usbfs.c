@@ -1690,7 +1690,7 @@ static int discard_urbs(struct usbi_transfer *itransfer, int first, int last_plu
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_transfer_priv *tpriv =
-		usbi_transfer_get_os_priv(itransfer);
+		itransfer.usbi_transfer_get_os_priv();
 	struct linux_device_handle_priv *dpriv =
 		_device_handle_priv(transfer->dev_handle);
 	int i, ret = 0;
@@ -1736,7 +1736,7 @@ static void free_iso_urbs(struct linux_transfer_priv *tpriv)
 static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 	struct linux_device_handle_priv *dpriv =
 		_device_handle_priv(transfer->dev_handle);
 	struct usbfs_urb *urbs;
@@ -1905,7 +1905,7 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 static int submit_iso_transfer(struct usbi_transfer *itransfer)
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 	struct linux_device_handle_priv *dpriv =
 		_device_handle_priv(transfer->dev_handle);
 	struct usbfs_urb **urbs;
@@ -2050,7 +2050,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 
 static int submit_control_transfer(struct usbi_transfer *itransfer)
 {
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_device_handle_priv *dpriv =
 		_device_handle_priv(transfer->dev_handle);
@@ -2108,7 +2108,7 @@ static int op_submit_transfer(struct usbi_transfer *itransfer)
 
 static int op_cancel_transfer(struct usbi_transfer *itransfer)
 {
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	int r;
 
@@ -2135,7 +2135,7 @@ static int op_cancel_transfer(struct usbi_transfer *itransfer)
 static void op_clear_transfer_priv(struct usbi_transfer *itransfer)
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 
 	/* urbs can be freed also in submit_transfer so lock mutex first */
 	switch (transfer->type) {
@@ -2162,7 +2162,7 @@ static void op_clear_transfer_priv(struct usbi_transfer *itransfer)
 static int handle_bulk_completion(struct usbi_transfer *itransfer,
 	struct usbfs_urb *urb)
 {
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	int urb_idx = urb - tpriv->urbs;
 
@@ -2298,7 +2298,7 @@ static int handle_iso_completion(struct usbi_transfer *itransfer,
 	struct usbfs_urb *urb)
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 	int num_urbs = tpriv->num_urbs;
 	int urb_idx = 0;
 	int i;
@@ -2417,7 +2417,7 @@ out:
 static int handle_control_completion(struct usbi_transfer *itransfer,
 	struct usbfs_urb *urb)
 {
-	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
+	struct linux_transfer_priv *tpriv = itransfer.usbi_transfer_get_os_priv();
 	int status;
 
 	usbi_mutex_lock(&itransfer->lock);
