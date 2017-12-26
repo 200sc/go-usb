@@ -329,8 +329,8 @@ if (cfg != desired)
 // discover devices
 libusb_device **list;
 libusb_device *found = NULL;
-ssize_t cnt = libusb_get_device_list(NULL, &list);
-ssize_t i = 0;
+int cnt = libusb_get_device_list(NULL, &list);
+int i = 0;
 int err = 0;
 if (cnt < 0)
 	error();
@@ -618,13 +618,13 @@ struct libusb_device *usbi_get_device_by_session_id(struct libusb_context *ctx,
  * \returns the number of devices in the outputted list, or any
  * \ref libusb_error according to errors encountered by the backend.
  */
-ssize_t  libusb_get_device_list(libusb_context *ctx,
+int  libusb_get_device_list(libusb_context *ctx,
 	libusb_device ***list)
 {
 	struct discovered_devs *discdevs = discovered_devs_alloc();
 	struct libusb_device **ret;
 	int r = 0;
-	ssize_t i, len;
+	int i, len;
 	ctx = USBI_GET_CONTEXT(ctx);
 	// usbi_dbg("");
 
@@ -915,7 +915,7 @@ void  libusb_unref_device(libusb_device *dev)
 int usbi_signal_event(struct libusb_context *ctx)
 {
 	uint8 dummy = 1;
-	ssize_t r;
+	int r;
 
 	/* write some data on event pipe to interrupt event handlers */
 	r = usbi_write(ctx->event_pipe[1], &dummy, sizeof(dummy));
@@ -934,7 +934,7 @@ int usbi_signal_event(struct libusb_context *ctx)
 int usbi_clear_event(struct libusb_context *ctx)
 {
 	uint8 dummy;
-	ssize_t r;
+	int r;
 
 	/* read some data on event pipe to clear it */
 	r = usbi_read(ctx->event_pipe[0], &dummy, sizeof(dummy));

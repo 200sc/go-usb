@@ -1,5 +1,29 @@
 package usb
 
+/*
+ * Public libusb header file
+ * Copyright © 2001 Johannes Erdfelt <johannes@erdfelt.com>
+ * Copyright © 2007-2008 Daniel Drake <dsd@gentoo.org>
+ * Copyright © 2012 Pete Batard <pete@akeo.ie>
+ * Copyright © 2012 Nathan Hjelm <hjelmn@cs.unm.edu>
+ * For more information, please visit: http://libusb.info
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+
 /* standard USB stuff */
 
 /** \ingroup libusb_desc
@@ -1055,3 +1079,156 @@ type libusb_transfer struct {
 	/** Isochronous packet descriptors, for isochronous transfers only. */
 	iso_packet_desc libusb_iso_packet_descriptor
 }
+
+/** \ingroup libusb_poll
+ * File descriptor for polling
+ */
+ type libusb_pollfd struct {
+	/** Numeric file descriptor */
+	fd int
+
+	/** Event flags to poll for from <poll.h>. POLLIN indicates that you
+	 * should monitor this file descriptor for becoming ready to read from,
+	 * and POLLOUT indicates that you should monitor this file descriptor for
+	 * nonblocking write readiness. */
+	events int8
+}
+
+/** \def LIBUSB_API_VERSION
+ * \ingroup libusb_misc
+ * libusb's API version.
+ *
+ * Since version 1.0.13, to help with feature detection, libusb defines
+ * a LIBUSB_API_VERSION macro that gets increased every time there is a
+ * significant change to the API, such as the introduction of a new call,
+ * the definition of a new macro/enum member, or any other element that
+ * libusb applications may want to detect at compilation time.
+ *
+ * The macro is typically used in an application as follows:
+ * \code
+ * #if defined(LIBUSB_API_VERSION) && (LIBUSB_API_VERSION >= 0x01001234)
+ * // Use one of the newer features from the libusb API
+ * #endif
+ * \endcode
+ *
+ * Internally, LIBUSB_API_VERSION is defined as follows:
+ * (libusb major << 24) | (libusb minor << 16) | (16 bit incremental)
+ */
+const LIBUSB_API_VERSION = 0x01000105
+ 
+ /** \def libusb_le16_to_cpu
+  * \ingroup libusb_misc
+  * Convert a 16-bit value from little-endian to host-endian format. On
+  * little endian systems, this function does nothing. On big endian systems,
+  * the bytes are swapped.
+  * \param x the little-endian value to convert
+  * \returns the value in host-endian byte order
+  */
+var libusb_le16_to_cpu = libusb_cpu_to_le16
+ 
+ 
+ /* Descriptor sizes per descriptor type */
+ const LIBUSB_DT_DEVICE_SIZE =			18
+ const LIBUSB_DT_CONFIG_SIZE =			9
+ const LIBUSB_DT_INTERFACE_SIZE =		9
+ const LIBUSB_DT_ENDPOINT_SIZE	=		7
+ const LIBUSB_DT_ENDPOINT_AUDIO_SIZE =		9	/* Audio extension */
+ const LIBUSB_DT_HUB_NONVAR_SIZE =		7
+ const LIBUSB_DT_SS_ENDPOINT_COMPANION_SIZE = 	6
+ const LIBUSB_DT_BOS_SIZE =			5
+ const LIBUSB_DT_DEVICE_CAPABILITY_SIZE =	3
+ 
+ /* BOS descriptor sizes */
+ const LIBUSB_BT_USB_2_0_EXTENSION_SIZE	= 7
+ const LIBUSB_BT_SS_USB_DEVICE_CAPABILITY_SIZE =	10
+ const LIBUSB_BT_CONTAINER_ID_SIZE =		20
+ 
+ /* We unwrap the BOS => define its max size */
+ const LIBUSB_DT_BOS_MAX_SIZE = ((LIBUSB_DT_BOS_SIZE)     +\
+					 (LIBUSB_BT_USB_2_0_EXTENSION_SIZE)       +\
+					 (LIBUSB_BT_SS_USB_DEVICE_CAPABILITY_SIZE) +\
+					 (LIBUSB_BT_CONTAINER_ID_SIZE))
+ 
+ const LIBUSB_ENDPOINT_ADDRESS_MASK =	0x0f    /* in bEndpointAddress */
+ const LIBUSB_ENDPOINT_DIR_MASK	=	0x80
+ 
+ const LIBUSB_CONTROL_SETUP_SIZE = 8 // manually calculated in port
+  
+ /* Total number of error codes in enum libusb_error */
+ const LIBUSB_ERROR_COUNT = 14
+ 
+ /** \ingroup libusb_asyncio
+  * Asynchronous transfer callback function type. When submitting asynchronous
+  * transfers, you pass a pointer to a callback function of this type via the
+  * \ref libusb_transfer::callback "callback" member of the libusb_transfer
+  * structure. libusb will call this function later, when the transfer has
+  * completed or failed. See \ref libusb_asyncio for more information.
+  * \param transfer The libusb_transfer struct the callback function is being
+  * notified about.
+  */
+ type libusb_transfer_cb_fn func(*libusb_transfer)
+
+/** \ingroup libusb_poll
+ * Callback function, invoked when a new file descriptor should be added
+ * to the set of file descriptors monitored for events.
+ * \param fd the new file descriptor
+ * \param events events to monitor for, see \ref libusb_pollfd for a
+ * description
+ * \param user_data User data pointer specified in
+ * libusb_set_pollfd_notifiers() call
+ * \see libusb_set_pollfd_notifiers()
+ */
+type libusb_pollfd_added_cb func(int, int8, interface{})
+
+/** \ingroup libusb_poll
+ * Callback function, invoked when a file descriptor should be removed from
+ * the set of file descriptors being monitored for events. After returning
+ * from this callback, do not use that file descriptor again.
+ * \param fd the file descriptor to stop monitoring
+ * \param user_data User data pointer specified in
+ * libusb_set_pollfd_notifiers() call
+ * \see libusb_set_pollfd_notifiers()
+ */
+type libusb_pollfd_removed_cb func(int, interface{})
+
+/** \ingroup libusb_hotplug
+ * Callback handle.
+ *
+ * Callbacks handles are generated by libusb_hotplug_register_callback()
+ * and can be used to deregister callbacks. Callback handles are unique
+ * per libusb_context and it is safe to call libusb_hotplug_deregister_callback()
+ * on an already deregisted callback.
+ *
+ * Since version 1.0.16, \ref LIBUSB_API_VERSION >= 0x01000102
+ *
+ * For more information, see \ref libusb_hotplug.
+ */
+type libusb_hotplug_callback_handle int
+
+/** \ingroup libusb_hotplug
+ * Wildcard matching for hotplug events */
+const LIBUSB_HOTPLUG_MATCH_ANY = -1
+
+/** \ingroup libusb_hotplug
+ * Hotplug callback function type. When requesting hotplug event notifications,
+ * you pass a pointer to a callback function of this type.
+ *
+ * This callback may be called by an internal event thread and as such it is
+ * recommended the callback do minimal processing before returning.
+ *
+ * libusb will call this function later, when a matching event had happened on
+ * a matching device. See \ref libusb_hotplug for more information.
+ *
+ * It is safe to call either libusb_hotplug_register_callback() or
+ * libusb_hotplug_deregister_callback() from within a callback function.
+ *
+ * Since version 1.0.16, \ref LIBUSB_API_VERSION >= 0x01000102
+ *
+ * \param ctx            context of this notification
+ * \param device         libusb_device this event occurred on
+ * \param event          event that occurred
+ * \param user_data      user data provided when this callback was registered
+ * \returns bool whether this callback is finished processing events.
+ *                       returning 1 will cause this callback to be deregistered
+ */
+type libusb_hotplug_callback_fn func(*libusb_context, *libusb_device, libusb_hotplug_event, interface{}) int

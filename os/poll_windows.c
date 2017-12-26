@@ -632,7 +632,7 @@ int usbi_close(int fd)
 /*
  * synchronous write for fake "pipe" signaling
  */
-ssize_t usbi_write(int fd, const void *buf, int count)
+int usbi_write(int fd, const void *buf, int count)
 {
 	int _index;
 
@@ -667,10 +667,10 @@ ssize_t usbi_write(int fd, const void *buf, int count)
 /*
  * synchronous read for fake "pipe" signaling
  */
-ssize_t usbi_read(int fd, void *buf, int count)
+int usbi_read(int fd, void *buf, int count)
 {
 	int _index;
-	ssize_t r = -1;
+	int r = -1;
 	CHECK_INIT_POLLING;
 
 	if (count != sizeof(uint8)) {

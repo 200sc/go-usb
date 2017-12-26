@@ -552,7 +552,7 @@ static int sysfs_get_active_config(struct libusb_device *dev, int *config)
 	char tmp[5] = {0, 0, 0, 0, 0};
 	long num;
 	int fd;
-	ssize_t r;
+	int r;
 
 	fd = _open_sysfs_attr(dev, "bConfigurationValue");
 	if (fd < 0)
@@ -859,7 +859,7 @@ static int initialize_device(struct libusb_device *dev, uint8 busnum,
 	struct libusb_context *ctx = dev.ctx;
 	int descriptors_size = 512; /* Begin with a 1024 byte alloc */
 	int fd, speed;
-	ssize_t r;
+	int r;
 
 	dev->bus_number = busnum;
 	dev->device_address = devaddr;

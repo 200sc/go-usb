@@ -134,7 +134,7 @@ err:
 int linux_netlink_stop_event_monitor(void)
 {
 	char dummy = 1;
-	ssize_t r;
+	int r;
 
 	assert(linux_netlink_socket != -1);
 
@@ -273,7 +273,7 @@ static int linux_netlink_read_message(void)
 	const char *sys_name = NULL;
 	uint8 busnum, devaddr;
 	int detached, r;
-	ssize_t len;
+	int len;
 	struct cmsghdr *cmsg;
 	struct ucred *cred;
 	struct sockaddr_nl sa_nl;
@@ -334,7 +334,7 @@ static int linux_netlink_read_message(void)
 static void *linux_netlink_event_thread_main(void *arg)
 {
 	char dummy;
-	ssize_t r;
+	int r;
 	struct pollfd fds[] = {
 		{ .fd = netlink_control_pipe[0],
 		  .events = POLLIN },
