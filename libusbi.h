@@ -4,12 +4,6 @@
 
 #define TIMESPEC_IS_SET(ts) ((ts)->tv_sec != 0 || (ts)->tv_nsec != 0)
 
-#define USBI_GET_CONTEXT(ctx)				\
-	do {						\
-		if (!(ctx))				\
-			(ctx) = usbi_default_context;	\
-	} while(0)
-
 /* Forward declaration for use in context (fully defined inside poll abstraction) */
 /* Macros for managing event handling state */
 #define usbi_handling_events(ctx) \

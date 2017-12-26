@@ -150,7 +150,7 @@ func libusb_hotplug_register_callback(libusb_context *ctx,
 		return LIBUSB_ERROR_INVALID_PARAM;
 	}
 
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	new_callback = &libusb_hotplug_callback{}
 	new_callback.ctx = ctx;
@@ -209,7 +209,7 @@ func libusb_hotplug_deregister_callback (ctx *libusb_context, callback_handle li
 
 	var hotplug_cb *libusb_hotplug_callback
 
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	ctx.hotplug_cbs_lock.Lock()
 	// TODO: replace this defined nonsense

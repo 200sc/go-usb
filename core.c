@@ -625,7 +625,7 @@ ssize_t  libusb_get_device_list(libusb_context *ctx,
 	struct libusb_device **ret;
 	int r = 0;
 	ssize_t i, len;
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	// usbi_dbg("");
 
 	if (libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
@@ -1749,7 +1749,7 @@ int  libusb_set_auto_detach_kernel_driver(
  */
 void  libusb_set_debug(libusb_context *ctx, int level)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	if (!ctx->debug_fixed)
 		ctx->debug = level;
 }
@@ -1876,7 +1876,7 @@ void  libusb_exit(struct libusb_context *ctx)
 	struct timeval tv = { 0, 0 };
 
 	// usbi_dbg("");
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	/* if working with default context, only actually do the deinitialization
 	 * if we're the last user */

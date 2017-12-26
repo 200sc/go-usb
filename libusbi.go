@@ -254,3 +254,10 @@ func IS_EPIN(ep uint8) bool {
 func IS_XFERIN(xfer usbfs_urb) bool {
 	return xfer.endpoint & LIBUSB_ENDPOINT_IN != 0
 }
+
+func USBI_GET_CONTEXT(ctx *libusb_context) *libusb_context {
+	if ctx == nil {
+		return usbi_default_context
+	}
+	return ctx
+}

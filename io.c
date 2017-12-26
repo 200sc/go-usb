@@ -1670,7 +1670,7 @@ int  libusb_try_lock_events(libusb_context *ctx)
 {
 	int r;
 	unsigned int ru;
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	/* is someone else waiting to close a device? if so, don't let this thread
 	 * start event handling */
@@ -1711,7 +1711,7 @@ int  libusb_try_lock_events(libusb_context *ctx)
  */
 void  libusb_lock_events(libusb_context *ctx)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	usbi_mutex_lock(&ctx->events_lock);
 	ctx->event_handler_active = 1;
 }
@@ -1726,7 +1726,7 @@ void  libusb_lock_events(libusb_context *ctx)
  */
 void  libusb_unlock_events(libusb_context *ctx)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	ctx->event_handler_active = 0;
 	usbi_mutex_unlock(&ctx->events_lock);
 
@@ -1762,7 +1762,7 @@ void  libusb_unlock_events(libusb_context *ctx)
 int  libusb_event_handling_ok(libusb_context *ctx)
 {
 	unsigned int r;
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	/* is someone else waiting to close a device? if so, don't let this thread
 	 * continue event handling */
@@ -1790,7 +1790,7 @@ int  libusb_event_handling_ok(libusb_context *ctx)
 int  libusb_event_handler_active(libusb_context *ctx)
 {
 	unsigned int r;
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	/* is someone else waiting to close a device? if so, don't let this thread
 	 * start event handling -- indicate that event handling is happening */
@@ -1817,7 +1817,7 @@ int  libusb_event_handler_active(libusb_context *ctx)
  */
 void  libusb_interrupt_event_handler(libusb_context *ctx)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	// usbi_dbg("");
 	usbi_mutex_lock(&ctx->event_data_lock);
@@ -1849,7 +1849,7 @@ void  libusb_interrupt_event_handler(libusb_context *ctx)
  */
 void  libusb_lock_event_waiters(libusb_context *ctx)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	usbi_mutex_lock(&ctx->event_waiters_lock);
 }
 
@@ -1860,7 +1860,7 @@ void  libusb_lock_event_waiters(libusb_context *ctx)
  */
 void  libusb_unlock_event_waiters(libusb_context *ctx)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	usbi_mutex_unlock(&ctx->event_waiters_lock);
 }
 
@@ -1893,7 +1893,7 @@ int  libusb_wait_for_event(libusb_context *ctx, struct timeval *tv)
 {
 	int r;
 
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	if (tv == NULL) {
 		usbi_cond_wait(&ctx->event_waiters_cond, &ctx->event_waiters_lock);
 		return 0;
@@ -1968,7 +1968,7 @@ static int handle_timeouts_locked(struct libusb_context *ctx)
 static int handle_timeouts(struct libusb_context *ctx)
 {
 	int r;
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	usbi_mutex_lock(&ctx->flying_transfers_lock);
 	r = handle_timeouts_locked(ctx);
 	usbi_mutex_unlock(&ctx->flying_transfers_lock);
@@ -2249,7 +2249,7 @@ int  libusb_handle_events_timeout_completed(libusb_context *ctx,
 	int r;
 	struct timeval poll_timeout;
 
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	r = get_next_timeout(ctx, tv, &poll_timeout);
 	if (r) {
 		/* timeout already expired */
@@ -2386,7 +2386,7 @@ int  libusb_handle_events_locked(libusb_context *ctx,
 	int r;
 	struct timeval poll_timeout;
 
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	r = get_next_timeout(ctx, tv, &poll_timeout);
 	if (r) {
 		/* timeout already expired */
@@ -2426,7 +2426,7 @@ int  libusb_handle_events_locked(libusb_context *ctx,
  */
 int  libusb_pollfds_handle_timeouts(libusb_context *ctx)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	return usbi_using_timerfd(ctx);
 }
 
@@ -2467,7 +2467,7 @@ int  libusb_get_next_timeout(libusb_context *ctx,
 	struct timeval next_timeout = { 0, 0 };
 	int r;
 
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	if (usbi_using_timerfd(ctx))
 		return 0;
 
@@ -2540,7 +2540,7 @@ void  libusb_set_pollfd_notifiers(libusb_context *ctx,
 	libusb_pollfd_added_cb added_cb, libusb_pollfd_removed_cb removed_cb,
 	void *user_data)
 {
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 	ctx->fd_added_cb = added_cb;
 	ctx->fd_removed_cb = removed_cb;
 	ctx->fd_cb_user_data = user_data;
@@ -2634,7 +2634,7 @@ const struct libusb_pollfd **  libusb_get_pollfds(
 	struct libusb_pollfd **ret = NULL;
 	struct usbi_pollfd *ipollfd;
 	int i = 0;
-	USBI_GET_CONTEXT(ctx);
+	ctx = USBI_GET_CONTEXT(ctx);
 
 	usbi_mutex_lock(&ctx->event_data_lock);
 
