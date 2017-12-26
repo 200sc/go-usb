@@ -1133,7 +1133,7 @@ void  libusb_close(libusb_device_handle *dev_handle)
 	// usbi_dbg("");
 
 	ctx = dev_handle.dev.ctx;
-	handling_events = usbi_handling_events(ctx);
+	handling_events = (usbi_tls_key_get((ctx)->event_handling_key) != NULL)
 
 	/* Similarly to libusb_open(), we want to interrupt all event handlers
 	 * at this point. More importantly, we want to perform the actual close of

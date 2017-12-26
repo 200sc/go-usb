@@ -84,7 +84,7 @@ func ibusb_control_transfer(dev_handle *libusb_device_handle,
 	bmRequestType uint8, bRequest uint8, wValue uint16, wIndex uint16,
 	data []uint8, wLength uint16, timeout uint) int {
 
-	if usbi_handling_events(dev_handle.dev.ctx) {
+	if (usbi_tls_key_get((dev_handle.dev.ctx)->event_handling_key) != NULL) {
 		return LIBUSB_ERROR_BUSY
 	}
 
@@ -148,7 +148,7 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 	endpoint uint8, buffer []uint8, length int,
 	transferred *int, timeout uint, type uint8) int {
 
-	if usbi_handling_events(dev_handle.dev.ctx) {
+	if (usbi_tls_key_get((dev_handle.dev.ctx)->event_handling_key) != NULL) {
 		return LIBUSB_ERROR_BUSY
 	}
 

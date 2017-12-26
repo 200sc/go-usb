@@ -1,20 +1,3 @@
-#define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *mptr = (ptr);	\
-	(type *)( (char *)mptr - offsetof(type,member) );})
-
-#define TIMESPEC_IS_SET(ts) ((ts)->tv_sec != 0 || (ts)->tv_nsec != 0)
-
-/* Forward declaration for use in context (fully defined inside poll abstraction) */
-/* Macros for managing event handling state */
-#define usbi_handling_events(ctx) \
-	(usbi_tls_key_get((ctx)->event_handling_key) != NULL)
-
-#define usbi_start_event_handling(ctx) \
-	usbi_tls_key_set((ctx)->event_handling_key, ctx)
-
-#define usbi_end_event_handling(ctx) \
-	usbi_tls_key_set((ctx)->event_handling_key, NULL)
-
 /* Update the following macro if new event sources are added */
 #define usbi_pending_events(ctx) \
 	((ctx)->event_flags || (ctx)->device_close \

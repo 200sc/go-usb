@@ -2009,9 +2009,9 @@ static int handle_events(struct libusb_context *ctx, struct timeval *tv)
 
 	/* prevent attempts to recursively handle events (e.g. calling into
 	 * libusb_handle_events() from within a hotplug or transfer callback) */
-	if (usbi_handling_events(ctx))
+	if (usbi_tls_key_get((ctx)->event_handling_key) != NULL)
 		return LIBUSB_ERROR_BUSY;
-	usbi_start_event_handling(ctx);
+	usbi_tls_key_set((ctx)->event_handling_key, ctx)
 
 	/* there are certain fds that libusb uses internally, currently:
 	 *
@@ -2186,7 +2186,7 @@ handled:
 	}
 
 done:
-	usbi_end_event_handling(ctx);
+	usbi_tls_key_set((ctx)->event_handling_key, NULL)
 	return r;
 }
 
