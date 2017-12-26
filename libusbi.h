@@ -3,10 +3,6 @@
 	((ctx)->event_flags || (ctx)->device_close \
 	 || !list_empty(&(ctx)->hotplug_msgs) || !list_empty(&(ctx)->completed_transfers))
 
-#define LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer)			\
-	((struct usbi_transfer *)(((uint8 *)(transfer))		\
-		- sizeof(struct usbi_transfer)))
-
 static void *usbi_transfer_get_os_priv(struct usbi_transfer *transfer)
 {
 	return ((uint8 *)transfer) + sizeof(struct usbi_transfer)

@@ -1003,6 +1003,8 @@ type libusb_control_setup struct {
  * it back to the user.
  */
 type libusb_transfer struct {
+	usbiTransfer *usbi_transfer 
+	
 	/** Handle of the device that this transfer will be submitted to */
 	dev_handle *libusb_device_handle
 

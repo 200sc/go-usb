@@ -1398,8 +1398,7 @@ static int remove_from_flying_list(struct usbi_transfer *transfer)
  */
 int  libusb_submit_transfer(struct libusb_transfer *transfer)
 {
-	struct usbi_transfer *itransfer =
-		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
+	struct usbi_transfer *itransfer = transfer.usbiTransfer
 	struct libusb_context *ctx = transfer.dev_handle.dev.ctx;
 	int r;
 
@@ -1489,8 +1488,7 @@ int  libusb_submit_transfer(struct libusb_transfer *transfer)
  */
 int  libusb_cancel_transfer(struct libusb_transfer *transfer)
 {
-	struct usbi_transfer *itransfer =
-		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
+	struct usbi_transfer *itransfer = transfer.usbiTransfer
 	int r;
 
 	// usbi_dbg("transfer %p", transfer );
@@ -1534,10 +1532,7 @@ out:
 void  libusb_transfer_set_stream_id(
 	struct libusb_transfer *transfer, uint32 stream_id)
 {
-	struct usbi_transfer *itransfer =
-		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
-
-	itransfer->stream_id = stream_id;
+	transfer.usbiTransfer.stream_id = stream_id
 }
 
 /** \ingroup libusb_asyncio
@@ -1548,13 +1543,9 @@ void  libusb_transfer_set_stream_id(
  * \param transfer the transfer to get the stream id for
  * \returns the stream id for the transfer
  */
-uint32  libusb_transfer_get_stream_id(
-	struct libusb_transfer *transfer)
+uint32  libusb_transfer_get_stream_id(struct libusb_transfer *transfer)
 {
-	struct usbi_transfer *itransfer =
-		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
-
-	return itransfer->stream_id;
+	return transfer.usbiTransfer.stream_id
 }
 
 /* Handle completion of a transfer (completion might be an error condition).
