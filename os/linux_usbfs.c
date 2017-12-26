@@ -1688,8 +1688,7 @@ static void op_destroy_device(struct libusb_device *dev)
 /* URBs are discarded in reverse order of submission to avoid races. */
 static int discard_urbs(struct usbi_transfer *itransfer, int first, int last_plus_one)
 {
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_transfer_priv *tpriv =
 		usbi_transfer_get_os_priv(itransfer);
 	struct linux_device_handle_priv *dpriv =
@@ -1736,8 +1735,7 @@ static void free_iso_urbs(struct linux_transfer_priv *tpriv)
 
 static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
 	struct linux_device_handle_priv *dpriv =
 		_device_handle_priv(transfer->dev_handle);
@@ -1906,8 +1904,7 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 
 static int submit_iso_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
 	struct linux_device_handle_priv *dpriv =
 		_device_handle_priv(transfer->dev_handle);
@@ -2054,8 +2051,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 static int submit_control_transfer(struct usbi_transfer *itransfer)
 {
 	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_device_handle_priv *dpriv =
 		_device_handle_priv(transfer->dev_handle);
 	struct usbfs_urb *urb;
@@ -2091,8 +2087,7 @@ static int submit_control_transfer(struct usbi_transfer *itransfer)
 
 static int op_submit_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
@@ -2114,8 +2109,7 @@ static int op_submit_transfer(struct usbi_transfer *itransfer)
 static int op_cancel_transfer(struct usbi_transfer *itransfer)
 {
 	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	int r;
 
 	if (!tpriv->urbs)
@@ -2140,8 +2134,7 @@ static int op_cancel_transfer(struct usbi_transfer *itransfer)
 
 static void op_clear_transfer_priv(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
 
 	/* urbs can be freed also in submit_transfer so lock mutex first */
@@ -2170,7 +2163,7 @@ static int handle_bulk_completion(struct usbi_transfer *itransfer,
 	struct usbfs_urb *urb)
 {
 	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	int urb_idx = urb - tpriv->urbs;
 
 	usbi_mutex_lock(&itransfer->lock);
@@ -2304,8 +2297,7 @@ completed:
 static int handle_iso_completion(struct usbi_transfer *itransfer,
 	struct usbfs_urb *urb)
 {
-	struct libusb_transfer *transfer =
-		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct linux_transfer_priv *tpriv = usbi_transfer_get_os_priv(itransfer);
 	int num_urbs = tpriv->num_urbs;
 	int urb_idx = 0;
@@ -2503,7 +2495,7 @@ static int reap_for_handle(struct libusb_device_handle *handle)
 	}
 
 	itransfer = urb->usercontext;
-	transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	transfer = itransfer.libusbTransfer
 
 	// usbi_dbg("urb type=%d status=%d transferred=%d", urb->type, urb->status,
 		urb->actual_length);

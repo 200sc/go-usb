@@ -504,14 +504,14 @@ static void usbdk_destroy_device(struct libusb_device *dev)
 void windows_clear_transfer_priv(struct usbi_transfer *itransfer)
 {
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	usbi_free_fd(&transfer_priv->pollable_fd);
 }
 
 static int usbdk_do_control_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
@@ -558,7 +558,7 @@ static int usbdk_do_control_transfer(struct usbi_transfer *itransfer)
 
 static int usbdk_do_bulk_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
@@ -614,7 +614,7 @@ static int usbdk_do_bulk_transfer(struct usbi_transfer *itransfer)
 
 static int usbdk_do_iso_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 	struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(itransfer);
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
@@ -676,7 +676,7 @@ static int usbdk_do_iso_transfer(struct usbi_transfer *itransfer)
 
 static int usbdk_submit_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
@@ -697,7 +697,7 @@ static int usbdk_submit_transfer(struct usbi_transfer *itransfer)
 
 static int usbdk_abort_transfers(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct usbdk_device_priv *priv = _usbdk_device_priv(transfer->dev_handle->dev);
 
@@ -711,7 +711,7 @@ static int usbdk_abort_transfers(struct usbi_transfer *itransfer)
 
 static int usbdk_cancel_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
@@ -763,7 +763,7 @@ void windows_get_overlapped_result(struct usbi_transfer *transfer, struct winfd 
 {
 	if (HasOverlappedIoCompletedSync(pollable_fd->overlapped) // Handle async requests that completed synchronously first
 			|| GetOverlappedResult(pollable_fd->handle, pollable_fd->overlapped, io_size, false)) { // Regular async overlapped
-		struct libusb_transfer *ltransfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer);
+		struct libusb_transfer *ltransfer = transfer.libusbTransfer
 		struct usbdk_transfer_priv *transfer_priv = _usbdk_transfer_priv(transfer);
 
 		if (ltransfer->type == LIBUSB_TRANSFER_TYPE_ISOCHRONOUS) {

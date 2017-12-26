@@ -201,6 +201,7 @@ type libusb_device_handle struct {
  */
 
 type usbi_transfer struct {
+	libusbTransfer *libusb_transfer 
 	num_iso_packets int
 	list list_head 
 	completed_list list_head 

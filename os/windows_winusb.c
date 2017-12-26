@@ -546,7 +546,7 @@ static int auto_claim(struct libusb_transfer *transfer, int *interface_number, i
 static void auto_release(struct usbi_transfer *itransfer)
 {
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	libusb_device_handle *dev_handle = transfer->dev_handle;
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(dev_handle);
 	int r;
@@ -1767,7 +1767,7 @@ void windows_clear_transfer_priv(struct usbi_transfer *itransfer)
 
 static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -1785,7 +1785,7 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 
 static int submit_iso_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -1803,7 +1803,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer)
 
 static int submit_control_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -1820,7 +1820,7 @@ static int submit_control_transfer(struct usbi_transfer *itransfer)
 
 static int windows_submit_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
@@ -1842,7 +1842,7 @@ static int windows_submit_transfer(struct usbi_transfer *itransfer)
 
 static int windows_abort_control(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 
 	return priv->apib->abort_control(SUB_API_NOTSET, itransfer);
@@ -1850,7 +1850,7 @@ static int windows_abort_control(struct usbi_transfer *itransfer)
 
 static int windows_abort_transfers(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 
 	return priv->apib->abort_transfers(SUB_API_NOTSET, itransfer);
@@ -1858,7 +1858,7 @@ static int windows_abort_transfers(struct usbi_transfer *itransfer)
 
 static int windows_cancel_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
@@ -1877,7 +1877,7 @@ static int windows_cancel_transfer(struct usbi_transfer *itransfer)
 
 int windows_copy_transfer_data(struct usbi_transfer *itransfer, uint32 io_size)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	return priv->apib->copy_transfer_data(SUB_API_NOTSET, itransfer, io_size);
 }
@@ -2560,7 +2560,7 @@ static int interface_by_endpoint(struct windows_device_priv *priv,
 
 static int winusbx_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
@@ -2651,7 +2651,7 @@ static int winusbx_set_interface_altsetting(int sub_api, struct libusb_device_ha
 
 static int winusbx_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
@@ -2745,7 +2745,7 @@ static int winusbx_abort_control(int sub_api, struct usbi_transfer *itransfer)
 
 static int winusbx_abort_transfers(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
@@ -3548,7 +3548,7 @@ static int hid_set_interface_altsetting(int sub_api, struct libusb_device_handle
 
 static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -3654,7 +3654,7 @@ static int hid_submit_control_transfer(int sub_api, struct usbi_transfer *itrans
 
 static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
@@ -3740,7 +3740,7 @@ static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer
 
 static int hid_abort_transfers(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
 	HANDLE hid_handle;
@@ -3806,7 +3806,7 @@ static int hid_clear_halt(int sub_api, struct libusb_device_handle *dev_handle, 
 // This extra function is only needed for HID
 static int hid_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	int r = LIBUSB_TRANSFER_COMPLETED;
@@ -3945,7 +3945,7 @@ static int composite_release_interface(int sub_api, struct libusb_device_handle 
 
 static int composite_submit_control_transfer(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	struct libusb_config_descriptor *conf_desc;
@@ -4006,7 +4006,7 @@ static int composite_submit_control_transfer(int sub_api, struct usbi_transfer *
 }
 
 static int composite_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer) {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -4023,7 +4023,7 @@ static int composite_submit_bulk_transfer(int sub_api, struct usbi_transfer *itr
 }
 
 static int composite_submit_iso_transfer(int sub_api, struct usbi_transfer *itransfer) {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(transfer->dev_handle);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -4058,7 +4058,7 @@ static int composite_clear_halt(int sub_api, struct libusb_device_handle *dev_ha
 
 static int composite_abort_control(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 
@@ -4068,7 +4068,7 @@ static int composite_abort_control(int sub_api, struct usbi_transfer *itransfer)
 
 static int composite_abort_transfers(int sub_api, struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 
@@ -4105,7 +4105,7 @@ static int composite_reset_device(int sub_api, struct libusb_device_handle *dev_
 
 static int composite_copy_transfer_data(int sub_api, struct usbi_transfer *itransfer, uint32 io_size)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct windows_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct windows_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 

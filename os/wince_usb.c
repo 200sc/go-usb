@@ -489,7 +489,7 @@ static void wince_clear_transfer_priv(struct usbi_transfer *itransfer)
 
 static int wince_cancel_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	struct wince_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 
@@ -501,7 +501,7 @@ static int wince_cancel_transfer(struct usbi_transfer *itransfer)
 
 static int wince_submit_control_or_bulk_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct libusb_context *ctx = transfer->dev_handle->dev.ctx;
 	struct wince_transfer_priv *transfer_priv = usbi_transfer_get_os_priv(itransfer);
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
@@ -558,7 +558,7 @@ static int wince_submit_iso_transfer(struct usbi_transfer *itransfer)
 
 static int wince_submit_transfer(struct usbi_transfer *itransfer)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
@@ -579,7 +579,7 @@ static void wince_transfer_callback(
 	struct usbi_transfer *itransfer,
 	uint32 io_result, uint32 io_size)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
 	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	int status;
@@ -671,7 +671,7 @@ static void wince_handle_callback(
 	struct usbi_transfer *itransfer,
 	uint32 io_result, uint32 io_size)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:

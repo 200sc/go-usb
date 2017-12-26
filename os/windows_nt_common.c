@@ -447,7 +447,7 @@ static void windows_transfer_callback(struct usbi_transfer *itransfer, uint32 io
 
 void windows_handle_callback(struct usbi_transfer *itransfer, uint32 io_result, uint32 io_size)
 {
-	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
