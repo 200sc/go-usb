@@ -1870,13 +1870,17 @@ int  libusb_wait_for_event(libusb_context *ctx, struct timeval *tv)
 		return 0;
 	}
 
-	r = usbi_cond_timedwait(&ctx->event_waiters_cond,
-		&ctx->event_waiters_lock, tv);
-
-	if (r < 0)
-		return r;
-	else
-		return (r == ETIMEDOUT);
+	done := make(chan struct{})
+	go func() {
+		ctx.event_waiters_cond.Wait()
+		close(done)
+	}()
+	select {
+		case <-time.After(tv):
+			return 1
+		case <-done:
+			return 0
+	}
 }
 
 static void handle_timeout(struct usbi_transfer *itransfer)
