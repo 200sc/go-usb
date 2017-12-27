@@ -114,7 +114,7 @@ type libusb_context struct {
 
 	/* A thread-local storage key to track which thread is performing event
 	 * handling */
-	event_handling_key usbi_tls_key_t 
+	//event_handling_key usbi_tls_key_t 
 
 	/* used to wait for event completion in threads other than the one that is
 	 * event handling */

@@ -1104,7 +1104,6 @@ int usbi_io_init(struct libusb_context *ctx)
 	int r;
 
 	ctx.event_waiters_cond = sync.NewCond(ctx.event_waiters_lock)
-	usbi_tls_key_create(&ctx->event_handling_key);
 	list_init(&ctx->flying_transfers);
 	list_init(&ctx->ipollfds);
 	list_init(&ctx->hotplug_msgs);
@@ -1142,7 +1141,6 @@ err_close_pipe:
 	usbi_close(ctx->event_pipe[0]);
 	usbi_close(ctx->event_pipe[1]);
 err:
-	usbi_tls_key_delete(ctx->event_handling_key);
 	return r;
 }
 
@@ -1153,7 +1151,6 @@ void usbi_io_exit(struct libusb_context *ctx)
 	usbi_close(ctx->event_pipe[1]);
 	usbi_remove_pollfd(ctx, ctx->timerfd);
 	close(ctx->timerfd);
-	usbi_tls_key_delete(ctx->event_handling_key);
 }
 
 static int calculate_timeout(struct usbi_transfer *transfer)
@@ -1980,12 +1977,6 @@ static int handle_events(struct libusb_context *ctx, struct timeval *tv)
 	int timeout_ms;
 	int special_event;
 
-	/* prevent attempts to recursively handle events (e.g. calling into
-	 * libusb_handle_events() from within a hotplug or transfer callback) */
-	if (usbi_tls_key_get((ctx)->event_handling_key) != NULL)
-		return LIBUSB_ERROR_BUSY;
-	usbi_tls_key_set((ctx)->event_handling_key, ctx)
-
 	/* there are certain fds that libusb uses internally, currently:
 	 *
 	 *   1) event pipe
@@ -2157,7 +2148,6 @@ handled:
 	}
 
 done:
-	usbi_tls_key_set((ctx)->event_handling_key, NULL)
 	return r;
 }
 

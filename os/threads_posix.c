@@ -38,24 +38,3 @@ int usbi_cond_timedwait(pthread_cond_t *cond,
 
 	return pthread_cond_timedwait(cond, mutex, &timeout);
 }
-
-int usbi_get_tid(void)
-{
-	int ret = -1;
-#if defined(__ANDROID__)
-	ret = gettid();
-#elif defined(__linux__)
-	ret = syscall(SYS_gettid);
-#elif defined(__OpenBSD__)
-	/* The following only works with OpenBSD > 5.1 as it requires
-	   real thread support. For 5.1 and earlier, -1 is returned. */
-	ret = syscall(SYS_getthrid);
-#elif defined(__APPLE__)
-	ret = mach_thread_self();
-	mach_port_deallocate(mach_task_self(), ret);
-#elif defined(__CYGWIN__)
-	ret = GetCurrentThreadId();
-#endif
-/* TODO: NetBSD thread ID support */
-	return ret;
-}

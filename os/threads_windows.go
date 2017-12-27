@@ -21,5 +21,3 @@ package os
  */
 
 const ETIMEDOUT = 10060
-
-type usbi_tls_key_t uint32

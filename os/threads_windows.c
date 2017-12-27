@@ -83,39 +83,3 @@ int usbi_cond_timedwait(usbi_cond_t *cond,
 	return usbi_cond_intwait(cond, mutex, millis);
 }
 
-int usbi_tls_key_create(usbi_tls_key_t *key)
-{
-	if (!key)
-		return EINVAL;
-	*key = TlsAlloc();
-	if (*key == TLS_OUT_OF_INDEXES)
-		return ENOMEM;
-	else
-		return 0;
-}
-
-void *usbi_tls_key_get(usbi_tls_key_t key)
-{
-	return TlsGetValue(key);
-}
-
-int usbi_tls_key_set(usbi_tls_key_t key, void *value)
-{
-	if (TlsSetValue(key, value))
-		return 0;
-	else
-		return EINVAL;
-}
-
-int usbi_tls_key_delete(usbi_tls_key_t key)
-{
-	if (TlsFree(key))
-		return 0;
-	else
-		return EINVAL;
-}
-
-int usbi_get_tid(void)
-{
-	return (int)GetCurrentThreadId();
-}
