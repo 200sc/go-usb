@@ -1,3 +1,5 @@
+package os
+
 /*
  * Windows backend common header for libusb 1.0
  *
@@ -25,19 +27,14 @@
  */
 
 // Missing from MinGW
-#if !defined(FACILITY_SETUPAPI)
-#define FACILITY_SETUPAPI	15
-#endif
 
-typedef struct USB_CONFIGURATION_DESCRIPTOR {
-  uint8  bLength;
-  uint8  bDescriptorType;
-  uint16 wTotalLength;
-  uint8  bNumInterfaces;
-  uint8  bConfigurationValue;
-  uint8  iConfiguration;
-  uint8  bmAttributes;
-  uint8  MaxPower;
-} USB_CONFIGURATION_DESCRIPTOR, *PUSB_CONFIGURATION_DESCRIPTOR;
-
-typedef struct libusb_device_descriptor USB_DEVICE_DESCRIPTOR, *PUSB_DEVICE_DESCRIPTOR;
+type USB_CONFIGURATION_DESCRIPTIOR struct {
+   bLength uint8
+   bDescriptorType uint8
+   wTotalLength uint16
+   bNumInterfaces uint8
+   bConfigurationValue uint8
+   iConfiguration uint8
+   bmAttributes uint8
+   MaxPower uint8
+} USB_CONFIGURATION_DESCRIPTOR
