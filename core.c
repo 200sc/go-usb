@@ -20,24 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if defined(OS_LINUX)
-const struct usbi_os_backend * const usbi_backend = &linux_usbfs_backend;
-#elif defined(OS_DARWIN)
-const struct usbi_os_backend * const usbi_backend = &darwin_backend;
-#elif defined(OS_WINDOWS)
-
-#if defined(USE_USBDK)
-const struct usbi_os_backend * const usbi_backend = &usbdk_backend;
-#else
-const struct usbi_os_backend * const usbi_backend = &windows_backend;
-#endif
-
-#elif defined(OS_WINCE)
-const struct usbi_os_backend * const usbi_backend = &wince_backend;
-#else
-#error "Unsupported OS"
-#endif
-
 struct libusb_context *usbi_default_context = NULL;
 static int default_context_refcnt = 0;
 static usbi_mutex_static_t default_context_lock = USBI_MUTEX_INITIALIZER;
@@ -796,7 +778,6 @@ int  libusb_get_max_packet_size(libusb_device *dev,
 	r = ep->wMaxPacketSize;
 
 out:
-	libusb_free_config_descriptor(config);
 	return r;
 }
 
@@ -857,7 +838,6 @@ int  libusb_get_max_iso_packet_size(libusb_device *dev,
 		r *= (1 + ((val >> 11) & 3));
 
 out:
-	libusb_free_config_descriptor(config);
 	return r;
 }
 

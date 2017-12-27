@@ -448,7 +448,6 @@ static int windows_assign_endpoints(struct libusb_device_handle *dev_handle, int
 
 	if (if_desc->bNumEndpoints == 0) {
 		// usbi_dbg("no endpoints found for interface %d", iface);
-		libusb_free_config_descriptor(conf_desc);
 		return LIBUSB_SUCCESS;
 	}
 
@@ -459,7 +458,6 @@ static int windows_assign_endpoints(struct libusb_device_handle *dev_handle, int
 		priv->usb_interface[iface].endpoint[i] = if_desc->endpoint[i].bEndpointAddress;
 		// usbi_dbg("(re)assigned endpoint %02X to interface %d", priv->usb_interface[iface].endpoint[i], iface);
 	}
-	libusb_free_config_descriptor(conf_desc);
 
 	// Extra init may be required to configure endpoints
 	return priv->apib->configure_endpoints(SUB_API_NOTSET, dev_handle, iface);
@@ -3963,7 +3961,6 @@ static int composite_submit_control_transfer(int sub_api, struct usbi_transfer *
 		r = libusb_get_active_config_descriptor(transfer->dev_handle->dev, &conf_desc);
 		if (r == LIBUSB_SUCCESS) {
 			iface = get_interface_by_endpoint(conf_desc, (setup->index & 0xFF));
-			libusb_free_config_descriptor(conf_desc);
 			break;
 		}
 		// Fall through if not able to determine interface

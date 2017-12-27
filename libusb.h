@@ -286,43 +286,6 @@ static  uint8 *libusb_get_iso_packet_buffer(
 	return transfer->buffer + offset;
 }
 
-/** \ingroup libusb_asyncio
- * Convenience function to locate the position of an isochronous packet
- * within the buffer of an isochronous transfer, for transfers where each
- * packet is of identical size.
- *
- * This function relies on the assumption that every packet within the transfer
- * is of identical size to the first packet. Calculating the location of
- * the packet buffer is then just a simple calculation:
- * <tt>buffer + (packet_size * packet)</tt>
- *
- * Do not use this function on transfers other than those that have identical
- * packet lengths for each packet.
- *
- * \param transfer a transfer
- * \param packet the packet to return the address of
- * \returns the base address of the packet buffer inside the transfer buffer,
- * or NULL if the packet does not exist.
- * \see libusb_get_iso_packet_buffer()
- */
-static  uint8 *libusb_get_iso_packet_buffer_simple(
-	struct libusb_transfer *transfer, uint packet)
-{
-	int _packet;
-
-	/* oops..slight bug in the API. packet is an uint, but we use
-	 * signed integers almost everywhere else. range-check and convert to
-	 * signed to avoid compiler warnings. FIXME for libusb-2. */
-	if (packet > INT_MAX)
-		return NULL;
-	_packet = (int) packet;
-
-	if (_packet >= transfer->num_iso_packets)
-		return NULL;
-
-	return transfer->buffer + ((int) transfer->iso_packet_desc[0].length * _packet);
-}
-
 /** \ingroup libusb_desc
  * Retrieve a descriptor from the default control pipe.
  * This is a convenience function which formulates the appropriate control

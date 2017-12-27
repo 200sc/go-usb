@@ -19,13 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define DESC_HEADER_LENGTH		2
-#define DEVICE_DESC_LENGTH		18
-#define CONFIG_DESC_LENGTH		9
-#define INTERFACE_DESC_LENGTH		9
-#define ENDPOINT_DESC_LENGTH		7
-#define ENDPOINT_AUDIO_DESC_LENGTH	9
-
 /** @defgroup libusb_desc USB descriptors
  * This page details how to examine the various standard USB descriptors
  * for detected devices
@@ -81,11 +74,6 @@ int usbi_parse_descriptor(const uint8 *source, const char *descriptor,
 	}
 
 	return (int) (sp - source);
-}
-
-static void clear_endpoint(struct libusb_endpoint_descriptor *endpoint)
-{
-	
 }
 
 static int parse_endpoint(struct libusb_context *ctx,
@@ -172,26 +160,6 @@ static int parse_endpoint(struct libusb_context *ctx,
 	endpoint->extra_length = len;
 
 	return parsed;
-}
-
-static void clear_interface(struct libusb_interface *usb_interface)
-{
-	int i;
-	int j;
-
-	if (usb_interface->altsetting) {
-		for (i = 0; i < usb_interface->num_altsetting; i++) {
-			struct libusb_interface_descriptor *ifp =
-				(struct libusb_interface_descriptor *)
-				usb_interface->altsetting + i;
-			if (ifp->endpoint) {
-				for (j = 0; j < ifp->bNumEndpoints; j++)
-					clear_endpoint((struct libusb_endpoint_descriptor *)
-						       ifp->endpoint + j);
-			}
-		}
-	}
-	usb_interface->altsetting = NULL;
 }
 
 static int parse_interface(libusb_context *ctx,
@@ -326,18 +294,7 @@ static int parse_interface(libusb_context *ctx,
 
 	return parsed;
 err:
-	clear_interface(usb_interface);
 	return r;
-}
-
-static void clear_configuration(struct libusb_config_descriptor *config)
-{
-	int i;
-	if (config->interface) {
-		for (i = 0; i < config->bNumInterfaces; i++)
-			clear_interface((struct libusb_interface *)
-					config->interface + i);
-	}
 }
 
 static int parse_configuration(struct libusb_context *ctx,
@@ -448,7 +405,6 @@ static int parse_configuration(struct libusb_context *ctx,
 	return size;
 
 err:
-	clear_configuration(config);
 	return r;
 }
 
@@ -678,24 +634,6 @@ int  libusb_get_config_descriptor_by_value(libusb_device *dev,
 }
 
 /** \ingroup libusb_desc
- * Free a configuration descriptor obtained from
- * libusb_get_active_config_descriptor() or libusb_get_config_descriptor().
- * It is safe to call this function with a NULL config parameter, in which
- * case the function simply returns.
- *
- * \param config the configuration descriptor to free
- */
-void  libusb_free_config_descriptor(
-	struct libusb_config_descriptor *config)
-{
-	if (!config)
-		return;
-
-	clear_configuration(config);
-	
-}
-
-/** \ingroup libusb_desc
  * Get an endpoints superspeed endpoint companion descriptor (if any)
  *
  * \param ctx the context to operate on, or NULL for the default context
@@ -744,20 +682,6 @@ int  libusb_get_ss_endpoint_companion_descriptor(
 	return LIBUSB_ERROR_NOT_FOUND;
 }
 
-/** \ingroup libusb_desc
- * Free a superspeed endpoint companion descriptor obtained from
- * libusb_get_ss_endpoint_companion_descriptor().
- * It is safe to call this function with a NULL ep_comp parameter, in which
- * case the function simply returns.
- *
- * \param ep_comp the superspeed endpoint companion descriptor to free
- */
-void  libusb_free_ss_endpoint_companion_descriptor(
-	struct libusb_ss_endpoint_companion_descriptor *ep_comp)
-{
-	
-}
-
 static int parse_bos(struct libusb_context *ctx,
 	struct libusb_bos_descriptor **bos,
 	uint8 *buffer, int size, int host_endian)
@@ -799,24 +723,23 @@ static int parse_bos(struct libusb_context *ctx,
 	for (i = 0; i < bos_header.bNumDeviceCaps; i++) {
 		if (size < LIBUSB_DT_DEVICE_CAPABILITY_SIZE) {
 			// usbi_warn(ctx, "short dev-cap descriptor read %d/%d",
-				  size, LIBUSB_DT_DEVICE_CAPABILITY_SIZE);
+			//     size, LIBUSB_DT_DEVICE_CAPABILITY_SIZE);
 			break;
 		}
 		usbi_parse_descriptor(buffer, "bbb", &dev_cap, host_endian);
 		if (dev_cap.bDescriptorType != LIBUSB_DT_DEVICE_CAPABILITY) {
 			// usbi_warn(ctx, "unexpected descriptor %x (expected %x)",
-				  dev_cap.bDescriptorType, LIBUSB_DT_DEVICE_CAPABILITY);
+			//   dev_cap.bDescriptorType, LIBUSB_DT_DEVICE_CAPABILITY);
 			break;
 		}
 		if (dev_cap.bLength < LIBUSB_DT_DEVICE_CAPABILITY_SIZE) {
 			// usbi_err(ctx, "invalid dev-cap bLength (%d)",
-				 dev_cap.bLength);
-			libusb_free_bos_descriptor(_bos);
+			//     dev_cap.bLength);
 			return LIBUSB_ERROR_IO;
 		}
 		if (dev_cap.bLength > size) {
 			// usbi_warn(ctx, "short dev-cap descriptor read %d/%d",
-				  size, dev_cap.bLength);
+			//     size, dev_cap.bLength);
 			break;
 		}
 
@@ -884,21 +807,6 @@ int  libusb_get_bos_descriptor(libusb_device_handle *dev_handle,
 }
 
 /** \ingroup libusb_desc
- * Free a BOS descriptor obtained from libusb_get_bos_descriptor().
- * It is safe to call this function with a NULL bos parameter, in which
- * case the function simply returns.
- *
- * \param bos the BOS descriptor to free
- */
-void  libusb_free_bos_descriptor(struct libusb_bos_descriptor *bos)
-{
-	int i;
-
-	if (!bos)
-		return;
-}
-
-/** \ingroup libusb_desc
  * Get an USB 2.0 Extension descriptor
  *
  * \param ctx the context to operate on, or NULL for the default context
@@ -938,20 +846,6 @@ int  libusb_get_usb_2_0_extension_descriptor(
 
 	*usb_2_0_extension = _usb_2_0_extension;
 	return LIBUSB_SUCCESS;
-}
-
-/** \ingroup libusb_desc
- * Free a USB 2.0 Extension descriptor obtained from
- * libusb_get_usb_2_0_extension_descriptor().
- * It is safe to call this function with a NULL usb_2_0_extension parameter,
- * in which case the function simply returns.
- *
- * \param usb_2_0_extension the USB 2.0 Extension descriptor to free
- */
-void  libusb_free_usb_2_0_extension_descriptor(
-	struct libusb_usb_2_0_extension_descriptor *usb_2_0_extension)
-{
-	
 }
 
 /** \ingroup libusb_desc
@@ -997,20 +891,6 @@ int  libusb_get_ss_usb_device_capability_descriptor(
 }
 
 /** \ingroup libusb_desc
- * Free a SuperSpeed USB Device Capability descriptor obtained from
- * libusb_get_ss_usb_device_capability_descriptor().
- * It is safe to call this function with a NULL ss_usb_device_cap
- * parameter, in which case the function simply returns.
- *
- * \param ss_usb_device_cap the USB 2.0 Extension descriptor to free
- */
-void  libusb_free_ss_usb_device_capability_descriptor(
-	struct libusb_ss_usb_device_capability_descriptor *ss_usb_device_cap)
-{
-	
-}
-
-/** \ingroup libusb_desc
  * Get a Container ID descriptor
  *
  * \param ctx the context to operate on, or NULL for the default context
@@ -1049,20 +929,6 @@ int  libusb_get_container_id_descriptor(struct libusb_context *ctx,
 
 	*container_id = _container_id;
 	return LIBUSB_SUCCESS;
-}
-
-/** \ingroup libusb_desc
- * Free a Container ID descriptor obtained from
- * libusb_get_container_id_descriptor().
- * It is safe to call this function with a NULL container_id parameter,
- * in which case the function simply returns.
- *
- * \param container_id the USB 2.0 Extension descriptor to free
- */
-void  libusb_free_container_id_descriptor(
-	struct libusb_container_id_descriptor *container_id)
-{
-	
 }
 
 /** \ingroup libusb_desc

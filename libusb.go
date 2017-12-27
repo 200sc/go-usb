@@ -1232,3 +1232,32 @@ const LIBUSB_HOTPLUG_MATCH_ANY = -1
  *                       returning 1 will cause this callback to be deregistered
  */
 type libusb_hotplug_callback_fn func(*libusb_context, *libusb_device, libusb_hotplug_event, interface{}) int
+
+/** \ingroup libusb_asyncio
+ * Convenience function to locate the position of an isochronous packet
+ * within the buffer of an isochronous transfer, for transfers where each
+ * packet is of identical size.
+ *
+ * This function relies on the assumption that every packet within the transfer
+ * is of identical size to the first packet. Calculating the location of
+ * the packet buffer is then just a simple calculation:
+ * <tt>buffer + (packet_size * packet)</tt>
+ *
+ * Do not use this function on transfers other than those that have identical
+ * packet lengths for each packet.
+ *
+ * \param transfer a transfer
+ * \param packet the packet to return the address of
+ * \returns the base address of the packet buffer inside the transfer buffer,
+ * or NULL if the packet does not exist. 
+ * \see libusb_get_iso_packet_buffer()
+ */
+
+func libusb_get_iso_packet_buffer_simple(transfer *libusb_transfer, packet int) []uint8
+{
+	if (packet >= transfer.num_iso_packets)
+		return NULL;
+
+	// GO this needs to be fixed, buffer should probably not be a []uint8
+	return transfer.buffer + ((int) transfer.iso_packet_desc[0].length * packet);
+}
