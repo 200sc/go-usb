@@ -20,7 +20,6 @@ package usb
  */
 
 var (
-	usbi_locale int = 0
 	usbi_locale_supported = []string{"en", "nl", "fr", "ru"}
 	usbi_localized_errors = [][]string{
 		{ /* English (en) */
@@ -87,6 +86,24 @@ var (
 	}
 }
 
+type Locale string
+const (
+	ENGLISH Locale = "en"
+	DUTCH Locale = "nl" 
+	FRENCH Locale = "fr"
+	RUSSIAN Locale = "ru"
+)
+
+var (
+	localeIndex = map[Locale]int{
+		ENGLISH: 0,
+		DUTCH: 1,
+		FRENCH: 2,
+		RUSSIAN: 3,
+	}
+	usbi_locale = 0
+)
+
 /** \ingroup libusb_misc
  * Set the language, and only the language, not the encoding! used for
  * translatable libusb messages.
@@ -117,24 +134,12 @@ var (
  * \returns a LIBUSB_ERROR code on other errors
  */
 
-int  libusb_setlocale(const char *locale)
-{
-	int i;
-
-	if ( (locale == NULL) || (strlen(locale) < 2)
-	  || ((strlen(locale) > 2) && (locale[2] != '-') && (locale[2] != '_') && (locale[2] != '.')) )
-		return LIBUSB_ERROR_INVALID_PARAM;
-
-	for (i=0; i<len(usbi_locale_supported); i++) {
-		if (strncasecmp(usbi_locale_supported[i], locale, 2) == 0)
-			break;
+func libusb_setlocale(locale Locale) libusb_error {
+	found, ok := localeIndex[locale]
+	if !ok {
+		return LIBUSB_ERROR_NOT_FOUND
 	}
-	if (i >= len(usbi_locale_supported)) {
-		return LIBUSB_ERROR_NOT_FOUND;
-	}
-
-	usbi_locale = i;
-
+	usbi_locale = found;
 	return LIBUSB_SUCCESS;
 }
 
@@ -151,7 +156,7 @@ int  libusb_setlocale(const char *locale)
  * \param errcode the error code whose description is desired
  * \returns a short description of the error code in UTF-8 encoding
  */
-libusb_strerror(errcode libusb_error) string {
+func libusb_strerror(errcode libusb_error) string {
 	errcode_index := -errcode
 
 	if (errcode_index < 0) || (errcode_index >= LIBUSB_ERROR_COUNT) {
@@ -161,3 +166,60 @@ libusb_strerror(errcode libusb_error) string {
 
 	return usbi_localized_errors[usbi_locale][errcode_index]
 }
+
+/** \ingroup libusb_misc
+ * Returns a constant NULL-terminated string with the ASCII name of a libusb
+ * error or transfer status code. The caller must not free() the returned
+ * string.
+ *
+ * \param error_code The \ref libusb_error or libusb_transfer_status code to
+ * return the name of.
+ * \returns The error name, or the string **UNKNOWN** if the value of
+ * error_code is not a known error / status code.
+ */
+func libusb_error_name(error_code libusb_error) string {
+	 switch (error_code) {
+	 case LIBUSB_ERROR_IO:
+		 return "LIBUSB_ERROR_IO";
+	 case LIBUSB_ERROR_INVALID_PARAM:
+		 return "LIBUSB_ERROR_INVALID_PARAM";
+	 case LIBUSB_ERROR_ACCESS:
+		 return "LIBUSB_ERROR_ACCESS";
+	 case LIBUSB_ERROR_NO_DEVICE:
+		 return "LIBUSB_ERROR_NO_DEVICE";
+	 case LIBUSB_ERROR_NOT_FOUND:
+		 return "LIBUSB_ERROR_NOT_FOUND";
+	 case LIBUSB_ERROR_BUSY:
+		 return "LIBUSB_ERROR_BUSY";
+	 case LIBUSB_ERROR_TIMEOUT:
+		 return "LIBUSB_ERROR_TIMEOUT";
+	 case LIBUSB_ERROR_OVERFLOW:
+		 return "LIBUSB_ERROR_OVERFLOW";
+	 case LIBUSB_ERROR_PIPE:
+		 return "LIBUSB_ERROR_PIPE";
+	 case LIBUSB_ERROR_INTERRUPTED:
+		 return "LIBUSB_ERROR_INTERRUPTED";
+	 case LIBUSB_ERROR_NO_MEM:
+		 return "LIBUSB_ERROR_NO_MEM";
+	 case LIBUSB_ERROR_NOT_SUPPORTED:
+		 return "LIBUSB_ERROR_NOT_SUPPORTED";
+	 case LIBUSB_ERROR_OTHER:
+		 return "LIBUSB_ERROR_OTHER";
+	 case LIBUSB_TRANSFER_ERROR:
+		 return "LIBUSB_TRANSFER_ERROR";
+	 case LIBUSB_TRANSFER_TIMED_OUT:
+		 return "LIBUSB_TRANSFER_TIMED_OUT";
+	 case LIBUSB_TRANSFER_CANCELLED:
+		 return "LIBUSB_TRANSFER_CANCELLED";
+	 case LIBUSB_TRANSFER_STALL:
+		 return "LIBUSB_TRANSFER_STALL";
+	 case LIBUSB_TRANSFER_NO_DEVICE:
+		 return "LIBUSB_TRANSFER_NO_DEVICE";
+	 case LIBUSB_TRANSFER_OVERFLOW:
+		 return "LIBUSB_TRANSFER_OVERFLOW";
+	 case 0:
+		 return "LIBUSB_SUCCESS / LIBUSB_TRANSFER_COMPLETED";
+	 default:
+		 return "**UNKNOWN**";
+	 }
+ }
