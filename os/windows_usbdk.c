@@ -27,8 +27,6 @@
 typedef CONST WCHAR *PCWCHAR;
 #define wcsncpy_s wcsncpy
 
-#include "windows_usbdk.h"
-
 #if !defined(STATUS_SUCCESS)
 typedef LONG NTSTATUS;
 #define STATUS_SUCCESS			((NTSTATUS)0x00000000L)

@@ -66,9 +66,6 @@ struct winfd {
 /*
  * Timeval operations
  */
-#if defined(DDKBUILD)
-#include <winsock.h>	// defines timeval functions on DDK
-#endif
 
 #if !defined(TIMESPEC_TO_TIMEVAL)
 #define TIMESPEC_TO_TIMEVAL(tv, ts) {                   \

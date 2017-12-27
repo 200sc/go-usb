@@ -738,7 +738,6 @@ init_exit: // Holds semaphore here.
 		exit_dlls();
 		exit_polling();
 		windows_common_exit();
-		usbi_mutex_destroy(&autoclaim_lock);
 	}
 
 	if (r != LIBUSB_SUCCESS)
@@ -1543,7 +1542,6 @@ static void windows_exit(void)
 		exit_dlls();
 		exit_polling();
 		windows_common_exit();
-		usbi_mutex_destroy(&autoclaim_lock);
 	}
 
 	ReleaseSemaphore(semaphore, 1, NULL); // increase count back to 1

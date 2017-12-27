@@ -26,13 +26,11 @@
 #define usbi_mutex_init(mutex)		pthread_mutex_init((mutex), NULL)
 #define usbi_mutex_lock			pthread_mutex_lock
 #define usbi_mutex_unlock		pthread_mutex_unlock
-#define usbi_mutex_destroy		pthread_mutex_destroy
 
 #define usbi_cond_t			pthread_cond_t
 #define usbi_cond_init(cond)		pthread_cond_init((cond), NULL)
 #define usbi_cond_wait			pthread_cond_wait
 #define usbi_cond_broadcast		pthread_cond_broadcast
-#define usbi_cond_destroy		pthread_cond_destroy
 
 #define usbi_tls_key_t			pthread_key_t
 #define usbi_tls_key_create(key)	pthread_key_create((key), NULL)

@@ -883,8 +883,6 @@ void  libusb_unref_device(libusb_device *dev)
 			/* backend does not support hotplug */
 			usbi_disconnect_device(dev);
 		}
-
-		usbi_mutex_destroy(&dev->lock);
 	}
 }
 
@@ -974,7 +972,6 @@ int  libusb_open(libusb_device *dev,
 	if (r < 0) {
 		// usbi_dbg("open %d.%d returns %d", dev->bus_number, dev->device_address, r);
 		libusb_unref_device(dev);
-		usbi_mutex_destroy(&_dev_handle->lock);
 		return r;
 	}
 
@@ -1087,7 +1084,6 @@ static void do_close(struct libusb_context *ctx,
 
 	usbi_backend->close(dev_handle);
 	libusb_unref_device(dev_handle->dev);
-	usbi_mutex_destroy(&dev_handle->lock);
 }
 
 /** \ingroup libusb_dev
@@ -1835,10 +1831,6 @@ err_free_ctx:
 	}
 	usbi_mutex_unlock(&ctx->usb_devs_lock);
 
-	usbi_mutex_destroy(&ctx->open_devs_lock);
-	usbi_mutex_destroy(&ctx->usb_devs_lock);
-	usbi_mutex_destroy(&ctx->hotplug_cbs_lock);
-
 err_unlock:
 	usbi_mutex_static_unlock(&default_context_lock);
 	return r;
@@ -1908,10 +1900,6 @@ void  libusb_exit(struct libusb_context *ctx)
 	usbi_io_exit(ctx);
 	if (usbi_backend->exit)
 		usbi_backend->exit();
-
-	usbi_mutex_destroy(&ctx->open_devs_lock);
-	usbi_mutex_destroy(&ctx->usb_devs_lock);
-	usbi_mutex_destroy(&ctx->hotplug_cbs_lock);
 }
 
 /** \ingroup libusb_misc

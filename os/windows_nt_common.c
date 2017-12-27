@@ -121,8 +121,6 @@ static void htab_destroy(void)
 
 	if (htab_table == NULL)
 		return;
-
-	usbi_mutex_destroy(&htab_write_mutex);
 }
 
 /* This is the search function. It uses double hashing with open addressing.

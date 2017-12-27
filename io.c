@@ -1146,11 +1146,6 @@ err_close_pipe:
 	usbi_close(ctx->event_pipe[0]);
 	usbi_close(ctx->event_pipe[1]);
 err:
-	usbi_mutex_destroy(&ctx->flying_transfers_lock);
-	usbi_mutex_destroy(&ctx->events_lock);
-	usbi_mutex_destroy(&ctx->event_waiters_lock);
-	usbi_cond_destroy(&ctx->event_waiters_cond);
-	usbi_mutex_destroy(&ctx->event_data_lock);
 	usbi_tls_key_delete(ctx->event_handling_key);
 	return r;
 }
@@ -1162,11 +1157,6 @@ void usbi_io_exit(struct libusb_context *ctx)
 	usbi_close(ctx->event_pipe[1]);
 	usbi_remove_pollfd(ctx, ctx->timerfd);
 	close(ctx->timerfd);
-	usbi_mutex_destroy(&ctx->flying_transfers_lock);
-	usbi_mutex_destroy(&ctx->events_lock);
-	usbi_mutex_destroy(&ctx->event_waiters_lock);
-	usbi_cond_destroy(&ctx->event_waiters_cond);
-	usbi_mutex_destroy(&ctx->event_data_lock);
 	usbi_tls_key_delete(ctx->event_handling_key);
 }
 
