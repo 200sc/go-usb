@@ -698,7 +698,7 @@ static int wince_handle_events(
 	DWORD io_size, io_result;
 	int r = LIBUSB_SUCCESS;
 
-	usbi_mutex_lock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Lock();
 	for (i = 0; i < nfds && num_ready > 0; i++) {
 
 		// usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
@@ -710,7 +710,7 @@ static int wince_handle_events(
 
 		// Because a Windows OVERLAPPED is used for poll emulation,
 		// a pollable fd is created and stored with each transfer
-		usbi_mutex_lock(&ctx->flying_transfers_lock);
+		&ctx->flying_transfers_lock.Lock();
 		list_for_each_entry(transfer, &ctx->flying_transfers, list, struct usbi_transfer) {
 			transfer_priv = transfer.usbi_transfer_get_os_priv();
 			if (transfer_priv->pollable_fd.fd == fds[i].fd) {
@@ -718,7 +718,7 @@ static int wince_handle_events(
 				break;
 			}
 		}
-		usbi_mutex_unlock(&ctx->flying_transfers_lock);
+		&ctx->flying_transfers_lock.Unlock();
 
 		if (found && HasOverlappedIoCompleted(transfer_priv->pollable_fd.overlapped)) {
 			io_result = (DWORD)transfer_priv->pollable_fd.overlapped->Internal;
@@ -738,7 +738,7 @@ static int wince_handle_events(
 			break;
 		}
 	}
-	usbi_mutex_unlock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Unlock();
 
 	return r;
 }

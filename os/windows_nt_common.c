@@ -63,7 +63,7 @@ typedef struct htab_entry {
 } htab_entry;
 
 static htab_entry *htab_table = NULL;
-static usbi_mutex_t htab_write_mutex = NULL;
+var htab_write_mutex = sync.Mutex{}
 static uint64 htab_size, htab_filled;
 
 /* For the used double hash method the table size has to be a prime. To
@@ -91,9 +91,6 @@ static bool htab_create(struct libusb_context *ctx, uint64 nel)
 		// usbi_err(ctx, "hash table already allocated");
 		return true;
 	}
-
-	// Create a mutex
-	usbi_mutex_init(&htab_write_mutex);
 
 	// Change nel to the first prime number not smaller as nel.
 	nel |= 1;
@@ -192,7 +189,7 @@ uint64 htab_hash(const char *str)
 
 	// Concurrent threads might be storing the same entry at the same time
 	// (eg. "simultaneous" enums from different threads) => use a mutex
-	usbi_mutex_lock(&htab_write_mutex);
+	&htab_write_mutex.Lock();
 	// Just free any previously allocated string (which should be the same as
 	// new one). The possibility of concurrent threads storing a collision
 	// string (same hash, different string) at the same time is extremely low
@@ -200,11 +197,11 @@ uint64 htab_hash(const char *str)
 	htab_table[idx].str = _strdup(str);
 	if (htab_table[idx].str == NULL) {
 		// usbi_err(NULL, "could not duplicate string for hash table");
-		usbi_mutex_unlock(&htab_write_mutex);
+		&htab_write_mutex.Unlock();
 		return 0;
 	}
 	++htab_filled;
-	usbi_mutex_unlock(&htab_write_mutex);
+	&htab_write_mutex.Unlock();
 
 	return idx;
 }
@@ -471,7 +468,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 	DWORD io_size, io_result;
 	int r = LIBUSB_SUCCESS;
 
-	usbi_mutex_lock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Lock();
 	for (i = 0; i < nfds && num_ready > 0; i++) {
 
 		// usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
@@ -483,7 +480,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 
 		// Because a Windows OVERLAPPED is used for poll emulation,
 		// a pollable fd is created and stored with each transfer
-		usbi_mutex_lock(&ctx->flying_transfers_lock);
+		&ctx->flying_transfers_lock.Lock();
 		found = false;
 		list_for_each_entry(transfer, &ctx->flying_transfers, list, struct usbi_transfer) {
 			pollable_fd = windows_get_fd(transfer);
@@ -492,7 +489,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 				break;
 			}
 		}
-		usbi_mutex_unlock(&ctx->flying_transfers_lock);
+		&ctx->flying_transfers_lock.Unlock();
 
 		if (found) {
 			windows_get_overlapped_result(transfer, pollable_fd, &io_result, &io_size);
@@ -508,7 +505,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 			break;
 		}
 	}
-	usbi_mutex_unlock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Unlock();
 
 	return r;
 }

@@ -22,10 +22,11 @@
 
 struct libusb_context *usbi_default_context = NULL;
 static int default_context_refcnt = 0;
-static usbi_mutex_static_t default_context_lock = USBI_MUTEX_INITIALIZER;
 static struct timeval timestamp_origin = { 0, 0 };
 
-usbi_mutex_static_t active_contexts_lock = USBI_MUTEX_INITIALIZER;
+var default_context_lock = sync.Mutex{}
+var active_contexts_lock = sync.Mutex{}
+
 struct list_head active_contexts_list;
 
 /**
@@ -481,11 +482,6 @@ struct libusb_device *usbi_alloc_device(struct libusb_context *ctx,
 	if (!dev)
 		return NULL;
 
-	r = usbi_mutex_init(&dev->lock);
-	if (r) {
-		return NULL;
-	}
-
 	dev->ctx = ctx;
 	dev->refcnt = 1;
 	dev->session_data = session_id;
@@ -504,9 +500,9 @@ void usbi_connect_device(struct libusb_device *dev)
 
 	dev->attached = 1;
 
-	usbi_mutex_lock(&dev->ctx->usb_devs_lock);
+	&dev->ctx->usb_devs_lock.Lock();
 	list_add(&dev->list, &dev->ctx->usb_devs);
-	usbi_mutex_unlock(&dev->ctx->usb_devs_lock);
+	&dev->ctx->usb_devs_lock.Unlock();
 
 	/* Signal that an event has occurred for this device if we support hotplug AND
 	 * the hotplug message list is ready. This prevents an event from getting raised
@@ -520,13 +516,13 @@ void usbi_disconnect_device(struct libusb_device *dev)
 {
 	struct libusb_context *ctx = dev.ctx;
 
-	usbi_mutex_lock(&dev->lock);
+	&dev->lock.Lock();
 	dev->attached = 0;
-	usbi_mutex_unlock(&dev->lock);
+	&dev->lock.Unlock();
 
-	usbi_mutex_lock(&ctx->usb_devs_lock);
+	&ctx->usb_devs_lock.Lock();
 	list_del(&dev->list);
-	usbi_mutex_unlock(&ctx->usb_devs_lock);
+	&ctx->usb_devs_lock.Unlock();
 
 	/* Signal that an event has occurred for this device if we support hotplug AND
 	 * the hotplug message list is ready. This prevents an event from getting raised
@@ -569,13 +565,13 @@ struct libusb_device *usbi_get_device_by_session_id(struct libusb_context *ctx,
 	struct libusb_device *dev;
 	struct libusb_device *ret = NULL;
 
-	usbi_mutex_lock(&ctx->usb_devs_lock);
+	&ctx->usb_devs_lock.Lock();
 	list_for_each_entry(dev, &ctx->usb_devs, list, struct libusb_device)
 		if (dev->session_data == session_id) {
 			ret = libusb_ref_device(dev);
 			break;
 		}
-	usbi_mutex_unlock(&ctx->usb_devs_lock);
+	&ctx->usb_devs_lock.Unlock();
 
 	return ret;
 }
@@ -617,11 +613,11 @@ int  libusb_get_device_list(libusb_context *ctx,
 		if (usbi_backend->hotplug_poll)
 			usbi_backend->hotplug_poll();
 
-		usbi_mutex_lock(&ctx->usb_devs_lock);
+		&ctx->usb_devs_lock.Lock();
 		list_for_each_entry(dev, &ctx->usb_devs, list, struct libusb_device) {
 			discdevs = discovered_devs_append(discdevs, dev);
 		}
-		usbi_mutex_unlock(&ctx->usb_devs_lock);
+		&ctx->usb_devs_lock.Unlock();
 	} else {
 		/* backend does not provide hotplug support */
 		r = usbi_backend->get_device_list(ctx, &discdevs);
@@ -849,9 +845,9 @@ out:
 
 libusb_device *  libusb_ref_device(libusb_device *dev)
 {
-	usbi_mutex_lock(&dev->lock);
+	&dev->lock.Lock();
 	dev->refcnt++;
-	usbi_mutex_unlock(&dev->lock);
+	&dev->lock.Unlock();
 	return dev;
 }
 
@@ -867,9 +863,9 @@ void  libusb_unref_device(libusb_device *dev)
 	if (!dev)
 		return;
 
-	usbi_mutex_lock(&dev->lock);
+	&dev->lock.Lock();
 	refcnt = --dev->refcnt;
-	usbi_mutex_unlock(&dev->lock);
+	&dev->lock.Unlock();
 
 	if (refcnt == 0) {
 		// usbi_dbg("destroy device %d.%d", dev->bus_number, dev->device_address);
@@ -958,11 +954,6 @@ int  libusb_open(libusb_device *dev,
 
 	_dev_handle = malloc(sizeof(*_dev_handle) + priv_size);
 
-	r = usbi_mutex_init(&_dev_handle->lock);
-	if (r) {
-		return LIBUSB_ERROR_OTHER;
-	}
-
 	_dev_handle->dev = libusb_ref_device(dev);
 	_dev_handle->auto_detach_kernel_driver = 0;
 	_dev_handle->claimed_interfaces = 0;
@@ -975,9 +966,9 @@ int  libusb_open(libusb_device *dev,
 		return r;
 	}
 
-	usbi_mutex_lock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Lock();
 	list_add(&_dev_handle->list, &ctx->open_devs);
-	usbi_mutex_unlock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Unlock();
 	*dev_handle = _dev_handle;
 
 	return 0;
@@ -1042,7 +1033,7 @@ static void do_close(struct libusb_context *ctx,
 	struct usbi_transfer *tmp;
 
 	/* remove any transfers in flight that are for this device */
-	usbi_mutex_lock(&ctx->flying_transfers_lock);
+	&ctx->flying_transfers_lock.Lock();
 
 	/* safe iteration because transfers may be being deleted */
 	list_for_each_entry_safe(itransfer, tmp, &ctx->flying_transfers, list, struct usbi_transfer) {
@@ -1051,7 +1042,7 @@ static void do_close(struct libusb_context *ctx,
 		if (transfer->dev_handle != dev_handle)
 			continue;
 
-		usbi_mutex_lock(&itransfer->lock);
+		&itransfer->lock.Lock();
 		if (!(itransfer->state_flags & USBI_TRANSFER_DEVICE_DISAPPEARED)) {
 			// usbi_err(ctx, "Device handle closed while transfer was still being processed, but the device is still connected as far as we know");
 
@@ -1060,7 +1051,7 @@ static void do_close(struct libusb_context *ctx,
 			else
 				// usbi_err(ctx, "A cancellation hasn't even been scheduled on the transfer for which the device is closing");
 		}
-		usbi_mutex_unlock(&itransfer->lock);
+		&itransfer->lock.Unlock();
 
 		/* remove from the list of in-flight transfers and make sure
 		 * we don't accidentally use the device handle in the future
@@ -1076,11 +1067,11 @@ static void do_close(struct libusb_context *ctx,
 		// usbi_dbg("Removed transfer %p from the in-flight list because device handle %p closed",
 			 transfer, dev_handle);
 	}
-	usbi_mutex_unlock(&ctx->flying_transfers_lock);
+	&ctx->flying_transfers_lock.Unlock();
 
-	usbi_mutex_lock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Lock();
 	list_del(&dev_handle->list);
-	usbi_mutex_unlock(&ctx->open_devs_lock);
+	&ctx->open_devs_lock.Unlock();
 
 	usbi_backend->close(dev_handle);
 	libusb_unref_device(dev_handle->dev);
@@ -1121,12 +1112,12 @@ void  libusb_close(libusb_device_handle *dev_handle)
 	if (!handling_events) {
 		/* Record that we are closing a device.
 		 * Only signal an event if there are no prior pending events. */
-		usbi_mutex_lock(&ctx->event_data_lock);
+		&ctx->event_data_lock.Lock();
 		pending_events = usbi_pending_events(ctx);
 		ctx->device_close++;
 		if (!pending_events)
 			usbi_signal_event(ctx);
-		usbi_mutex_unlock(&ctx->event_data_lock);
+		&ctx->event_data_lock.Unlock();
 
 		/* take event handling lock */
 		libusb_lock_events(ctx);
@@ -1138,12 +1129,12 @@ void  libusb_close(libusb_device_handle *dev_handle)
 	if (!handling_events) {
 		/* We're done with closing this device.
 		 * Clear the event pipe if there are no further pending events. */
-		usbi_mutex_lock(&ctx->event_data_lock);
+		&ctx->event_data_lock.Lock();
 		ctx->device_close--;
 		pending_events = usbi_pending_events(ctx);
 		if (!pending_events)
 			usbi_clear_event(ctx);
-		usbi_mutex_unlock(&ctx->event_data_lock);
+		&ctx->event_data_lock.Unlock();
 
 		/* Release event handling lock and wake up event waiters */
 		libusb_unlock_events(ctx);
@@ -1293,7 +1284,7 @@ int  libusb_claim_interface(libusb_device_handle *dev_handle,
 	if (!dev_handle->dev->attached)
 		return LIBUSB_ERROR_NO_DEVICE;
 
-	usbi_mutex_lock(&dev_handle->lock);
+	&dev_handle->lock.Lock();
 	if (dev_handle->claimed_interfaces & (1 << interface_number))
 		goto out;
 
@@ -1302,7 +1293,7 @@ int  libusb_claim_interface(libusb_device_handle *dev_handle,
 		dev_handle->claimed_interfaces |= 1 << interface_number;
 
 out:
-	usbi_mutex_unlock(&dev_handle->lock);
+	&dev_handle->lock.Unlock();
 	return r;
 }
 
@@ -1334,7 +1325,7 @@ int  libusb_release_interface(libusb_device_handle *dev_handle,
 	if (interface_number >= USB_MAXINTERFACES)
 		return LIBUSB_ERROR_INVALID_PARAM;
 
-	usbi_mutex_lock(&dev_handle->lock);
+	&dev_handle->lock.Lock();
 	if (!(dev_handle->claimed_interfaces & (1 << interface_number))) {
 		r = LIBUSB_ERROR_NOT_FOUND;
 		goto out;
@@ -1345,7 +1336,7 @@ int  libusb_release_interface(libusb_device_handle *dev_handle,
 		dev_handle->claimed_interfaces &= ~(1 << interface_number);
 
 out:
-	usbi_mutex_unlock(&dev_handle->lock);
+	&dev_handle->lock.Unlock();
 	return r;
 }
 
@@ -1378,17 +1369,17 @@ int  libusb_set_interface_alt_setting(libusb_device_handle *dev_handle,
 	if (interface_number >= USB_MAXINTERFACES)
 		return LIBUSB_ERROR_INVALID_PARAM;
 
-	usbi_mutex_lock(&dev_handle->lock);
+	&dev_handle->lock.Lock();
 	if (!dev_handle->dev->attached) {
-		usbi_mutex_unlock(&dev_handle->lock);
+		&dev_handle->lock.Unlock();
 		return LIBUSB_ERROR_NO_DEVICE;
 	}
 
 	if (!(dev_handle->claimed_interfaces & (1 << interface_number))) {
-		usbi_mutex_unlock(&dev_handle->lock);
+		&dev_handle->lock.Unlock();
 		return LIBUSB_ERROR_NOT_FOUND;
 	}
-	usbi_mutex_unlock(&dev_handle->lock);
+	&dev_handle->lock.Unlock();
 
 	return usbi_backend->set_interface_altsetting(dev_handle, interface_number,
 		alternate_setting);
@@ -1750,7 +1741,7 @@ int  libusb_init(libusb_context **context)
 	static int first_init = 1;
 	int r = 0;
 
-	usbi_mutex_static_lock(&default_context_lock);
+	&default_context_lock.Lock();
 
 	if (!timestamp_origin.tv_sec) {
 		usbi_gettimeofday(&timestamp_origin, NULL);
@@ -1759,7 +1750,7 @@ int  libusb_init(libusb_context **context)
 	if (!context && usbi_default_context) {
 		// usbi_dbg("reusing default context");
 		default_context_refcnt++;
-		usbi_mutex_static_unlock(&default_context_lock);
+		&default_context_lock.Unlock();
 		return 0;
 	}
 
@@ -1779,20 +1770,17 @@ int  libusb_init(libusb_context **context)
 		// usbi_dbg("created default context");
 	}
 
-	usbi_mutex_init(&ctx->usb_devs_lock);
-	usbi_mutex_init(&ctx->open_devs_lock);
-	usbi_mutex_init(&ctx->hotplug_cbs_lock);
 	list_init(&ctx->usb_devs);
 	list_init(&ctx->open_devs);
 	list_init(&ctx->hotplug_cbs);
 
-	usbi_mutex_static_lock(&active_contexts_lock);
+	&active_contexts_lock.Lock();
 	if (first_init) {
 		first_init = 0;
 		list_init (&active_contexts_list);
 	}
 	list_add (&ctx->list, &active_contexts_list);
-	usbi_mutex_static_unlock(&active_contexts_lock);
+	&active_contexts_lock.Unlock();
 
 	if (usbi_backend->init) {
 		r = usbi_backend->init(ctx);
@@ -1804,7 +1792,7 @@ int  libusb_init(libusb_context **context)
 	if (r < 0)
 		goto err_backend_exit;
 
-	usbi_mutex_static_unlock(&default_context_lock);
+	&default_context_lock.Unlock();
 
 	if (context)
 		*context = ctx;
@@ -1820,19 +1808,19 @@ err_free_ctx:
 		default_context_refcnt--;
 	}
 
-	usbi_mutex_static_lock(&active_contexts_lock);
+	&active_contexts_lock.Lock();
 	list_del (&ctx->list);
-	usbi_mutex_static_unlock(&active_contexts_lock);
+	&active_contexts_lock.Unlock();
 
-	usbi_mutex_lock(&ctx->usb_devs_lock);
+	&ctx->usb_devs_lock.Lock();
 	list_for_each_entry_safe(dev, next, &ctx->usb_devs, list, struct libusb_device) {
 		list_del(&dev->list);
 		libusb_unref_device(dev);
 	}
-	usbi_mutex_unlock(&ctx->usb_devs_lock);
+	&ctx->usb_devs_lock.Unlock();
 
 err_unlock:
-	usbi_mutex_static_unlock(&default_context_lock);
+	&default_context_lock.Unlock();
 	return r;
 }
 
@@ -1851,21 +1839,21 @@ void  libusb_exit(struct libusb_context *ctx)
 
 	/* if working with default context, only actually do the deinitialization
 	 * if we're the last user */
-	usbi_mutex_static_lock(&default_context_lock);
+	&default_context_lock.Lock();
 	if (ctx == usbi_default_context) {
 		if (--default_context_refcnt > 0) {
 			// usbi_dbg("not destroying default context");
-			usbi_mutex_static_unlock(&default_context_lock);
+			&default_context_lock.Unlock();
 			return;
 		}
 		// usbi_dbg("destroying default context");
 		usbi_default_context = NULL;
 	}
-	usbi_mutex_static_unlock(&default_context_lock);
+	&default_context_lock.Unlock();
 
-	usbi_mutex_static_lock(&active_contexts_lock);
+	&active_contexts_lock.Lock();
 	list_del (&ctx->list);
-	usbi_mutex_static_unlock(&active_contexts_lock);
+	&active_contexts_lock.Unlock();
 
 	if (libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
 		usbi_hotplug_deregister_all(ctx);
@@ -1882,12 +1870,12 @@ void  libusb_exit(struct libusb_context *ctx)
 		if (list_empty(&ctx->open_devs))
 			libusb_handle_events_timeout(ctx, &tv);
 
-		usbi_mutex_lock(&ctx->usb_devs_lock);
+		&ctx->usb_devs_lock.Lock();
 		list_for_each_entry_safe(dev, next, &ctx->usb_devs, list, struct libusb_device) {
 			list_del(&dev->list);
 			libusb_unref_device(dev);
 		}
-		usbi_mutex_unlock(&ctx->usb_devs_lock);
+		&ctx->usb_devs_lock.Unlock();
 	}
 
 	/* a few sanity checks. don't bother with locking because unless

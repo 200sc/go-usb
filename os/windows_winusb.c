@@ -42,7 +42,7 @@ int windows_version = WINDOWS_UNDEFINED;
 static char windows_version_str[128] = "Windows Undefined";
 // Concurrency
 static int concurrent_usage = -1;
-static usbi_mutex_t autoclaim_lock;
+var autoclaim_lock = sync.Mutex{}
 // API globals
 #define CHECK_WINUSBX_AVAILABLE(sub_api)		\
 	do {						\
@@ -512,7 +512,7 @@ static int auto_claim(struct libusb_transfer *transfer, int *interface_number, i
 		return LIBUSB_ERROR_INVALID_PARAM;
 	}
 
-	usbi_mutex_lock(&autoclaim_lock);
+	&autoclaim_lock.Lock();
 	if (current_interface < 0) { // No serviceable interface was found
 		for (current_interface = 0; current_interface < USB_MAXINTERFACES; current_interface++) {
 			// Must claim an interface of the same API type
@@ -535,7 +535,7 @@ static int auto_claim(struct libusb_transfer *transfer, int *interface_number, i
 		if (handle_priv->autoclaim_count[current_interface] != 0)
 			handle_priv->autoclaim_count[current_interface]++;
 	}
-	usbi_mutex_unlock(&autoclaim_lock);
+	&autoclaim_lock.Unlock();
 
 	*interface_number = current_interface;
 	return r;
@@ -549,7 +549,7 @@ static void auto_release(struct usbi_transfer *itransfer)
 	struct windows_device_handle_priv *handle_priv = _device_handle_priv(dev_handle);
 	int r;
 
-	usbi_mutex_lock(&autoclaim_lock);
+	&autoclaim_lock.Lock();
 	if (handle_priv->autoclaim_count[transfer_priv->interface_number] > 0) {
 		handle_priv->autoclaim_count[transfer_priv->interface_number]--;
 		if (handle_priv->autoclaim_count[transfer_priv->interface_number] == 0) {
@@ -561,7 +561,7 @@ static void auto_release(struct usbi_transfer *itransfer)
 					transfer_priv->interface_number, libusb_error_name((libusb_error)r));
 		}
 	}
-	usbi_mutex_unlock(&autoclaim_lock);
+	&autoclaim_lock.Unlock();
 }
 
 /* Windows version dtection */
@@ -707,9 +707,6 @@ static int windows_init(struct libusb_context *ctx)
 			r = LIBUSB_ERROR_NOT_SUPPORTED;
 			goto init_exit;
 		}
-
-		// We need a lock for proper auto-release
-		usbi_mutex_init(&autoclaim_lock);
 
 		// Initialize pollable file descriptors
 		init_polling();

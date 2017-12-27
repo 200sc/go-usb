@@ -353,9 +353,9 @@ static void *linux_netlink_event_thread_main(void *arg)
 			break;
 		}
 		if (fds[1].revents & POLLIN) {
-			usbi_mutex_static_lock(&linux_hotplug_lock);
+			&linux_hotplug_lock.Lock();
 			linux_netlink_read_message();
-			usbi_mutex_static_unlock(&linux_hotplug_lock);
+			&linux_hotplug_lock.Unlock();
 		}
 	}
 
@@ -368,9 +368,9 @@ void linux_netlink_hotplug_poll(void)
 {
 	int r;
 
-	usbi_mutex_static_lock(&linux_hotplug_lock);
+	&linux_hotplug_lock.Lock();
 	do {
 		r = linux_netlink_read_message();
 	} while (r == 0);
-	usbi_mutex_static_unlock(&linux_hotplug_lock);
+	&linux_hotplug_lock.Unlock();
 }

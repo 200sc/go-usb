@@ -24,23 +24,6 @@ struct usbi_cond_perthread {
 	HANDLE event;
 };
 
-int usbi_mutex_static_lock(usbi_mutex_static_t *mutex)
-{
-	if (!mutex)
-		return EINVAL;
-	while (InterlockedExchange(mutex, 1) == 1)
-		SleepEx(0, TRUE);
-	return 0;
-}
-
-int usbi_mutex_static_unlock(usbi_mutex_static_t *mutex)
-{
-	if (!mutex)
-		return EINVAL;
-	InterlockedExchange(mutex, 0);
-	return 0;
-}
-
 int usbi_cond_init(usbi_cond_t *cond)
 {
 	if (!cond)
@@ -69,7 +52,7 @@ int usbi_cond_broadcast(usbi_cond_t *cond)
 }
 
 __inline static int usbi_cond_intwait(usbi_cond_t *cond,
-	usbi_mutex_t *mutex, DWORD timeout_ms)
+	sync.Mutex *mutex, DWORD timeout_ms)
 {
 	struct usbi_cond_perthread *pos;
 	int r, found = 0;
@@ -99,15 +82,11 @@ __inline static int usbi_cond_intwait(usbi_cond_t *cond,
 	list_del(&pos->list); // remove from not_waiting list.
 	list_add(&pos->list, &cond->waiters);
 
-	r  = usbi_mutex_unlock(mutex);
-	if (r)
-		return r;
-
+	mutex.Unlock();
+	
 	r2 = WaitForSingleObject(pos->event, timeout_ms);
-	r = usbi_mutex_lock(mutex);
-	if (r)
-		return r;
-
+	mutex.Lock();
+	
 	list_del(&pos->list);
 	list_add(&pos->list, &cond->not_waiting);
 
@@ -119,13 +98,13 @@ __inline static int usbi_cond_intwait(usbi_cond_t *cond,
 		return EINVAL;
 }
 // N.B.: usbi_cond_*wait() can also return ENOMEM, even though pthread_cond_*wait cannot!
-int usbi_cond_wait(usbi_cond_t *cond, usbi_mutex_t *mutex)
+int usbi_cond_wait(usbi_cond_t *cond, sync.Mutex *mutex)
 {
 	return usbi_cond_intwait(cond, mutex, INFINITE);
 }
 
 int usbi_cond_timedwait(usbi_cond_t *cond,
-	usbi_mutex_t *mutex, const struct timeval *tv)
+	sync.Mutex *mutex, const struct timeval *tv)
 {
 	DWORD millis;
 

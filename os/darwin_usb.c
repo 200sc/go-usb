@@ -44,7 +44,8 @@ static clock_serv_t clock_monotonic;
 static CFRunLoopRef libusb_darwin_acfl = NULL; /* event cf loop */
 static CFRunLoopSourceRef libusb_darwin_acfls = NULL; /* shutdown signal for event cf loop */
 
-static usbi_mutex_t darwin_cached_devices_lock = PTHREAD_MUTEX_INITIALIZER;
+var darwin_cached_devices_lock = sync.Mutex{}
+
 static struct list_head darwin_cached_devices = {&darwin_cached_devices, &darwin_cached_devices};
 static char *darwin_device_class = kIOUSBDeviceClassName;
 
@@ -235,7 +236,7 @@ static void darwin_devices_attached (void *ptr, io_iterator_t add_devices) {
   struct libusb_context *ctx;
   io_service_t service;
 
-  usbi_mutex_lock(&active_contexts_lock);
+  &active_contexts_lock.Lock();
 
   while ((service = IOIteratorNext(add_devices))) {
     /* add this device to each active context's device list */
@@ -246,7 +247,7 @@ static void darwin_devices_attached (void *ptr, io_iterator_t add_devices) {
     IOObjectRelease(service);
   }
 
-  usbi_mutex_unlock(&active_contexts_lock);
+  &active_contexts_lock.Unlock();
 }
 
 static void darwin_devices_detached (void *ptr, io_iterator_t rem_devices) {
@@ -258,7 +259,7 @@ static void darwin_devices_detached (void *ptr, io_iterator_t rem_devices) {
   UInt64 session;
   int ret;
 
-  usbi_mutex_lock(&active_contexts_lock);
+  &active_contexts_lock.Lock();
 
   while ((device = IOIteratorNext (rem_devices)) != 0) {
     /* get the location from the i/o registry */
@@ -269,14 +270,14 @@ static void darwin_devices_detached (void *ptr, io_iterator_t rem_devices) {
 
     /* we need to match darwin_ref_cached_device call made in darwin_get_cached_device function
        otherwise no cached device will ever get freed */
-    usbi_mutex_lock(&darwin_cached_devices_lock);
+    &darwin_cached_devices_lock.Lock();
     list_for_each_entry(old_device, &darwin_cached_devices, list, struct darwin_cached_device) {
       if (old_device->session == session) {
         darwin_deref_cached_device (old_device);
         break;
       }
     }
-    usbi_mutex_unlock(&darwin_cached_devices_lock);
+    &darwin_cached_devices_lock.Unlock();
 
     list_for_each_entry(ctx, &active_contexts_list, list, struct libusb_context) {
       // usbi_dbg ("notifying context %p of device disconnect", ctx);
@@ -291,7 +292,7 @@ static void darwin_devices_detached (void *ptr, io_iterator_t rem_devices) {
     }
   }
 
-  usbi_mutex_unlock(&active_contexts_lock);
+  &active_contexts_lock.Unlock();
 }
 
 static void darwin_hotplug_poll (void)
@@ -424,11 +425,11 @@ static void *darwin_event_thread_main (void *arg0) {
 static void __attribute__((destructor)) _darwin_finalize(void) {
   struct darwin_cached_device *dev, *next;
 
-  usbi_mutex_lock(&darwin_cached_devices_lock);
+  &darwin_cached_devices_lock.Lock();
   list_for_each_entry_safe(dev, next, &darwin_cached_devices, list, struct darwin_cached_device) {
     darwin_deref_cached_device(dev);
   }
-  usbi_mutex_unlock(&darwin_cached_devices_lock);
+  &darwin_cached_devices_lock.Unlock();
 }
 
 static void darwin_check_version (void) {
@@ -823,7 +824,7 @@ static int darwin_get_cached_device(struct libusb_context *ctx, io_service_t ser
     IOObjectRelease(parent);
   }
 
-  usbi_mutex_lock(&darwin_cached_devices_lock);
+  &darwin_cached_devices_lock.Lock();
   do {
     *cached_out = NULL;
 
@@ -875,7 +876,7 @@ static int darwin_get_cached_device(struct libusb_context *ctx, io_service_t ser
     }
   } while (0);
 
-  usbi_mutex_unlock(&darwin_cached_devices_lock);
+  &darwin_cached_devices_lock.Unlock();
 
   /* keep track of devices regardless of if we successfully enumerate them to
      prevent them from being enumerated multiple times */
@@ -1469,10 +1470,10 @@ static void darwin_destroy_device(struct libusb_device *dev) {
 
   if (dpriv->dev) {
     /* need to hold the lock in case this is the last reference to the device */
-    usbi_mutex_lock(&darwin_cached_devices_lock);
+    &darwin_cached_devices_lock.Lock();
     darwin_deref_cached_device (dpriv->dev);
     dpriv->dev = NULL;
-    usbi_mutex_unlock(&darwin_cached_devices_lock);
+    &darwin_cached_devices_lock.Unlock();
   }
 }
 
