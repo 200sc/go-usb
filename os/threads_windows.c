@@ -24,34 +24,7 @@ struct usbi_cond_perthread {
 	HANDLE event;
 };
 
-int usbi_cond_init(usbi_cond_t *cond)
-{
-	if (!cond)
-		return EINVAL;
-	list_init(&cond->waiters);
-	list_init(&cond->not_waiting);
-	return 0;
-}
-
-int usbi_cond_broadcast(usbi_cond_t *cond)
-{
-	// Assumes mutex is locked; this is not in keeping with POSIX spec, but
-	//   libusb does this anyway, so we simplify by not adding more sync
-	//   primitives to the CV definition!
-	int fail = 0;
-	struct usbi_cond_perthread *pos;
-
-	if (!cond)
-		return EINVAL;
-	list_for_each_entry(pos, &cond->waiters, list, struct usbi_cond_perthread) {
-		if (!SetEvent(pos->event))
-			fail = 1;
-	}
-	// The wait function will remove its respective item from the list.
-	return fail ? EINVAL : 0;
-}
-
-__inline static int usbi_cond_intwait(usbi_cond_t *cond,
+__inline static int usbi_cond_intwait(sync.Cond *cond,
 	sync.Mutex *mutex, DWORD timeout_ms)
 {
 	struct usbi_cond_perthread *pos;
@@ -96,11 +69,6 @@ __inline static int usbi_cond_intwait(usbi_cond_t *cond,
 		return ETIMEDOUT;
 	else
 		return EINVAL;
-}
-// N.B.: usbi_cond_*wait() can also return ENOMEM, even though pthread_cond_*wait cannot!
-int usbi_cond_wait(usbi_cond_t *cond, sync.Mutex *mutex)
-{
-	return usbi_cond_intwait(cond, mutex, INFINITE);
 }
 
 int usbi_cond_timedwait(usbi_cond_t *cond,

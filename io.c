@@ -1103,7 +1103,7 @@ int usbi_io_init(struct libusb_context *ctx)
 {
 	int r;
 
-	usbi_cond_init(&ctx->event_waiters_cond);
+	ctx.event_waiters_cond = sync.NewCond(ctx.event_waiters_lock)
 	usbi_tls_key_create(&ctx->event_handling_key);
 	list_init(&ctx->flying_transfers);
 	list_init(&ctx->ipollfds);
@@ -1708,7 +1708,7 @@ void  libusb_unlock_events(libusb_context *ctx)
 	 * the availability of the events lock when we are modifying pollfds
 	 * (check ctx->device_close)? */
 	&ctx->event_waiters_lock.Lock();
-	usbi_cond_broadcast(&ctx->event_waiters_cond);
+	ctx.event_waiters_cond.Broadcast()
 	&ctx->event_waiters_lock.Unlock();
 }
 
@@ -1869,7 +1869,7 @@ int  libusb_wait_for_event(libusb_context *ctx, struct timeval *tv)
 
 	ctx = USBI_GET_CONTEXT(ctx);
 	if (tv == NULL) {
-		usbi_cond_wait(&ctx->event_waiters_cond, &ctx->event_waiters_lock);
+		ctx.event_waiters_cond.Wait()
 		return 0;
 	}
 

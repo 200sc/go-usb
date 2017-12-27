@@ -18,11 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define usbi_cond_t			pthread_cond_t
-#define usbi_cond_init(cond)		pthread_cond_init((cond), NULL)
-#define usbi_cond_wait			pthread_cond_wait
-#define usbi_cond_broadcast		pthread_cond_broadcast
-
 #define usbi_tls_key_t			pthread_key_t
 #define usbi_tls_key_create(key)	pthread_key_create((key), NULL)
 #define usbi_tls_key_get		pthread_getspecific

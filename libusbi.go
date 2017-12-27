@@ -119,7 +119,7 @@ type libusb_context struct {
 	/* used to wait for event completion in threads other than the one that is
 	 * event handling */
 	event_waiters_lock sync.Mutex
-	event_waiters_cond usbi_cond_t
+	event_waiters_cond sync.Cond
 
 	/* A lock to protect internal context event data. */
 	event_data_lock sync.Mutex
