@@ -29,12 +29,12 @@ package os
 // Missing from MinGW
 
 type USB_CONFIGURATION_DESCRIPTIOR struct {
-   bLength uint8
-   bDescriptorType uint8
-   wTotalLength uint16
-   bNumInterfaces uint8
-   bConfigurationValue uint8
-   iConfiguration uint8
-   bmAttributes uint8
-   MaxPower uint8
-} USB_CONFIGURATION_DESCRIPTOR
+	bLength             uint8
+	bDescriptorType     uint8
+	wTotalLength        uint16
+	bNumInterfaces      uint8
+	bConfigurationValue uint8
+	iConfiguration      uint8
+	bmAttributes        uint8
+	MaxPower            uint8
+}
