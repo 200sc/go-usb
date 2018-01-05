@@ -1374,17 +1374,17 @@ int  libusb_init(libusb_context **context)
 		// usbi_dbg("created default context");
 	}
 
-	list_init(&ctx->usb_devs);
-	list_init(&ctx->open_devs);
-	list_init(&ctx->hotplug_cbs);
+	list_init(ctx.usb_devs);
+	list_init(ctx.open_devs);
+	list_init(ctx.hotplug_cbs);
 
-	&active_contexts_lock.Lock();
+	active_contexts_lock.Lock();
 	if (first_init) {
 		first_init = 0;
-		list_init (&active_contexts_list);
+		list_init(active_contexts_list);
 	}
 	list_add (&ctx->list, &active_contexts_list);
-	&active_contexts_lock.Unlock();
+	active_contexts_lock.Unlock();
 
 	if (usbi_backend->init) {
 		r = usbi_backend->init(ctx);

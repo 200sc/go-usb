@@ -1,50 +1,5 @@
 /* -*- Mode: C; indent-tabs-mode:t ; c-basic-offset:8 -*- */
 
-int usbi_io_init(struct libusb_context *ctx)
-{
-	int r;
-
-	ctx.event_waiters_cond = sync.NewCond(ctx.event_waiters_lock)
-	list_init(&ctx->flying_transfers);
-	list_init(&ctx->ipollfds);
-	list_init(&ctx->hotplug_msgs);
-	list_init(&ctx->completed_transfers);
-
-	/* FIXME should use an eventfd on kernels that support it */
-	r = usbi_pipe(ctx->event_pipe);
-	if (r < 0) {
-		r = LIBUSB_ERROR_OTHER;
-		goto err;
-	}
-
-	r = usbi_add_pollfd(ctx, ctx->event_pipe[0], POLLIN);
-	if (r < 0)
-		goto err_close_pipe;
-
-	ctx->timerfd = timerfd_create(usbi_backend->get_timerfd_clockid(),
-		TFD_NONBLOCK);
-	if (ctx->timerfd >= 0) {
-		// usbi_dbg("using timerfd for timeouts");
-		r = usbi_add_pollfd(ctx, ctx->timerfd, POLLIN);
-		if (r < 0)
-			goto err_close_timerfd;
-	} else {
-		// usbi_dbg("timerfd not available (code %d error %d)", ctx->timerfd, errno);
-		ctx->timerfd = -1;
-	}
-
-	return 0;
-
-err_close_timerfd:
-	close(ctx->timerfd);
-	usbi_remove_pollfd(ctx, ctx->event_pipe[0]);
-err_close_pipe:
-	usbi_close(ctx->event_pipe[0]);
-	usbi_close(ctx->event_pipe[1]);
-err:
-	return r;
-}
-
 void usbi_io_exit(struct libusb_context *ctx)
 {
 	usbi_remove_pollfd(ctx, ctx->event_pipe[0]);
@@ -1262,40 +1217,7 @@ int  libusb_handle_events_locked(libusb_context *ctx,
 	return handle_events(ctx, &poll_timeout);
 }
 
-/** \ingroup libusb_poll
- * Determines whether your application must apply special timing considerations
- * when monitoring libusb's file descriptors.
- *
- * This function is only useful for applications which retrieve and poll
- * libusb's file descriptors in their own main loop (\ref libusb_pollmain).
- *
- * Ordinarily, libusb's event handler needs to be called into at specific
- * moments in time (in addition to times when there is activity on the file
- * descriptor set). The usual approach is to use libusb_get_next_timeout()
- * to learn about when the next timeout occurs, and to adjust your
- * poll()/select() timeout accordingly so that you can make a call into the
- * library at that time.
- *
- * Some platforms supported by libusb do not come with this baggage - any
- * events relevant to timing will be represented by activity on the file
- * descriptor set, and libusb_get_next_timeout() will always return 0.
- * This function allows you to detect whether you are running on such a
- * platform.
- *
- * Since v1.0.5.
- *
- * \param ctx the context to operate on, or NULL for the default context
- * \returns 0 if you must call into libusb at times determined by
- * libusb_get_next_timeout(), or 1 if all timeout events are handled internally
- * or through regular activity on the file descriptors.
- * \ref libusb_pollmain "Polling libusb file descriptors for event handling"
- */
-int  libusb_pollfds_handle_timeouts(libusb_context *ctx)
-{
-	//ctx = USBI_GET_CONTEXT(ctx);
-	//return usbi_using_timerfd(ctx);
-	return true
-}
+
 
 /** \ingroup libusb_poll
  * Determine the next internal timeout that libusb needs to handle. You only
