@@ -68,7 +68,7 @@ static bool htab_create(struct libusb_context *ctx, uint64 nel)
 	htab_filled = 0;
 
 	// allocate memory and zero out.
-	htab_table = calloc(htab_size + 1, sizeof(htab_entry));
+	htab_table := make([]htab_entry, htab_size+1)
 	if (htab_table == NULL) {
 		// usbi_err(ctx, "could not allocate space for hash table");
 		return false;

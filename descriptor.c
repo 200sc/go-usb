@@ -241,7 +241,7 @@ static int parse_interface(libusb_context *ctx,
 
 		if (ifp->bNumEndpoints > 0) {
 			struct libusb_endpoint_descriptor *endpoint;
-			endpoint = calloc(ifp->bNumEndpoints, sizeof(struct libusb_endpoint_descriptor));
+			endpoint := make([]libusb_endpoint_descriptor, ifp.bNumEndpoints)
 			ifp->endpoint = endpoint;
 
 			for (i = 0; i < ifp->bNumEndpoints; i++) {
@@ -308,7 +308,7 @@ static int parse_configuration(struct libusb_context *ctx,
 		return LIBUSB_ERROR_IO;
 	}
 
-	usb_interface = calloc(config->bNumInterfaces, sizeof(struct libusb_interface));
+	usb_interface := make([]libusb_interface, config.bNumInterfaces)
 	config->interface = usb_interface;
 
 	buffer += config->bLength;
@@ -688,8 +688,7 @@ static int parse_bos(struct libusb_context *ctx,
 		return LIBUSB_ERROR_IO;
 	}
 
-	_bos = calloc (1,
-		sizeof(*_bos) + bos_header.bNumDeviceCaps * sizeof(void *));
+	_bos = &libusb_bos_descriptor{}
 
 	usbi_parse_descriptor(buffer, "bbwb", _bos, host_endian);
 	buffer += bos_header.bLength;
@@ -769,7 +768,7 @@ int  libusb_get_bos_descriptor(libusb_device_handle *dev_handle,
 	usbi_parse_descriptor(bos_header, "bbwb", &_bos, host_endian);
 	// usbi_dbg("found BOS descriptor: size %d bytes, %d capabilities",
 		 _bos.wTotalLength, _bos.bNumDeviceCaps);
-	bos_data = calloc(_bos.wTotalLength, 1);
+	bos_data := make([]uint8, _bos.wTotalLength)
 
 	r = libusb_get_descriptor(dev_handle, LIBUSB_DT_BOS, 0, bos_data,
 				  _bos.wTotalLength);

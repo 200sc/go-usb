@@ -47,51 +47,6 @@ static  bool guid_eq(const GUID *guid1, const GUID *guid2)
 	return false;
 }
 
-
-/*
- * Sanitize Microsoft's paths: convert to uppercase, add prefix and fix backslashes.
- * Return an allocated sanitized string or NULL on error.
- */
-static char *sanitize_path(const char *path)
-{
-	const char root_prefix[] = "\\\\.\\";
-	int j, size, root_size;
-	char *ret_path = NULL;
-	int add_root = 0;
-
-	if (path == NULL)
-		return NULL;
-
-	size = safe_strlen(path) + 1;
-	root_size = sizeof(root_prefix) - 1;
-
-	// Microsoft indiscriminately uses '\\?\', '\\.\', '##?#" or "##.#" for root prefixes.
-	if (!((size > 3) && (((path[0] == '\\') && (path[1] == '\\') && (path[3] == '\\'))
-			|| ((path[0] == '#') && (path[1] == '#') && (path[3] == '#'))))) {
-		add_root = root_size;
-		size += add_root;
-	}
-
-	ret_path = calloc(1, size);
-	if (ret_path == NULL)
-		return NULL;
-
-	safe_strcpy(&ret_path[add_root], size-add_root, path);
-
-	// Ensure consistency with root prefix
-	for (j = 0; j < root_size; j++)
-		ret_path[j] = root_prefix[j];
-
-	// Same goes for '\' and '#' after the root prefix. Ensure '#' is used
-	for (j = root_size; j < size; j++) {
-		ret_path[j] = (char)toupper((int)ret_path[j]); // Fix case too
-		if (ret_path[j] == '\\')
-			ret_path[j] = '#';
-	}
-
-	return ret_path;
-}
-
 /*
  * Cfgmgr32, OLE32 and SetupAPI DLL functions
  */
@@ -231,11 +186,7 @@ static SP_DEVICE_INTERFACE_DETAIL_DATA_A *get_interface_details(struct libusb_co
 		goto err_exit;
 	}
 
-	dev_interface_details = calloc(1, size);
-	if (dev_interface_details == NULL) {
-		// usbi_err(ctx, "could not allocate interface data for index %u.", _index);
-		goto err_exit;
-	}
+	dev_interface_details := &SP_DEVICE_INTERFACE_DETAIL_DATA_A{}
 
 	dev_interface_details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
 	if (!pSetupDiGetDeviceInterfaceDetailA(*dev_info, &dev_interface_data,
@@ -300,11 +251,7 @@ static SP_DEVICE_INTERFACE_DETAIL_DATA_A *get_interface_details_filter(struct li
 		goto err_exit;
 	}
 
-	dev_interface_details = calloc(1, size);
-	if (dev_interface_details == NULL) {
-		// usbi_err(ctx, "could not allocate interface data for index %u.", _index);
-		goto err_exit;
-	}
+	dev_interface_details := &SP_DEVICE_INTERFACE_DETAIL_DATA_A{}
 
 	dev_interface_details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
 	if (!pSetupDiGetDeviceInterfaceDetailA(*dev_info, &dev_interface_data, dev_interface_details, size, &size, NULL))
@@ -352,7 +299,6 @@ static uint64 get_ancestor_session_id(DWORD devinst, unsigned level)
 {
 	DWORD parent_devinst;
 	uint64 session_id = 0;
-	char *sanitized_path = NULL;
 	char path[MAX_PATH_LENGTH];
 	unsigned i;
 
@@ -368,12 +314,9 @@ static uint64 get_ancestor_session_id(DWORD devinst, unsigned level)
 	if (CM_Get_Device_IDA(devinst, path, MAX_PATH_LENGTH, 0) != CR_SUCCESS)
 		return 0;
 
-	// TODO: (post hotplug): try without sanitizing
-	sanitized_path = sanitize_path(path);
-	if (sanitized_path == NULL)
-		return 0;
+	// add GO: add path sanitation
 
-	session_id = htab_hash(sanitized_path);
+	session_id = htab_hash(path);
 	return session_id;
 }
 
@@ -775,7 +718,7 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 	if (dev->num_configurations == 0)
 		return LIBUSB_ERROR_INVALID_PARAM;
 
-	priv->config_descriptor = calloc(dev->num_configurations, sizeof(uint8 *));
+	priv.config_descriptor = make([]*uint8, dev.num_configurations)
 
 	for (i = 0; i < dev->num_configurations; i++)
 		priv->config_descriptor[i] = NULL;
@@ -810,8 +753,8 @@ static int cache_config_descriptors(struct libusb_device *dev, HANDLE hub_handle
 			LOOP_BREAK(LIBUSB_ERROR_IO);
 		}
 
-		size = sizeof(USB_DESCRIPTOR_REQUEST) + cd_buf_short.data.wTotalLength;
-		cd_buf_actual = calloc(1, size);
+		//size = sizeof(USB_DESCRIPTOR_REQUEST) + cd_buf_short.data.wTotalLength;
+		cd_buf_actual := &USB_DESCRIPTOR_REQUEST{}
 
 		// Actual call
 		cd_buf_actual->ConnectionIndex = (uint64)priv->port;
@@ -1097,7 +1040,7 @@ static int set_composite_interface(struct libusb_context *ctx, struct libusb_dev
 	priv->usb_interface[interface_number].apib = &usb_api_backend[api];
 	priv->usb_interface[interface_number].sub_api = sub_api;
 	if ((api == USB_API_HID) && (priv->hid == NULL)) {
-		priv->hid = calloc(1, sizeof(struct hid_device_priv));
+		priv.hid = &hid_device_priv{}
 	}
 
 	return LIBUSB_SUCCESS;
@@ -1187,7 +1130,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 	guid[HID_PASS] = &hid_guid;
 	nb_guids = HID_PASS + 1;
 
-	unref_list = calloc(unref_size, sizeof(libusb_device *));
+	unref_list := make([]*libusb_device, unref_size)
 
 	for (pass = 0; ((pass < nb_guids) && (r == LIBUSB_SUCCESS)); pass++) {
 		for (i = 0; ; i++) {
@@ -1211,11 +1154,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				if (dev_interface_details == NULL)
 					break;
 
-				dev_interface_path = sanitize_path(dev_interface_details->DevicePath);
-				if (dev_interface_path == NULL) {
-					// usbi_warn(ctx, "could not sanitize device interface path for '%s'", dev_interface_details->DevicePath);
-					continue;
-				}
+				// todo GO: add path sanitation for dev_interface_details.DevicePath
 			} else {
 				// Workaround for a Nec/Renesas USB 3.0 driver bug where root hubs are
 				// being listed under the "NUSB3" PnP Symbolic Name rather than "USB".
@@ -1238,15 +1177,8 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				continue;
 			}
 
-			dev_id_path = sanitize_path(path);
-			if (dev_id_path == NULL) {
-				// usbi_warn(ctx, "could not sanitize device id path for devinst %X, skipping",
-					(uint)dev_info_data.DevInst);
-				continue;
-			}
-#ifdef ENUM_DEBUG
-			// usbi_dbg("PRO: %s", dev_id_path);
-#endif
+			// todo GO: add path sanitation
+			dev_id_path = path
 
 			// The SPDRP_ADDRESS for USB devices is the device port number on the hub
 			port_nr = 0;
@@ -1254,7 +1186,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				if ((!pSetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_ADDRESS,
 					&reg_type, (BYTE *)&port_nr, 4, &size)) || (size != 4)) {
 					// usbi_warn(ctx, "could not retrieve port number for device '%s', skipping: %s",
-						dev_id_path, windows_error_str(0));
+					//	dev_id_path, windows_error_str(0));
 					continue;
 				}
 			}
@@ -1286,7 +1218,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 							// usbi_err(ctx, "program assertion failed: too many GUIDs");
 							LOOP_BREAK(LIBUSB_ERROR_OVERFLOW);
 						}
-						if_guid = calloc(1, sizeof(GUID));
+						if_guid := &GUID{}
 
 						pCLSIDFromString(guid_string_w, if_guid);
 						guid[nb_guids++] = if_guid;
@@ -1422,7 +1354,7 @@ static int windows_get_device_list(struct libusb_context *ctx, struct discovered
 				case USB_API_HUB:
 					break;
 				case USB_API_HID:
-					priv->hid = calloc(1, sizeof(struct hid_device_priv));
+					priv.hid := &hid_device_priv{}
 
 					priv->hid->nb_interfaces = 0;
 					break;
@@ -2403,7 +2335,8 @@ static int winusbx_claim_interface(int sub_api, struct libusb_device_handle *dev
 						break;
 
 					// ignore GUID part
-					dev_path_no_guid = sanitize_path(strtok(dev_interface_details->DevicePath, "{"));
+					// todo go: path santiation
+					dev_path_no_guid = strings.Split(dev_interface_details.DevicePath, "{")[0]
 					if (safe_strncmp(dev_path_no_guid, priv->usb_interface[iface].path, safe_strlen(dev_path_no_guid)) == 0) {
 						file_handle = CreateFileA(filter_path, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ,
 							NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
@@ -3122,7 +3055,7 @@ static int _hid_get_report(struct hid_device_priv *dev, HANDLE hid_handle, int i
 	}
 
 	// Add a trailing byte to detect overflows
-	buf = calloc(1, expected_size + 1);
+	buf := make([]uint8, expected_size+1)
 
 	buf[0] = (uint8)id; // Must be set always
 	// usbi_dbg("report ID: 0x%02X", buf[0]);
@@ -3380,7 +3313,7 @@ static int hid_open(int sub_api, struct libusb_device_handle *dev_handle)
 			// usbi_dbg("%u HID %s report value(s) found", (uint)size[j], type[j]);
 			priv->hid->uses_report_ids[j] = false;
 			if (size[j] > 0) {
-				value_caps = calloc(size[j], sizeof(HIDP_VALUE_CAPS));
+				value_caps := make([]HIDP_VALUE_CAPS, size[j])
 				if ((value_caps != NULL)
 						&& (HidP_GetValueCaps((HIDP_REPORT_TYPE)j, value_caps, &size[j], preparsed_data) == HIDP_STATUS_SUCCESS)
 						&& (size[j] >= 1)) {
@@ -3661,7 +3594,7 @@ static int hid_submit_bulk_transfer(int sub_api, struct usbi_transfer *itransfer
 		length = transfer->length;
 
 	// Add a trailing byte to detect overflows on input
-	transfer_priv->hid_buffer = calloc(1, length + 1);
+	transfer_priv.hid_buffer := make([]uint8, length+1)
 	transfer_priv->hid_expected_size = length;
 
 	if (direction_in) {

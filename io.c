@@ -1,33 +1,3 @@
-/** \ingroup libusb_asyncio
- * Free a transfer structure. This should be called for all transfers
- * allocated with libusb_alloc_transfer().
- *
- * If the \ref libusb_transfer_flags::LIBUSB_TRANSFER_FREE_BUFFER
- * "LIBUSB_TRANSFER_FREE_BUFFER" flag is set and the transfer buffer is
- * non-NULL, this function will also free the transfer buffer using the
- * standard system memory allocator (e.g. free()).
- *
- * It is legal to call this function with a NULL transfer. In this case,
- * the function will simply return safely.
- *
- * It is not legal to free an active transfer (one which has been submitted
- * and has not yet completed).
- *
- * \param transfer the transfer to free
- */
-
-static int disarm_timerfd(struct libusb_context *ctx)
-{
-	const struct itimerspec disarm_timer = { { 0, 0 }, { 0, 0 } };
-	int r;
-
-	// usbi_dbg("");
-	r = timerfd_settime(ctx->timerfd, 0, &disarm_timer, NULL);
-	if (r < 0)
-		return LIBUSB_ERROR_OTHER;
-	else
-		return 0;
-}
 
 /* iterates through the flying transfers, and rearms the timerfd based on the
  * next upcoming timeout.
@@ -791,8 +761,8 @@ static int handle_events(struct libusb_context *ctx, struct timeval *tv)
 		 * required internal fds (memory corruption?) */
 		assert(ctx->pollfds_cnt >= internal_nfds);
 
-		ctx->pollfds = calloc(ctx->pollfds_cnt, sizeof(*ctx->pollfds));
-
+		ctx.pollfds = make([]int, ctx.pollfds_cnt)
+		
 		list_for_each_entry(ipollfd, &ctx->ipollfds, list, struct usbi_pollfd) {
 			struct libusb_pollfd *pollfd = &ipollfd->pollfd;
 			i++;

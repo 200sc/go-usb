@@ -222,7 +222,7 @@ static int usbdk_cache_config_descriptors(struct libusb_context *ctx,
 	USB_DK_CONFIG_DESCRIPTOR_REQUEST Request;
 	Request.ID = info->ID;
 
-	p->config_descriptors = calloc(info->DeviceDescriptor.bNumConfigurations, sizeof(PUSB_CONFIGURATION_DESCRIPTOR));
+	p.config_descriptors = make([]PUSB_CONFIGURATION_DESCRIPTOR, info.DeviceDescriptor.bNumConfigurations)
 
 	for (i = 0; i < info->DeviceDescriptor.bNumConfigurations; i++) {
 		uint64 Length;

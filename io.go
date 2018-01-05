@@ -87,6 +87,35 @@ func calculate_timeout(transfer *usbi_transfer) int {
 }
 
 /** \ingroup libusb_asyncio
+ * Free a transfer structure. This should be called for all transfers
+ * allocated with libusb_alloc_transfer().
+ *
+ * If the \ref libusb_transfer_flags::LIBUSB_TRANSFER_FREE_BUFFER
+ * "LIBUSB_TRANSFER_FREE_BUFFER" flag is set and the transfer buffer is
+ * non-NULL, this function will also free the transfer buffer using the
+ * standard system memory allocator (e.g. free()).
+ *
+ * It is legal to call this function with a NULL transfer. In this case,
+ * the function will simply return safely.
+ *
+ * It is not legal to free an active transfer (one which has been submitted
+ * and has not yet completed).
+ *
+ * \param transfer the transfer to free
+ */
+
+func disarm_timerfd(ctx *libusb_context) int {
+	disarm_timer := itimerspec{{0,0},{0,0}}
+
+	r := timerfd_settime(ctx->timerfd, 0, &disarm_timer, NULL)
+	if (r < 0) {
+		return LIBUSB_ERROR_OTHER
+	}
+	
+	return 0
+ }
+
+/** \ingroup libusb_asyncio
  * Allocate a libusb transfer with a specified number of isochronous packet
  * descriptors. The returned transfer is pre-initialized for you. When the new
  * transfer is no longer needed, it should be freed with

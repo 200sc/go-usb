@@ -829,7 +829,7 @@ static int darwin_get_cached_device(struct libusb_context *ctx, io_service_t ser
       break;
     }
 
-    new_device = calloc (1, sizeof (*new_device));
+    new_device := &darwin_cached_device{}
 
     /* add this device to the cached device list */
     list_add(&new_device->list, &darwin_cached_devices);
@@ -1571,7 +1571,7 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer) {
 
   if (!tpriv->isoc_framelist) {
     tpriv->num_iso_packets = transfer->num_iso_packets;
-    tpriv->isoc_framelist = (IOUSBIsocFrame*) calloc (transfer->num_iso_packets, sizeof(IOUSBIsocFrame));
+    tpriv->isoc_framelist := make([]IOUSBIsocFrame, transfer.num_iso_packets)
   }
 
   /* copy the frame list from the libusb descriptor (the structures differ only is member order) */

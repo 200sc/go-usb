@@ -162,13 +162,9 @@ static int _fd_to_index_and_lock(int fd)
 
 static OVERLAPPED *create_overlapped(void)
 {
-	OVERLAPPED *overlapped = (OVERLAPPED*) calloc(1, sizeof(OVERLAPPED));
-	if (overlapped == NULL) {
-		return NULL;
-	}
+	overlapped := &OVERLAPPED{}
 	overlapped->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if(overlapped->hEvent == NULL) {
-		free (overlapped);
 		return NULL;
 	}
 	return overlapped;
@@ -483,8 +479,8 @@ int usbi_poll(struct pollfd *fds, uint nfds, int timeout)
 	CHECK_INIT_POLLING;
 
 	triggered = 0;
-	handles_to_wait_on = (HANDLE*) calloc(nfds+1, sizeof(HANDLE));	// +1 for fd_update
-	handle_to_index = (int*) calloc(nfds, sizeof(int));
+	handles_to_wait_on := make([]HANDLE, nfds+1) 
+	handle_to_index := make([]int, nfds)
 	if ((handles_to_wait_on == NULL) || (handle_to_index == NULL)) {
 		errno = ENOMEM;
 		triggered = -1;

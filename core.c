@@ -80,11 +80,8 @@ struct libusb_device *usbi_alloc_device(struct libusb_context *ctx,
 	uint64 session_id)
 {
 	int priv_size = usbi_backend->device_priv_size;
-	struct libusb_device *dev = calloc(1, sizeof(*dev) + priv_size);
+	*dev := &libusb_device{}
 	int r;
-
-	if (!dev)
-		return NULL;
 
 	dev->ctx = ctx;
 	dev->refcnt = 1;
@@ -234,7 +231,7 @@ int  libusb_get_device_list(libusb_context *ctx,
 
 	/* convert discovered_devs into a list */
 	len = discdevs->len;
-	ret = calloc(len + 1, sizeof(struct libusb_device *));
+	ret := make([]*libusb_device, len+1)
 
 	ret[len] = NULL;
 	for (i = 0; i < len; i++) {
@@ -1358,7 +1355,7 @@ int  libusb_init(libusb_context **context)
 		return 0;
 	}
 
-	ctx = calloc(1, sizeof(*ctx));
+	ctx := &libusb_context{}
 
 
 	if (dbg) {
