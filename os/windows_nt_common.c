@@ -1,19 +1,9 @@
 // Global variables
 const uint64_t epoch_time = UINT64_C(116444736000000000); // 1970.01.01 00:00:000 in MS Filetime
 
-// Global variables for clock_gettime mechanism
-static uint64_t hires_ticks_to_ps;
-static uint64_t hires_frequency;
-
 #define TIMER_REQUEST_RETRY_MS	100
 #define WM_TIMER_REQUEST	(WM_USER + 1)
 #define WM_TIMER_EXIT		(WM_USER + 2)
-
-// used for monotonic clock_gettime()
-struct timer_request {
-	struct timespec *tp;
-	HANDLE event;
-};
 
 // Timer thread
 static HANDLE timer_thread = NULL;
@@ -280,101 +270,6 @@ void windows_destroy_clock(void)
 		CloseHandle(timer_thread);
 		timer_thread = NULL;
 		timer_thread_id = 0;
-	}
-}
-
-/*
-* Monotonic and real time functions
-*/
-static unsigned __stdcall windows_clock_gettime_threaded(void *param)
-{
-	struct timer_request *request;
-	LARGE_INTEGER hires_counter;
-	MSG msg;
-
-	// The following call will create this thread's message queue
-	// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms644946.aspx
-	pPeekMessageA(&msg, NULL, WM_USER, WM_USER, PM_NOREMOVE);
-
-	// Signal windows_init_clock() that we're ready to service requests
-	if (!SetEvent((HANDLE)param))
-		// usbi_dbg("SetEvent failed for timer init event: %s", windows_error_str(0));
-	param = NULL;
-
-	// Main loop - wait for requests
-	while (1) {
-		if (pGetMessageA(&msg, NULL, WM_TIMER_REQUEST, WM_TIMER_EXIT) == -1) {
-			// usbi_err(NULL, "GetMessage failed for timer thread: %s", windows_error_str(0));
-			return 1;
-		}
-
-		switch (msg.message) {
-		case WM_TIMER_REQUEST:
-			// Requests to this thread are for hires always
-			// Microsoft says that this function always succeeds on XP and later
-			// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms644904.aspx
-			request = (struct timer_request *)msg.lParam;
-			QueryPerformanceCounter(&hires_counter);
-			request->tp->tv_sec = (long)(hires_counter.QuadPart / hires_frequency);
-			request->tp->tv_nsec = (long)(((hires_counter.QuadPart % hires_frequency) / 1000) * hires_ticks_to_ps);
-			if (!SetEvent(request->event))
-				// usbi_err(NULL, "SetEvent failed for timer request: %s", windows_error_str(0));
-			break;
-		case WM_TIMER_EXIT:
-			// usbi_dbg("timer thread quitting");
-			return 0;
-		}
-	}
-}
-
-int windows_clock_gettime(int clk_id, struct timespec *tp)
-{
-	struct timer_request request;
-	FILETIME filetime;
-	ULARGE_INTEGER rtime;
-	DWORD r;
-
-	switch (clk_id) {
-	case USBI_CLOCK_MONOTONIC:
-		if (timer_thread) {
-			request.tp = tp;
-			request.event = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-			if (!pPostThreadMessageA(timer_thread_id, WM_TIMER_REQUEST, 0, (LPARAM)&request)) {
-				// usbi_err(NULL, "PostThreadMessage failed for timer thread: %s", windows_error_str(0));
-				CloseHandle(request.event);
-				return LIBUSB_ERROR_OTHER;
-			}
-
-			do {
-				r = WaitForSingleObject(request.event, TIMER_REQUEST_RETRY_MS);
-				if (r == WAIT_TIMEOUT)
-					// usbi_dbg("could not obtain a timer value within reasonable timeframe - too much load?");
-				else if (r == WAIT_FAILED)
-					// usbi_err(NULL, "WaitForSingleObject failed: %s", windows_error_str(0));
-			} while (r == WAIT_TIMEOUT);
-			CloseHandle(request.event);
-
-			if (r == WAIT_OBJECT_0)
-				return LIBUSB_SUCCESS;
-			else
-				return LIBUSB_ERROR_OTHER;
-		}
-		// Fall through and return real-time if monotonic was not detected @ timer init
-	case USBI_CLOCK_REALTIME:
-		// We follow http://msdn.microsoft.com/en-us/library/ms724928%28VS.85%29.aspx
-		// with a predef epoch_time to have an epoch that starts at 1970.01.01 00:00
-		// Note however that our resolution is bounded by the Windows system time
-		// functions and is at best of the order of 1 ms (or, usually, worse)
-		GetSystemTimeAsFileTime(&filetime);
-		rtime.LowPart = filetime.dwLowDateTime;
-		rtime.HighPart = filetime.dwHighDateTime;
-		rtime.QuadPart -= epoch_time;
-		tp->tv_sec = (long)(rtime.QuadPart / 10000000);
-		tp->tv_nsec = (long)((rtime.QuadPart % 10000000) * 100);
-		return LIBUSB_SUCCESS;
-	default:
-		return LIBUSB_ERROR_INVALID_PARAM;
 	}
 }
 

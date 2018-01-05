@@ -1345,10 +1345,10 @@ int  libusb_init(libusb_context **context)
 	static int first_init = 1;
 	int r = 0;
 
-	&default_context_lock.Lock();
+	default_context_lock.Lock();
 
 	if (!timestamp_origin.tv_sec) {
-		usbi_gettimeofday(&timestamp_origin, NULL);
+		timestamp_origin := time.Now()
 	}
 
 	if (!context && usbi_default_context) {
@@ -1516,112 +1516,3 @@ int  libusb_has_capability(uint32 capability)
 	}
 	return 0;
 }
-
-
-// void // usbi_log_v(struct libusb_context *ctx, libusb_log_level level,
-// 	const char *function, const char *format, va_list args)
-// {
-// 	const char *prefix = "";
-// 	char buf[USBI_MAX_LOG_LEN];
-// 	struct timeval now;
-// 	int global_debug, header_len, text_len;
-// 	static int has_debug_header_been_displayed = 0;
-
-// 	int ctx_level = 0;
-
-// 	USBI_GET_CONTEXT(ctx);
-// 	if (ctx) {
-// 		ctx_level = ctx->debug;
-// 	} else {
-// 		char *dbg = getenv("LIBUSB_DEBUG");
-// 		if (dbg)
-// 			ctx_level = atoi(dbg);
-// 	}
-// 	global_debug = (ctx_level == LIBUSB_LOG_LEVEL_DEBUG);
-// 	if (!ctx_level)
-// 		return;
-// 	if (level == LIBUSB_LOG_LEVEL_WARNING && ctx_level < LIBUSB_LOG_LEVEL_WARNING)
-// 		return;
-// 	if (level == LIBUSB_LOG_LEVEL_INFO && ctx_level < LIBUSB_LOG_LEVEL_INFO)
-// 		return;
-// 	if (level == LIBUSB_LOG_LEVEL_DEBUG && ctx_level < LIBUSB_LOG_LEVEL_DEBUG)
-// 		return;
-// #endif
-
-// 	usbi_gettimeofday(&now, NULL);
-// 	if ((global_debug) && (!has_debug_header_been_displayed)) {
-// 		has_debug_header_been_displayed = 1;
-// 		// usbi_log_str(ctx, LIBUSB_LOG_LEVEL_DEBUG, "[timestamp] [threadID] facility level [function call] <message>" "\n");
-// 		// usbi_log_str(ctx, LIBUSB_LOG_LEVEL_DEBUG, "--------------------------------------------------------------------------------" "\n");
-// 	}
-// 	if (now.tv_usec < timestamp_origin.tv_usec) {
-// 		now.tv_sec--;
-// 		now.tv_usec += 1000000;
-// 	}
-// 	now.tv_sec -= timestamp_origin.tv_sec;
-// 	now.tv_usec -= timestamp_origin.tv_usec;
-
-// 	switch (level) {
-// 	case LIBUSB_LOG_LEVEL_INFO:
-// 		prefix = "info";
-// 		break;
-// 	case LIBUSB_LOG_LEVEL_WARNING:
-// 		prefix = "warning";
-// 		break;
-// 	case LIBUSB_LOG_LEVEL_ERROR:
-// 		prefix = "error";
-// 		break;
-// 	case LIBUSB_LOG_LEVEL_DEBUG:
-// 		prefix = "debug";
-// 		break;
-// 	case LIBUSB_LOG_LEVEL_NONE:
-// 		return;
-// 	default:
-// 		prefix = "unknown";
-// 		break;
-// 	}
-
-// 	if (global_debug) {
-// 		header_len = snprintf(buf, sizeof(buf),
-// 			"[%2d.%06d] [%08x] libusb: %s [%s] ",
-// 			(int)now.tv_sec, (int)now.tv_usec, usbi_get_tid(), prefix, function);
-// 	} else {
-// 		header_len = snprintf(buf, sizeof(buf),
-// 			"libusb: %s [%s] ", prefix, function);
-// 	}
-
-// 	if (header_len < 0 || header_len >= (int)sizeof(buf)) {
-// 		/* Somehow snprintf failed to write to the buffer,
-// 		 * remove the header so something useful is output. */
-// 		header_len = 0;
-// 	}
-// 	/* Make sure buffer is NUL terminated */
-// 	buf[header_len] = '\0';
-// 	text_len = vsnprintf(buf + header_len, sizeof(buf) - header_len,
-// 		format, args);
-// 	if (text_len < 0 || text_len + header_len >= (int)sizeof(buf)) {
-// 		/* Truncated log output. On some platforms a -1 return value means
-// 		 * that the output was truncated. */
-// 		text_len = sizeof(buf) - header_len;
-// 	}
-// 	if (header_len + text_len + sizeof("\n") >= sizeof(buf)) {
-// 		/* Need to truncate the text slightly to fit on the terminator. */
-// 		text_len -= (header_len + text_len + sizeof("\n")) - sizeof(buf);
-// 	}
-// 	strcpy(buf + header_len + text_len, "\n");
-
-// 	// usbi_log_str(ctx, level, buf);
-// }
-
-// void // usbi_log(struct libusb_context *ctx, libusb_log_level level,
-// 	const char *function, const char *format, ...)
-// {
-// 	va_list args;
-
-// 	va_start (args, format);
-// 	// usbi_log_v(ctx, level, function, format, args);
-// 	va_end (args);
-// }
-
-
-

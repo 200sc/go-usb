@@ -1865,31 +1865,6 @@ static int darwin_handle_transfer_completion (struct usbi_transfer *itransfer) {
   return usbi_handle_transfer_completion (itransfer, darwin_transfer_status (itransfer, tpriv->result));
 }
 
-static int darwin_clock_gettime(int clk_id, struct timespec *tp) {
-  mach_timespec_t sys_time;
-  clock_serv_t clock_ref;
-
-  switch (clk_id) {
-  case USBI_CLOCK_REALTIME:
-    /* CLOCK_REALTIME represents time since the epoch */
-    clock_ref = clock_realtime;
-    break;
-  case USBI_CLOCK_MONOTONIC:
-    /* use system boot time as reference for the monotonic clock */
-    clock_ref = clock_monotonic;
-    break;
-  default:
-    return LIBUSB_ERROR_INVALID_PARAM;
-  }
-
-  clock_get_time (clock_ref, &sys_time);
-
-  tp->tv_sec  = sys_time.tv_sec;
-  tp->tv_nsec = sys_time.tv_nsec;
-
-  return 0;
-}
-
 #if InterfaceVersion >= 550
 static int darwin_alloc_streams (struct libusb_device_handle *dev_handle, uint32 num_streams, uint8 *endpoints,
                                  int num_endpoints) {
@@ -1986,8 +1961,6 @@ const struct usbi_os_backend darwin_backend = {
         .clear_transfer_priv = darwin_clear_transfer_priv,
 
         .handle_transfer_completion = darwin_handle_transfer_completion,
-
-        .clock_gettime = darwin_clock_gettime,
 
         .device_priv_size = sizeof(struct darwin_device_priv),
         .device_handle_priv_size = sizeof(struct darwin_device_handle_priv),

@@ -1,42 +1,3 @@
-/* -*- Mode: C; indent-tabs-mode:t ; c-basic-offset:8 -*- */
-
-void usbi_io_exit(struct libusb_context *ctx)
-{
-	usbi_remove_pollfd(ctx, ctx->event_pipe[0]);
-	usbi_close(ctx->event_pipe[0]);
-	usbi_close(ctx->event_pipe[1]);
-	usbi_remove_pollfd(ctx, ctx->timerfd);
-	close(ctx->timerfd);
-}
-
-static int calculate_timeout(struct usbi_transfer *transfer)
-{
-	int r;
-	struct timespec current_time;
-	uint timeout = transfer.libusbTransfer->timeout;
-
-	if (!timeout)
-		return 0;
-
-	r = usbi_backend->clock_gettime(USBI_CLOCK_MONOTONIC, &current_time);
-	if (r < 0) {
-		// usbi_err(ITRANSFER_CTX(transfer),
-			"failed to read monotonic clock, errno=%d", errno);
-		return r;
-	}
-
-	current_time.tv_sec += timeout / 1000;
-	current_time.tv_nsec += (timeout % 1000) * 1000000;
-
-	while (current_time.tv_nsec >= 1000000000) {
-		current_time.tv_nsec -= 1000000000;
-		current_time.tv_sec++;
-	}
-
-	TIMESPEC_TO_TIMEVAL(&transfer->timeout, &current_time);
-	return 0;
-}
-
 /** \ingroup libusb_asyncio
  * Allocate a libusb transfer with a specified number of isochronous packet
  * descriptors. The returned transfer is pre-initialized for you. When the new
@@ -764,9 +725,8 @@ static int handle_timeouts_locked(struct libusb_context *ctx)
 		return 0;
 
 	/* get current time */
-	r = usbi_backend->clock_gettime(USBI_CLOCK_MONOTONIC, &systime_ts);
-	if (r < 0)
-		return r;
+	systime_ts := time.Now()
+
 
 	TIMESPEC_TO_TIMEVAL(&systime, &systime_ts);
 
@@ -1227,11 +1187,7 @@ int  libusb_get_next_timeout(libusb_context *ctx,
 		return 0;
 	}
 
-	r = usbi_backend->clock_gettime(USBI_CLOCK_MONOTONIC, &cur_ts);
-	if (r < 0) {
-		// usbi_err(ctx, "failed to read monotonic clock, errno=%d", errno);
-		return 0;
-	}
+	cur_ts := time.Now()
 	TIMESPEC_TO_TIMEVAL(&cur_tv, &cur_ts);
 
 	if (!timercmp(&cur_tv, &next_timeout, <)) {

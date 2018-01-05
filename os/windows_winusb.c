@@ -1917,7 +1917,6 @@ const struct usbi_os_backend windows_backend = {
 	windows_handle_events,
 	NULL,
 
-	windows_clock_gettime,
 	NULL,
 	sizeof(struct windows_device_priv),
 	sizeof(struct windows_device_handle_priv),

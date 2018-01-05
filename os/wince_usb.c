@@ -719,42 +719,6 @@ static int wince_handle_events(
 	return r;
 }
 
-/*
- * Monotonic and real time functions
- */
-static int wince_clock_gettime(int clk_id, struct timespec *tp)
-{
-	LARGE_INTEGER hires_counter;
-	ULARGE_INTEGER rtime;
-	FILETIME filetime;
-	SYSTEMTIME st;
-
-	switch(clk_id) {
-	case USBI_CLOCK_MONOTONIC:
-		if (hires_frequency != 0 && QueryPerformanceCounter(&hires_counter)) {
-			tp->tv_sec = (long)(hires_counter.QuadPart / hires_frequency);
-			tp->tv_nsec = (long)(((hires_counter.QuadPart % hires_frequency) / 1000) * hires_ticks_to_ps);
-			return LIBUSB_SUCCESS;
-		}
-		// Fall through and return real-time if monotonic read failed or was not detected @ init
-	case USBI_CLOCK_REALTIME:
-		// We follow http://msdn.microsoft.com/en-us/library/ms724928%28VS.85%29.aspx
-		// with a predef epoch_time to have an epoch that starts at 1970.01.01 00:00
-		// Note however that our resolution is bounded by the Windows system time
-		// functions and is at best of the order of 1 ms (or, usually, worse)
-		GetSystemTime(&st);
-		SystemTimeToFileTime(&st, &filetime);
-		rtime.LowPart = filetime.dwLowDateTime;
-		rtime.HighPart = filetime.dwHighDateTime;
-		rtime.QuadPart -= epoch_time;
-		tp->tv_sec = (long)(rtime.QuadPart / 10000000);
-		tp->tv_nsec = (long)((rtime.QuadPart % 10000000)*100);
-		return LIBUSB_SUCCESS;
-	default:
-		return LIBUSB_ERROR_INVALID_PARAM;
-	}
-}
-
 const struct usbi_os_backend wince_backend = {
 	"Windows CE",
 	0,
@@ -799,7 +763,6 @@ const struct usbi_os_backend wince_backend = {
 	wince_handle_events,
 	NULL,				/* handle_transfer_completion() */
 
-	wince_clock_gettime,
 	sizeof(struct wince_device_priv),
 	0,
 	sizeof(struct wince_transfer_priv),

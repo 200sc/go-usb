@@ -56,6 +56,36 @@ package usb
 	 return 0
  }
 
+func usbi_io_exit(ctx *libusb_context) {
+	usbi_remove_pollfd(ctx, ctx.event_pipe[0])
+	usbi_close(ctx.event_pipe[0])
+	usbi_close(ctx.event_pipe[1])
+	usbi_remove_pollfd(ctx, ctx.timerfd)
+	close(ctx.timerfd)
+}
+
+func calculate_timeout(transfer *usbi_transfer) int {
+	
+	timeout := transfer.libusbTransfer.timeout
+
+	if (timeout == 0) {
+		return 0
+	}
+
+	current_time := time.Now()
+
+	current_time.tv_sec += timeout / 1000;
+	current_time.tv_nsec += (timeout % 1000) * 1000000;
+
+	while (current_time.tv_nsec >= 1000000000) {
+		current_time.tv_nsec -= 1000000000;
+		current_time.tv_sec++;
+	}
+
+	TIMESPEC_TO_TIMEVAL(&transfer->timeout, &current_time);
+	return 0;
+}
+
  /** \ingroup libusb_poll
  * Handle any pending events by polling file descriptors, without checking if
  * any other threads are already doing so. Must be called with the event lock

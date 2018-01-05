@@ -266,25 +266,6 @@ static const char *find_usbfs_path(void)
 	return ret;
 }
 
-/* the monotonic clock is not usable on all systems (e.g. embedded ones often
- * seem to lack it). fall back to REALTIME if we have to. */
-static clockid_t find_monotonic_clock(void)
-{
-#ifdef CLOCK_MONOTONIC
-	struct timespec ts;
-	int r;
-
-	/* Linux 2.6.28 adds CLOCK_MONOTONIC_RAW but we don't use it
-	 * because it's not available through timerfd */
-	r = clock_gettime(CLOCK_MONOTONIC, &ts);
-	if (r == 0)
-		return CLOCK_MONOTONIC;
-	// usbi_dbg("monotonic clock doesn't work, errno %d", errno);
-#endif
-
-	return CLOCK_REALTIME;
-}
-
 static int kernel_version_ge(int major, int minor, int sublevel)
 {
 	struct utsname uts;
@@ -2564,17 +2545,6 @@ out:
 	return r;
 }
 
-static int op_clock_gettime(int clk_id, struct timespec *tp)
-{
-	switch (clk_id) {
-	case USBI_CLOCK_MONOTONIC:
-		return clock_gettime(monotonic_clkid, tp);
-	case USBI_CLOCK_REALTIME:
-		return clock_gettime(CLOCK_REALTIME, tp);
-	default:
-		return LIBUSB_ERROR_INVALID_PARAM;
-  }
-}
 
 static clockid_t op_get_timerfd_clockid(void)
 {
@@ -2622,8 +2592,6 @@ const struct usbi_os_backend linux_usbfs_backend = {
 	.clear_transfer_priv = op_clear_transfer_priv,
 
 	.handle_events = op_handle_events,
-
-	.clock_gettime = op_clock_gettime,
 
 	.get_timerfd_clockid = op_get_timerfd_clockid,
 
