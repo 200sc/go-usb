@@ -115,6 +115,133 @@ func disarm_timerfd(ctx *libusb_context) int {
 	return 0
  }
 
+ /* iterates through the flying transfers, and rearms the timerfd based on the
+ * next upcoming timeout.
+ * must be called with flying_list locked.
+ * returns 0 on success or a LIBUSB_ERROR code on failure.
+ */
+func arm_timerfd_for_next_timeout(ctx *libusb_context) int {
+	var transfer *usbi_transfer
+
+	for transfer = list_entry(ctx.flying_transfers.next, usbi_transfer, list); 
+		&transfer.list != ctx.flying_transfers; 
+		transfer = list_entry(transfer.list.next, usbi_transfer, list) {
+
+		cur_tv := &transfer.timeout
+
+		/* if we've reached transfers of infinite timeout, then we have no
+		 * arming to do */
+		if (!timerisset(cur_tv)) {
+			return disarm_timerfd(ctx)
+		}
+
+		/* act on first transfer that has not already been handled */
+		if (!(transfer.timeout_flags & (USBI_TRANSFER_TIMEOUT_HANDLED | USBI_TRANSFER_OS_HANDLES_TIMEOUT))) {
+
+			it = itimerspec{{0, 0}, {cur_tv.tv_sec, cur_tv.tv_usec * 1000 }}
+
+			// usbi_dbg("next timeout originally %dms", USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)->timeout);
+			r := timerfd_settime(ctx->timerfd, TFD_TIMER_ABSTIME, &it, NULL)
+			if (r < 0) {
+				return LIBUSB_ERROR_OTHER
+			}
+			return 0
+		}
+	}
+	return disarm_timerfd(ctx)
+}
+
+/* add a transfer to the (timeout-sorted) active transfers list.
+ * This function will return non 0 if fails to update the timer,
+ * in which case the transfer is *not* on the flying_transfers list. */
+ func add_to_flying_list(transfer *usbi_transfer) int {
+	var cur *usbi_transfer
+	struct timeval *timeout = &transfer.timeout
+	struct libusb_context *ctx = transfer.libusbTransfer.dev_handle.dev.ctx
+	first := true
+
+	r := calculate_timeout(transfer)
+	if (r != 0) {
+		return r
+	}
+
+	/* if we have no other flying transfers, start the list with this one */
+	if (list_empty(ctx.flying_transfers)) {
+		list_add(transfer.list, ctx.flying_transfers)
+		goto out
+	}
+
+	/* if we have infinite timeout, append to end of list */
+	if (!timerisset(timeout)) {
+		list_add_tail(transfer.list, ctx.flying_transfers)
+		/* first is irrelevant in this case */
+		goto out
+	}
+
+	/* otherwise, find appropriate place in list */
+	for cur = list_entry(ctx.flying_transfers.next, usbi_transfer, list); 
+		&cur.list != ctx.flying_transfers; 
+		cur = list_entry(cur.list.next, usbi_transfer, list) {
+		/* find first timeout that occurs after the transfer in question */
+		cur_tv := cur.timeout
+
+		if (!timerisset(cur_tv) || (cur_tv.tv_sec > timeout.tv_sec) ||
+				(cur_tv.tv_sec == timeout.tv_sec &&
+					cur_tv.tv_usec > timeout.tv_usec)) {
+			list_add_tail(transfer.list, cur.list)
+			goto out
+		}
+		first = false
+	}
+	/* first is false at this stage (list not empty) */
+
+	/* otherwise we need to be inserted at the end */
+	list_add_tail(transfer.list, ctx.flying_transfers)
+out:
+	if (first && timerisset(timeout)) {
+		/* if this transfer has the lowest timeout of all active transfers,
+		 * rearm the timerfd with this transfer's timeout */
+		it := itimerspec{{0, 0}, {timeout.tv_sec, timeout.tv_usec * 1000}}
+		// usbi_dbg("arm timerfd for timeout in %dms (first in line)",
+			// USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer.libusbTransfer->timeout);
+		r = timerfd_settime(ctx.timerfd, TFD_TIMER_ABSTIME, &it, nil)
+		if (r < 0) {
+			// usbi_warn(ctx, "failed to arm first timerfd (errno %d)", errno);
+			r = LIBUSB_ERROR_OTHER
+		}
+	}
+
+	if (r != 0) {
+		list_del(transfer.list)
+	}
+
+	return r
+}
+
+/* remove a transfer from the active transfers list.
+ * This function will *always* remove the transfer from the
+ * flying_transfers list. It will return a LIBUSB_ERROR code
+ * if it fails to update the timer for the next timeout. */
+func remove_from_flying_list(transfer *usbi_transfer) int {
+	
+	ctx := transfer.libusbTransfer.dev_handle.dev.ctx;
+	r := 0
+
+	ctx.flying_transfers_lock.Lock()
+
+	rearm_timerfd := (timerisset(transfer.timeout) && list_first_entry(ctx.flying_transfers, usbi_transfer, list) == transfer)
+
+	list_del(transfer.list)
+
+	if (rearm_timerfd != 0) {
+		r = arm_timerfd_for_next_timeout(ctx)
+	}
+	
+	ctx.flying_transfers_lock.Unlock()
+
+	return r
+}
+
 /** \ingroup libusb_asyncio
  * Allocate a libusb transfer with a specified number of isochronous packet
  * descriptors. The returned transfer is pre-initialized for you. When the new
