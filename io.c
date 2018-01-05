@@ -1162,64 +1162,6 @@ int  libusb_handle_events(libusb_context *ctx)
 }
 
 /** \ingroup libusb_poll
- * Handle any pending events in blocking mode.
- *
- * Like libusb_handle_events(), with the addition of a completed parameter
- * to allow for race free waiting for the completion of a specific transfer.
- *
- * See libusb_handle_events_timeout_completed() for details on the completed
- * parameter.
- *
- * \param ctx the context to operate on, or NULL for the default context
- * \param completed pointer to completion integer to check, or NULL
- * \returns 0 on success, or a LIBUSB_ERROR code on failure
- * \ref libusb_mtasync
- */
-int  libusb_handle_events_completed(libusb_context *ctx,
-	int *completed)
-{
-	struct timeval tv;
-	tv.tv_sec = 60;
-	tv.tv_usec = 0;
-	return libusb_handle_events_timeout_completed(ctx, &tv, completed);
-}
-
-/** \ingroup libusb_poll
- * Handle any pending events by polling file descriptors, without checking if
- * any other threads are already doing so. Must be called with the event lock
- * held, see libusb_lock_events().
- *
- * This function is designed to be called under the situation where you have
- * taken the event lock and are calling poll()/select() directly on libusb's
- * file descriptors (as opposed to using libusb_handle_events() or similar).
- * You detect events on libusb's descriptors, so you then call this function
- * with a zero timeout value (while still holding the event lock).
- *
- * \param ctx the context to operate on, or NULL for the default context
- * \param tv the maximum time to block waiting for events, or zero for
- * non-blocking mode
- * \returns 0 on success, or a LIBUSB_ERROR code on failure
- * \ref libusb_mtasync
- */
-int  libusb_handle_events_locked(libusb_context *ctx,
-	struct timeval *tv)
-{
-	int r;
-	struct timeval poll_timeout;
-
-	ctx = USBI_GET_CONTEXT(ctx);
-	r = get_next_timeout(ctx, tv, &poll_timeout);
-	if (r) {
-		/* timeout already expired */
-		return handle_timeouts(ctx);
-	}
-
-	return handle_events(ctx, &poll_timeout);
-}
-
-
-
-/** \ingroup libusb_poll
  * Determine the next internal timeout that libusb needs to handle. You only
  * need to use this function if you are calling poll() or select() or similar
  * on libusb's file descriptors yourself - you do not need to use it if you
@@ -1471,7 +1413,7 @@ void usbi_handle_disconnect(struct libusb_device_handle *dev_handle)
 	struct usbi_transfer *to_cancel;
 
 	// usbi_dbg("device %d.%d",
-		dev_handle->dev->bus_number, dev_handle->dev->device_address);
+	// dev_handle->dev->bus_number, dev_handle->dev->device_address);
 
 	/* terminate all pending transfers with the LIBUSB_TRANSFER_NO_DEVICE
 	 * status code.

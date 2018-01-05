@@ -57,6 +57,57 @@ package usb
  }
 
  /** \ingroup libusb_poll
+ * Handle any pending events by polling file descriptors, without checking if
+ * any other threads are already doing so. Must be called with the event lock
+ * held, see libusb_lock_events().
+ *
+ * This function is designed to be called under the situation where you have
+ * taken the event lock and are calling poll()/select() directly on libusb's
+ * file descriptors (as opposed to using libusb_handle_events() or similar).
+ * You detect events on libusb's descriptors, so you then call this function
+ * with a zero timeout value (while still holding the event lock).
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \param tv the maximum time to block waiting for events, or zero for
+ * non-blocking mode
+ * \returns 0 on success, or a LIBUSB_ERROR code on failure
+ * \ref libusb_mtasync
+ */
+func libusb_handle_events_locked(ctx *libusb_context, tv *timeval) int {
+	var poll_timeout timeval 
+
+	ctx = USBI_GET_CONTEXT(ctx)
+	r := get_next_timeout(ctx, tv, &poll_timeout)
+	if (r != 0) {
+		/* timeout already expired */
+		return handle_timeouts(ctx)
+	}
+
+	return handle_events(ctx, &poll_timeout)
+}
+
+/** \ingroup libusb_poll
+ * Handle any pending events in blocking mode.
+ *
+ * Like libusb_handle_events(), with the addition of a completed parameter
+ * to allow for race free waiting for the completion of a specific transfer.
+ *
+ * See libusb_handle_events_timeout_completed() for details on the completed
+ * parameter.
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \param completed pointer to completion integer to check, or NULL
+ * \returns 0 on success, or a LIBUSB_ERROR code on failure
+ * \ref libusb_mtasync
+ */
+func libusb_handle_events_completed(ctx *libusb_context, completed *int) int {
+	var tv timeval
+	tv.tv_sec = 60
+	tv.tv_usec = 0
+	return libusb_handle_events_timeout_completed(ctx, &tv, completed)
+}
+
+ /** \ingroup libusb_poll
  * Determines whether your application must apply special timing considerations
  * when monitoring libusb's file descriptors.
  *
