@@ -1,9 +1,13 @@
-package usb
+package os
 
 /*
- * USB descriptor handling functions for libusb
- * Copyright © 2007 Daniel Drake <dsd@gentoo.org>
- * Copyright © 2001 Johannes Erdfelt <johannes@erdfelt.com>
+ * Windows CE backend for libusb 1.0
+ * Copyright © 2011-2013 RealVNC Ltd.
+ * Portions taken from Windows backend, which is
+ * Copyright © 2009-2010 Pete Batard <pbatard@gmail.com>
+ * With contributions from Michael Plante, Orin Eman et al.
+ * Parts of this code adapted from libusb-win32-v1 by Stephan Meyer
+ * Major code testing contribution by Xiaofan Chen
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,10 +23,3 @@ package usb
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
-const DESC_HEADER_LENGTH = 2
-const DEVICE_DESC_LENGTH = 18
-const CONFIG_DESC_LENGTH = 9
-const INTERFACE_DESC_LENGTH = 9
-const ENDPOINT_DESC_LENGTH = 7
-const ENDPOINT_AUDIO_DESC_LENGTH = 9

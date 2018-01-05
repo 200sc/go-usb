@@ -1,9 +1,8 @@
-package usb
+package os
 
 /*
- * USB descriptor handling functions for libusb
- * Copyright © 2007 Daniel Drake <dsd@gentoo.org>
- * Copyright © 2001 Johannes Erdfelt <johannes@erdfelt.com>
+ * poll_posix: poll compatibility wrapper for POSIX systems
+ * Copyright © 2013 RealVNC Ltd.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,11 +17,5 @@ package usb
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
  */
-
-const DESC_HEADER_LENGTH = 2
-const DEVICE_DESC_LENGTH = 18
-const CONFIG_DESC_LENGTH = 9
-const INTERFACE_DESC_LENGTH = 9
-const ENDPOINT_DESC_LENGTH = 7
-const ENDPOINT_AUDIO_DESC_LENGTH = 9
