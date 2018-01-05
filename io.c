@@ -1,36 +1,4 @@
 /** \ingroup libusb_asyncio
- * Allocate a libusb transfer with a specified number of isochronous packet
- * descriptors. The returned transfer is pre-initialized for you. When the new
- * transfer is no longer needed, it should be freed with
- * libusb_free_transfer().
- *
- * Transfers intended for non-isochronous endpoints (e.g. control, bulk,
- * interrupt) should specify an iso_packets count of zero.
- *
- * For transfers intended for isochronous endpoints, specify an appropriate
- * number of packet descriptors to be allocated as part of the transfer.
- * The returned transfer is not specially initialized for isochronous I/O;
- * you are still required to set the
- * \ref libusb_transfer::num_iso_packets "num_iso_packets" and
- * \ref libusb_transfer::type "type" fields accordingly.
- *
- * It is safe to allocate a transfer with some isochronous packets and then
- * use it on a non-isochronous endpoint. If you do this, ensure that at time
- * of submission, num_iso_packets is 0 and that type is set appropriately.
- *
- * \param iso_packets number of isochronous packet descriptors to allocate
- * \returns a newly allocated transfer, or NULL on error
- */
-
-func libusb_alloc_transfer(iso_packets int) *libusb_transfer {
-	// surely this is wrong
-	itransfer := &usbi_transfer{}
-	itransfer.num_iso_packets = iso_packets;
-
-	return itransfer.libusbTransfer
-}
-
-/** \ingroup libusb_asyncio
  * Free a transfer structure. This should be called for all transfers
  * allocated with libusb_alloc_transfer().
  *
@@ -1342,23 +1310,6 @@ out:
 #endif
 }
 
-/** \ingroup libusb_poll
- * Free a list of libusb_pollfd structures. This should be called for all
- * pollfd lists allocated with libusb_get_pollfds().
- *
- * Since version 1.0.20, \ref LIBUSB_API_VERSION >= 0x01000104
- *
- * It is legal to call this function with a NULL pollfd list. In this case,
- * the function will simply return safely.
- *
- * \param pollfds the list of libusb_pollfd structures to free
- */
-void  libusb_free_pollfds(const struct libusb_pollfd **pollfds)
-{
-	if (!pollfds)
-		return;
-}
-
 /* Backends may call this from handle_events to report disconnection of a
  * device. This function ensures transfers get cancelled appropriately.
  * Callers of this function must hold the events_lock.
@@ -1410,5 +1361,4 @@ void usbi_handle_disconnect(struct libusb_device_handle *dev_handle)
 		&to_cancel->lock.Unlock();
 		usbi_handle_transfer_completion(to_cancel, LIBUSB_TRANSFER_NO_DEVICE);
 	}
-
 }
