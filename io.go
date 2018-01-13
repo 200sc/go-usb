@@ -40,12 +40,12 @@ package usb
 		return r
 	 }
  
-	 ctx.timerfd = timerfd_create(usbi_backend->get_timerfd_clockid(), TFD_NONBLOCK)
+	 ctx.timerfd = timerfd_create(usbi_backend.get_timerfd_clockid(), TFD_NONBLOCK)
 	 if (ctx.timerfd >= 0) {
 		 // usbi_dbg("using timerfd for timeouts")
 		 r = usbi_add_pollfd(ctx, ctx.timerfd, POLLIN)
 		 if (r < 0) {
-			close(ctx->timerfd)
+			close(ctx.timerfd)
 			usbi_remove_pollfd(ctx, ctx.event_pipe[0])
 			usbi_close(ctx.event_pipe[0])
 	 		usbi_close(ctx.event_pipe[1])
@@ -82,7 +82,7 @@ func calculate_timeout(transfer *usbi_transfer) int {
 		current_time.tv_sec++;
 	}
 
-	TIMESPEC_TO_TIMEVAL(&transfer->timeout, &current_time);
+	TIMESPEC_TO_TIMEVAL(&transfer.timeout, &current_time);
 	return 0;
 }
 
@@ -107,7 +107,7 @@ func calculate_timeout(transfer *usbi_transfer) int {
 func disarm_timerfd(ctx *libusb_context) int {
 	disarm_timer := itimerspec{{0,0},{0,0}}
 
-	r := timerfd_settime(ctx->timerfd, 0, &disarm_timer, NULL)
+	r := timerfd_settime(ctx.timerfd, 0, &disarm_timer, NULL)
 	if (r < 0) {
 		return LIBUSB_ERROR_OTHER
 	}
@@ -140,8 +140,8 @@ func arm_timerfd_for_next_timeout(ctx *libusb_context) int {
 
 			it = itimerspec{{0, 0}, {cur_tv.tv_sec, cur_tv.tv_usec * 1000 }}
 
-			// usbi_dbg("next timeout originally %dms", USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer)->timeout);
-			r := timerfd_settime(ctx->timerfd, TFD_TIMER_ABSTIME, &it, NULL)
+			// usbi_dbg("next timeout originally %dms", USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer).timeout);
+			r := timerfd_settime(ctx.timerfd, TFD_TIMER_ABSTIME, &it, NULL)
 			if (r < 0) {
 				return LIBUSB_ERROR_OTHER
 			}
@@ -203,7 +203,7 @@ out:
 		 * rearm the timerfd with this transfer's timeout */
 		it := itimerspec{{0, 0}, {timeout.tv_sec, timeout.tv_usec * 1000}}
 		// usbi_dbg("arm timerfd for timeout in %dms (first in line)",
-			// USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer.libusbTransfer->timeout);
+			// USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer.libusbTransfer.timeout);
 		r = timerfd_settime(ctx.timerfd, TFD_TIMER_ABSTIME, &it, nil)
 		if (r < 0) {
 			// usbi_warn(ctx, "failed to arm first timerfd (errno %d)", errno);
@@ -358,4 +358,208 @@ func libusb_pollfds_handle_timeouts(ctx *libusb_context) int {
 	//return usbi_using_timerfd(ctx);
 	// GO: assuming true for right now
 	return true
+}
+
+/** \ingroup libusb_asyncio
+ * Submit a transfer. This function will fire off the USB transfer and then
+ * return immediately.
+ *
+ * \param transfer the transfer to submit
+ * \returns 0 on success
+ * \returns LIBUSB_ERROR_NO_DEVICE if the device has been disconnected
+ * \returns LIBUSB_ERROR_BUSY if the transfer has already been submitted.
+ * \returns LIBUSB_ERROR_NOT_SUPPORTED if the transfer flags are not supported
+ * by the operating system.
+ * \returns LIBUSB_ERROR_INVALID_PARAM if the transfer size is larger than
+ * the operating system and/or hardware can support
+ * \returns another LIBUSB_ERROR code on other failure
+ */
+func libusb_submit_transfer(transfer *libusb_transfer) int {
+	 itransfer := transfer.usbiTransfer
+	 ctx := transfer.dev_handle.dev.ctx
+	 var r int
+ 
+	 // usbi_dbg("transfer %p", transfer);
+ 
+	 /*
+	  * Important note on locking, this function takes / releases locks
+	  * in the following order:
+	  *  take flying_transfers_lock
+	  *  take itransfer->lock
+	  *  clear transfer
+	  *  add to flying_transfers list
+	  *  release flying_transfers_lock
+	  *  submit transfer
+	  *  release itransfer->lock
+	  *  if submit failed:
+	  *   take flying_transfers_lock
+	  *   remove from flying_transfers list
+	  *   release flying_transfers_lock
+	  *
+	  * Note that it takes locks in the order a-b and then releases them
+	  * in the same order a-b. This is somewhat unusual but not wrong,
+	  * release order is not important as long as *all* locks are released
+	  * before re-acquiring any locks.
+	  *
+	  * This means that the ordering of first releasing itransfer->lock
+	  * and then re-acquiring the flying_transfers_list on error is
+	  * important and must not be changed!
+	  *
+	  * This is done this way because when we take both locks we must always
+	  * take flying_transfers_lock first to avoid ab-ba style deadlocks with
+	  * the timeout handling and usbi_handle_disconnect paths.
+	  *
+	  * And we cannot release itransfer->lock before the submission is
+	  * complete otherwise timeout handling for transfers with short
+	  * timeouts may run before submission.
+	  */
+	 ctx.flying_transfers_lock.Lock()
+	 itransfer.lock.Lock()
+	 if (itransfer.state_flags & USBI_TRANSFER_IN_FLIGHT) {
+		ctx.flying_transfers_lock.Unlock()
+		itransfer.lock.Unlock()
+		return LIBUSB_ERROR_BUSY
+	 }
+	 itransfer.transferred = 0
+	 itransfer.state_flags = 0
+	 itransfer.timeout_flags = 0
+	 r = add_to_flying_list(itransfer) 
+	 if (r) {
+		ctx.flying_transfers_lock.Unlock()
+		itransfer.lock.Unlock()
+		return r
+	 }
+	 /*
+	  * We must release the flying transfers lock here, because with
+	  * some backends the submit_transfer method is synchroneous.
+	  */
+	 ctx.flying_transfers_lock.Unlock()
+ 
+	 r = usbi_backend.submit_transfer(itransfer)
+	 if (r == LIBUSB_SUCCESS) {
+		 itransfer.state_flags |= USBI_TRANSFER_IN_FLIGHT
+		 /* keep a reference to this device */
+		 libusb_ref_device(transfer.dev_handle.dev)
+	 }
+	 itransfer.lock.Unlock()
+ 
+	 if (r != LIBUSB_SUCCESS) {
+		 remove_from_flying_list(itransfer)
+	 }
+ 
+	 return r
+ }
+ 
+ /** \ingroup libusb_asyncio
+ * Asynchronously cancel a previously submitted transfer.
+ * This function returns immediately, but this does not indicate cancellation
+ * is complete. Your callback function will be invoked at some later time
+ * with a transfer status of
+ * \ref libusb_transfer_status::LIBUSB_TRANSFER_CANCELLED
+ * "LIBUSB_TRANSFER_CANCELLED."
+ *
+ * \param transfer the transfer to cancel
+ * \returns 0 on success
+ * \returns LIBUSB_ERROR_NOT_FOUND if the transfer is not in progress,
+ * already complete, or already cancelled.
+ * \returns a LIBUSB_ERROR code on failure
+ */
+func libusb_cancel_transfer(transfer *libusb_transfer) int {
+	itransfer := transfer.usbiTransfer
+	var r int
+
+	// usbi_dbg("transfer %p", transfer );
+	itransfer.lock.Lock()
+	defer itransfer.lock.Unlock()
+	if !(itransfer.state_flags & USBI_TRANSFER_IN_FLIGHT) || (itransfer.state_flags & USBI_TRANSFER_CANCELLING) {
+		return LIBUSB_ERROR_NOT_FOUND
+	}
+	r = usbi_backend.cancel_transfer(itransfer)
+	if (r < 0) {
+		// if (r != LIBUSB_ERROR_NOT_FOUND &&
+		//     r != LIBUSB_ERROR_NO_DEVICE)
+			// usbi_err(TRANSFER_CTX(transfer),
+			//  "cancel transfer failed error %d", r)
+		// else
+			// usbi_dbg("cancel transfer failed error %d", r)
+
+		if (r == LIBUSB_ERROR_NO_DEVICE)
+			itransfer.state_flags |= USBI_TRANSFER_DEVICE_DISAPPEARED
+	}
+
+	itransfer.state_flags |= USBI_TRANSFER_CANCELLING
+
+	return r
+}
+
+/** \ingroup libusb_asyncio
+ * Set a transfers bulk stream id. Note users are advised to use
+ * libusb_fill_bulk_stream_transfer() instead of calling this function
+ * directly.
+ *
+ * Since version 1.0.19, \ref LIBUSB_API_VERSION >= 0x01000103
+ *
+ * \param transfer the transfer to set the stream id for
+ * \param stream_id the stream id to set
+ * \see libusb_alloc_streams()
+ */
+func libusb_transfer_set_stream_id(transfer* libusb_transfer, stream_id uint32) {
+	transfer.usbiTransfer.stream_id = stream_id
+}
+
+/** \ingroup libusb_asyncio
+ * Get a transfers bulk stream id.
+ *
+ * Since version 1.0.19, \ref LIBUSB_API_VERSION >= 0x01000103
+ *
+ * \param transfer the transfer to get the stream id for
+ * \returns the stream id for the transfer
+ */
+func libusb_transfer_get_stream_id(transfer *libusb_transfer) uint32 {
+	return transfer.usbiTransfer.stream_id
+}
+
+/* Handle completion of a transfer (completion might be an error condition).
+ * This will invoke the user-supplied callback function, which may end up
+ * freeing the transfer. Therefore you cannot use the transfer structure
+ * after calling this function, and you should free all backend-specific
+ * data before calling it.
+ * Do not call this function with the usbi_transfer lock held. User-specified
+ * callback functions may attempt to directly resubmit the transfer, which
+ * will attempt to take the lock. */
+func usbi_handle_transfer_completion(itransfer *usbi_transfer, status libusb_transfer_status) int {
+	transfer := itransfer.libusbTransfer
+	dev_handle := transfer.dev_handle
+	var flags uint8
+	var r int
+
+	r = remove_from_flying_list(itransfer)
+	//if (r < 0)
+		// usbi_err(ITRANSFER_CTX(itransfer), "failed to set timer for next timeout, errno=%d", errno);
+
+	itransfer.lock.Lock()
+	itransfer.state_flags &= ~USBI_TRANSFER_IN_FLIGHT
+	itransfer.lock.Unlock()
+
+	if status == LIBUSB_TRANSFER_COMPLETED && transfer.flags & LIBUSB_TRANSFER_SHORT_NOT_OK {
+		rqlen := transfer.length
+		if transfer.type == LIBUSB_TRANSFER_TYPE_CONTROL {
+			rqlen -= LIBUSB_CONTROL_SETUP_SIZE
+		}
+		if rqlen != itransfer.transferred {
+			// usbi_dbg("interpreting short transfer as error");
+			status = LIBUSB_TRANSFER_ERROR
+		}
+	}
+
+	flags = transfer.flags
+	transfer.status = status
+	transfer.actual_length = itransfer.transferred;
+	// usbi_dbg("transfer %p has callback %p", transfer, transfer.callback);
+	if transfer.callback != nil {
+		transfer.callback(transfer)
+	}
+
+	libusb_unref_device(dev_handle.dev)
+	return r
 }
