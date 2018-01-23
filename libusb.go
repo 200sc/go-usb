@@ -676,9 +676,6 @@ type libusb_endpoint_descriptor struct {
 	/** Extra descriptors. If libusb encounters unknown endpoint descriptors,
 	 * it will store them here, should you wish to parse them. */
 	extra []uint8
-
-	/** Length of the extra descriptors, in bytes. */
-	extra_length int
 }
 
 /** \ingroup libusb_desc
@@ -726,9 +723,6 @@ type libusb_interface_descriptor struct {
 	/** Extra descriptors. If libusb encounters unknown interface descriptors,
 	 * it will store them here, should you wish to parse them. */
 	extra []uint8
-
-	/** Length of the extra descriptors, in bytes. */
-	extra_length int
 }
 
 /** \ingroup libusb_desc
@@ -785,9 +779,6 @@ type libusb_config_descriptor struct {
 	/** Extra descriptors. If libusb encounters unknown configuration
 	 * descriptors, it will store them here, should you wish to parse them. */
 	extra []uint8
-
-	/** Length of the extra descriptors, in bytes. */
-	extra_length int
 }
 
 /** \ingroup libusb_desc

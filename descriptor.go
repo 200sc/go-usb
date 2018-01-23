@@ -45,7 +45,7 @@ func libusb_get_container_id_descriptor(ctx *libusb_context,
 	container_id **libusb_container_id_descriptor) int {
 
 	_container_id * libusb_container_id_descriptor
-	const int host_endian = 0
+	host_endian := false
 
 	if dev_cap.bDevCapabilityType != LIBUSB_BT_CONTAINER_ID {
 		// usbi_err(ctx, "unexpected bDevCapabilityType %x (expected %x)",
@@ -246,7 +246,7 @@ func libusb_get_bos_descriptor(dev_handle *libusb_device_handle, bos **libusb_bo
 	}
 
 	_bos := libusb_bos_descriptor{}
-	host_endian := 0
+	host_endian := false
 
 	usbi_parse_descriptor(bos_header, "bbwb", &_bos, host_endian)
 	// usbi_dbg("found BOS descriptor: size %d bytes, %d capabilities",
@@ -260,4 +260,430 @@ func libusb_get_bos_descriptor(dev_handle *libusb_device_handle, bos **libusb_bo
 	// else usbi_err(dev_handle), "failed to read BOS (%d)", r.dev.ctx;
 
 	return r
+}
+
+/** \ingroup libusb_desc
+ * Get an endpoints superspeed endpoint companion descriptor (if any)
+ *
+ * \param ctx the context to operate on, or nil for the default context
+ * \param endpoint endpoint descriptor from which to get the superspeed
+ * endpoint companion descriptor
+ * \param ep_comp output location for the superspeed endpoint companion
+ * descriptor. Only valid if 0 was returned. Must be freed with
+ * libusb_free_ss_endpoint_companion_descriptor() after use.
+ * \returns 0 on success
+ * \returns LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
+ * \returns another LIBUSB_ERROR code on error
+ */
+ func libusb_get_ss_endpoint_companion_descriptor(
+	ctx *libusb_context,
+	endpoint *libusb_endpoint_descriptor,
+	ep_comp **libusb_ss_endpoint_companion_descriptor) int {
+
+	var header usb_descriptor_header
+	buffer := endpoint.extra
+	buffi := 0
+	size := len(buffer)	
+
+	*ep_comp = nil
+
+	for size >= DESC_HEADER_LENGTH {
+		usbi_parse_descriptor(buffer[buffi:], "bb", &header, 0)
+		if (header.bLength < 2 || header.bLength > size) {
+			// usbi_err(ctx, "invalid descriptor length %d",
+				//  header.bLength);
+			return LIBUSB_ERROR_IO
+		}
+		if (header.bDescriptorType != LIBUSB_DT_SS_ENDPOINT_COMPANION) {
+			buffi += header.bLength
+			size -= header.bLength
+			continue
+		}
+		if (header.bLength < LIBUSB_DT_SS_ENDPOINT_COMPANION_SIZE) {
+			// usbi_err(ctx, "invalid ss-ep-comp-desc length %d",
+				//  header.bLength);
+			return LIBUSB_ERROR_IO
+		}
+		*ep_comp = &&libusb_ss_endpoint_companion_descriptor{}
+
+		usbi_parse_descriptor(buffer, "bbbbw", *ep_comp, 0)
+		return LIBUSB_SUCCESS
+	}
+	return LIBUSB_ERROR_NOT_FOUND
+}
+
+
+/** \ingroup libusb_desc
+ * Get a USB configuration descriptor with a specific bConfigurationValue.
+ * This is a non-blocking function which does not involve any requests being
+ * sent to the device.
+ *
+ * \param dev a device
+ * \param bConfigurationValue the bConfigurationValue of the configuration you
+ * wish to retrieve
+ * \param config output location for the USB configuration descriptor. Only
+ * valid if 0 was returned. Must be freed with libusb_free_config_descriptor()
+ * after use.
+ * \returns 0 on success
+ * \returns LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
+ * \returns another LIBUSB_ERROR code on error
+ * \see libusb_get_active_config_descriptor()
+ * \see libusb_get_config_descriptor()
+ */
+ func libusb_get_config_descriptor_by_value(dev *libusb_device,
+	bConfigurationValue uint8, config **libusb_config_descriptor) int {
+
+	var r, idx int
+	host_endian := false
+	var buf []uint8
+
+	if usbi_backend.get_config_descriptor_by_value {
+		r = usbi_backend.get_config_descriptor_by_value(dev, bConfigurationValue, &buf, &host_endian)
+		if r < 0 {
+			return r
+		}
+		return raw_desc_to_config(dev.ctx, buf, r, host_endian, config)
+	}
+
+	r = usbi_get_config_index_by_value(dev, bConfigurationValue, &idx)
+	if r < 0 {
+		return r
+	} else if idx < 0 {
+		return LIBUSB_ERROR_NOT_FOUND
+	} else {
+		return libusb_get_config_descriptor(dev, uint8(idx), config)
+	}
+}
+
+/* iterate through all configurations, returning the index of the configuration
+ * matching a specific bConfigurationValue in the idx output parameter, or -1
+ * if the config was not found.
+ * returns 0 on success or a LIBUSB_ERROR code
+ */
+ func usbi_get_config_index_by_value(dev *libusb_device, bConfigurationValue uint8, idx *int) int {
+
+	// usbi_dbg("value %d", bConfigurationValue);
+	for i := 0; i < dev.num_configurations; i++ {
+
+		var tmp [6]uint8
+
+		host_endian := false
+		r := usbi_backend.get_config_descriptor(dev, i, tmp, sizeof(tmp), &host_endian)
+		if r < 0 {
+			*idx = -1
+			return r
+		}
+		if tmp[5] == bConfigurationValue {
+			*idx = i
+			return 0
+		}
+	}
+
+	*idx = -1
+	return 0
+}
+
+/** \ingroup libusb_desc
+ * Get a USB configuration descriptor based on its index.
+ * This is a non-blocking function which does not involve any requests being
+ * sent to the device.
+ *
+ * \param dev a device
+ * \param config_index the index of the configuration you wish to retrieve
+ * \param config output location for the USB configuration descriptor. Only
+ * valid if 0 was returned. Must be freed with libusb_free_config_descriptor()
+ * after use.
+ * \returns 0 on success
+ * \returns LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
+ * \returns another LIBUSB_ERROR code on error
+ * \see libusb_get_active_config_descriptor()
+ * \see libusb_get_config_descriptor_by_value()
+ */
+ func libusb_get_config_descriptor(dev *libusb_device, config_index uint8, config **libusb_config_descriptor) int {
+
+	var tmp [LIBUSB_DT_CONIFG_SIZE]uint8 
+	
+	host_endian := false
+
+	// usbi_dbg("index %d", config_index);
+	if config_index >= dev.num_configurations {
+		return LIBUSB_ERROR_NOT_FOUND
+	}
+
+	r := usbi_backend.get_config_descriptor(dev, config_index, tmp, LIBUSB_DT_CONFIG_SIZE, &host_endian)
+	if r < 0 {
+		return r
+	}
+	if r < LIBUSB_DT_CONFIG_SIZE {
+		// usbi_err(dev.ctx, "short config descriptor read %d/%d",
+			//  r, LIBUSB_DT_CONFIG_SIZE);
+		return LIBUSB_ERROR_IO
+	}
+
+	_config := libusb_config_descriptor{}
+
+	usbi_parse_descriptor(tmp, "bbw", &_config, host_endian)
+
+	buf := make([]uint8, _config.wTotalLength)
+	
+	r = usbi_backend.get_config_descriptor(dev, config_index, buf, _config.wTotalLength, &host_endian)
+	if r >= 0 {
+		r = raw_desc_to_config(dev.ctx, buf, r, host_endian, config)
+	}
+
+	return r
+}
+
+/** \ingroup libusb_desc
+ * Get the USB configuration descriptor for the currently active configuration.
+ * This is a non-blocking function which does not involve any requests being
+ * sent to the device.
+ *
+ * \param dev a device
+ * \param config output location for the USB configuration descriptor. Only
+ * valid if 0 was returned. Must be freed with libusb_free_config_descriptor()
+ * after use.
+ * \returns 0 on success
+ * \returns LIBUSB_ERROR_NOT_FOUND if the device is in unconfigured state
+ * \returns another LIBUSB_ERROR code on error
+ * \see libusb_get_config_descriptor
+ */
+ func libusb_get_active_config_descriptor(dev *libusb_device, config **libusb_config_descriptor) int {
+
+	var _config libusb_config_descriptor 
+	var tmp [LIBUSB_DT_CONFIG_SIZE]uint8
+
+	host_endian := false
+
+	r := usbi_backend.get_active_config_descriptor(dev, tmp, LIBUSB_DT_CONFIG_SIZE, &host_endian)
+	if (r < 0) {
+		return r
+	}
+	if (r < LIBUSB_DT_CONFIG_SIZE) {
+		// usbi_err(dev.ctx, "short config descriptor read %d/%d",
+			//  r, LIBUSB_DT_CONFIG_SIZE);
+		return LIBUSB_ERROR_IO
+	}
+
+	usbi_parse_descriptor(tmp, "bbw", &_config, host_endian)
+	buf := make([]uint8, _config.wTotalLength)
+
+	r = usbi_backend.get_active_config_descriptor(dev, buf, _config.wTotalLength, &host_endian)
+	if r >= 0 {
+		r = raw_desc_to_config(dev.ctx, buf, r, host_endian, config)
+	}
+
+	return r
+}
+
+/** \ingroup libusb_desc
+ * Get the USB device descriptor for a given device.
+ *
+ * This is a non-blocking function; the device descriptor is cached in memory.
+ *
+ * Note since libusb-1.0.16, \ref LIBUSB_API_VERSION >= 0x01000102, this
+ * function always succeeds.
+ *
+ * \param dev the device
+ * \param desc output location for the descriptor data
+ * \returns 0 on success or a LIBUSB_ERROR code on failure
+ */
+ // GO: this was changed from using a memcpy to a new pointer to just returning the value
+ func libusb_get_device_descriptor(dev *libusb_device) libusb_device_descriptor {
+	return dev.device_descriptor
+}
+
+func usbi_device_cache_descriptor(dev *libusb_device) int {
+	host_endian := false
+	r := usbi_backend.get_device_descriptor(dev, []uint8(&dev.device_descriptor), &host_endian)
+	if r < 0) {
+		return r
+	}
+
+	if !host_endian {
+		dev.device_descriptor.bcdUSB = libusb_le16_to_cpu(dev.device_descriptor.bcdUSB)
+		dev.device_descriptor.idVendor = libusb_le16_to_cpu(dev.device_descriptor.idVendor)
+		dev.device_descriptor.idProduct = libusb_le16_to_cpu(dev.device_descriptor.idProduct)
+		dev.device_descriptor.bcdDevice = libusb_le16_to_cpu(dev.device_descriptor.bcdDevice)
+	}
+
+	return LIBUSB_SUCCESS
+}
+
+func raw_desc_to_config(ctx *libusb_context,
+	buf []uint8, size int, host_endian bool,
+	config **libusb_config_descriptor) int {
+
+	_config := &libusb_config_descriptor{}
+
+	r := parse_configuration(ctx, _config, buf, size, host_endian)
+	if r < 0 {
+		// usbi_err(ctx, "parse_configuration failed with error %d", r);
+		return r
+	} 
+	// else if (r > 0) {
+	// 	// usbi_warn(ctx, "still %d bytes of descriptor data left", r);
+	// }
+	
+	*config = _config
+	return LIBUSB_SUCCESS
+}
+
+func parse_configuration(ctx *libusb_context,
+	config *libusb_config_descriptor, buffer []uint8,
+	size int, host_endian bool) int {
+
+   if (size < LIBUSB_DT_CONFIG_SIZE) {
+	   // usbi_err(ctx, "short config descriptor read %d/%d",
+			// size, LIBUSB_DT_CONFIG_SIZE)
+	   return LIBUSB_ERROR_IO
+   }
+
+   var header usb_descriptor_header
+
+   usbi_parse_descriptor(buffer, "bbwbbbbb", config, host_endian)
+   if (config.bDescriptorType != LIBUSB_DT_CONFIG) {
+	   // usbi_err(ctx, "unexpected descriptor %x (expected %x)",
+			// config.bDescriptorType, LIBUSB_DT_CONFIG)
+	   return LIBUSB_ERROR_IO
+   }
+   if (config.bLength < LIBUSB_DT_CONFIG_SIZE) {
+	   // usbi_err(ctx, "invalid config bLength (%d)", config.bLength)
+	   return LIBUSB_ERROR_IO
+   }
+   if (config.bLength > size) {
+	   // usbi_err(ctx, "short config descriptor read %d/%d",
+			// size, config.bLength)
+	   return LIBUSB_ERROR_IO
+   }
+   if (config.bNumInterfaces > USB_MAXINTERFACES) {
+	   // usbi_err(ctx, "too many interfaces (%d)", config.bNumInterfaces)
+	   return LIBUSB_ERROR_IO
+   }
+
+   config.interface = make([]libusb_interface, config.bNumInterfaces)
+
+   buffi := config.bLength
+   size -= config.bLength
+
+   config.extra = nil
+
+   for (i := 0; i < config.bNumInterfaces; i++) {
+	   int len
+	   uint8 *begin
+
+	   /* Skip over the rest of the Class Specific or Vendor */
+	   /*  Specific descriptors */
+	   begin = buffer
+	   for (size >= DESC_HEADER_LENGTH) {
+		   usbi_parse_descriptor(buffer[buffi:], "bb", &header, 0)
+
+		   if (header.bLength < DESC_HEADER_LENGTH) {
+			   // usbi_err(ctx,
+					// "invalid extra config desc len (%d)",
+					// header.bLength)
+			   return LIBUSB_ERROR_IO
+		   } else if (header.bLength > size) {
+			   // usbi_warn(ctx,
+					//  "short extra config desc read %d/%d",
+					//  size, header.bLength)
+			   config.bNumInterfaces = (uint8)i
+			   return size
+		   }
+
+		   /* If we find another "proper" descriptor then we're done */
+		   if ((header.bDescriptorType == LIBUSB_DT_ENDPOINT) ||
+				   (header.bDescriptorType == LIBUSB_DT_INTERFACE) ||
+				   (header.bDescriptorType == LIBUSB_DT_CONFIG) ||
+				   (header.bDescriptorType == LIBUSB_DT_DEVICE))
+			   break
+
+		   // usbi_dbg("skipping descriptor 0x%x", header.bDescriptorType)
+		   buffi += header.bLength
+		   size -= header.bLength
+	   }
+
+	   /* Copy any unknown descriptors into a storage area for */
+	   /*  drivers to later parse */
+	   len = int(buffi - begin)
+	   if len != 0 {
+		   if len(config.extra) {
+			   config.extra = make([]uint8, len)
+
+			   copy(config.extra, begin)
+		   }
+	   }
+
+	   r := parse_interface(ctx, config.interface[i:], buffer[buffi:], size, host_endian)
+	   if r < 0 {
+		   return r
+	   }
+	   if r == 0 {
+		   config.bNumInterfaces = uint8(i)
+		   break
+	   }
+
+	   buffi += r
+	   size -= r
+   }
+
+   return size
+}
+
+/* set host_endian if the w values are already in host endian format,
+ * as opposed to bus endian. */
+ func usbi_parse_descriptor(sp []uint8, descriptor string, dp []uint8, host_endian bool) int {
+	
+	i := 0
+	di := 0
+	uint16 w;
+	uint32 d;
+
+	for _, r := range descriptor {
+		switch r {
+			case 'b':	/* 8-bit byte */
+				dp[i+di] = sp[i]
+				i++ 
+			case 'w':	/* 16-bit word, convert from little endian to CPU */
+				if i % 2 != 0 {
+					di++ /* Align to word boundary */
+				}
+
+				if host_endian {
+					dp[i+di] = sp[i]
+					dp[ii+di1] = sp[i+1]
+				} else {
+					// I'm not sure this is valid.
+					dp[i+di] = sp[i+1]
+					dp[i+di+1] = sp[i]
+				}
+				i ++ 2
+			case 'd':	/* 32-bit word, convert from little endian to CPU */
+				if i % 2 != 0 {
+					di++ /* Align to word boundary */
+				}
+ 
+				if host_endian {
+					dp[i+di] = sp[i]
+					dp[i+di+1] = sp[i+1]
+					dp[i+di+2] = sp[i+2]
+					dp[i+di+3] = sp[i+3]
+				} else {
+					dp[i+di] = sp[i+3]
+					dp[i+di+1] = sp[i+2]
+					dp[i+di+2] = sp[i+1]
+					dp[i+di+3] + sp[i]
+				}
+				sp += 4;
+				dp += 4;
+			case 'u':	/* 16 byte UUID */
+				for j := i; j < i+16; j++ {
+					dp[j+di] = sp[j]
+				}
+				i += 16
+		}
+	}
+
+	// ?
+	return i
 }

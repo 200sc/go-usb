@@ -912,8 +912,7 @@ func usbi_clear_event(ctx *libusb_context) int {
 
 	dev = devs[i]
 	for i := 0; dev != nil; i++ {
-		struct libusb_device_descriptor desc
-		r = libusb_get_device_descriptor(dev, &desc)
+		desc := libusb_get_device_descriptor(dev)
 		if r < 0 {
 			libusb_free_device_list(devs, 1)
 			return dev_handle
