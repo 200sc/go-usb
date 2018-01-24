@@ -3,6 +3,6 @@ An in-progress port of libusb to Go
 
 # Current state
 
-Still converting C files to Go. 
+OS-Agnostic code is converted and needs to be passed over for compile errors
 
-Initial target to support linux, osx, and windows, so the files for other OSes have been removed.
+OS-Specific code is in the process of conversion
