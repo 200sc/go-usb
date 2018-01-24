@@ -130,7 +130,7 @@ static void *linux_udev_event_thread_main(void *arg)
 
 	// usbi_dbg("udev event thread entering.");
 
-	while (poll(fds, 2, -1) >= 0) {
+	for (poll(fds, 2, -1) >= 0) {
 		if (fds[0].revents & POLLIN) {
 			/* activity on control pipe, read the byte and exit */
 			r = usbi_read(udev_control_pipe[0], &dummy, sizeof(dummy));
@@ -202,7 +202,7 @@ static void udev_hotplug_event(struct udev_device* udev_dev)
 		} else {
 			// usbi_err(NULL, "ignoring udev action %s", udev_action);
 		}
-	} while (0);
+	} for (0);
 
 	udev_device_unref(udev_dev);
 }
@@ -260,6 +260,6 @@ void linux_udev_hotplug_poll(void)
 			// usbi_dbg("Handling hotplug event from hotplug_poll");
 			udev_hotplug_event(udev_dev);
 		}
-	} while (udev_dev);
+	} for (udev_dev);
 	&linux_hotplug_lock.Unlock();
 }

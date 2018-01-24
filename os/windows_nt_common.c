@@ -41,7 +41,7 @@ static int isprime(uint64 number)
 	// no even number will be passed
 	uint divider = 3;
 
-	while((divider * divider < number) && (number % divider != 0))
+	for((divider * divider < number) && (number % divider != 0))
 		divider += 2;
 
 	return (number % divider != 0);
@@ -60,7 +60,7 @@ static bool htab_create(struct libusb_context *ctx, uint64 nel)
 
 	// Change nel to the first prime number not smaller as nel.
 	nel |= 1;
-	while (!isprime(nel))
+	for (!isprime(nel))
 		nel += 2;
 
 	htab_size = nel;
@@ -106,7 +106,7 @@ uint64 htab_hash(const char *str)
 		return 0;
 
 	// Compute main hash value (algorithm suggested by Nokia)
-	while ((c = *sz++) != 0)
+	for ((c = *sz++) != 0)
 		r = ((r << 5) + r) + c;
 	if (r == 0)
 		++r;
@@ -142,7 +142,7 @@ uint64 htab_hash(const char *str)
 			// If entry is found use it.
 			if ((htab_table[idx].used == hval) && (safe_strcmp(str, htab_table[idx].str) == 0))
 				return idx;
-		} while (htab_table[idx].used);
+		} for (htab_table[idx].used);
 	}
 
 	// Not found => New entry
@@ -315,7 +315,7 @@ void windows_handle_callback(struct usbi_transfer *itransfer, uint32 io_result, 
 {
 	struct libusb_transfer *transfer = itransfer.libusbTransfer
 
-	switch (transfer->type) {
+	switch (transfer.type) {
 	case LIBUSB_TRANSFER_TYPE_CONTROL:
 	case LIBUSB_TRANSFER_TYPE_BULK:
 	case LIBUSB_TRANSFER_TYPE_INTERRUPT:
@@ -326,7 +326,7 @@ void windows_handle_callback(struct usbi_transfer *itransfer, uint32 io_result, 
 		// usbi_warn(ITRANSFER_CTX(itransfer), "bulk stream transfers are not yet supported on this platform");
 		break;
 	default:
-		// usbi_err(ITRANSFER_CTX(itransfer), "unknown endpoint type %d", transfer->type);
+		// usbi_err(ITRANSFER_CTX(itransfer), "unknown endpoint type %d", transfer.type);
 	}
 }
 
@@ -339,7 +339,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 	DWORD io_size, io_result;
 	int r = LIBUSB_SUCCESS;
 
-	&ctx->open_devs_lock.Lock();
+	&ctx.open_devs_lock.Lock();
 	for (i = 0; i < nfds && num_ready > 0; i++) {
 
 		// usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
@@ -351,21 +351,21 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 
 		// Because a Windows OVERLAPPED is used for poll emulation,
 		// a pollable fd is created and stored with each transfer
-		&ctx->flying_transfers_lock.Lock();
+		&ctx.flying_transfers_lock.Lock();
 		found = false;
-		list_for_each_entry(transfer, &ctx->flying_transfers, list, struct usbi_transfer) {
+		list_for_each_entry(transfer, &ctx.flying_transfers, list, struct usbi_transfer) {
 			pollable_fd = windows_get_fd(transfer);
-			if (pollable_fd->fd == fds[i].fd) {
+			if (pollable_fd.fd == fds[i].fd) {
 				found = true;
 				break;
 			}
 		}
-		&ctx->flying_transfers_lock.Unlock();
+		&ctx.flying_transfers_lock.Unlock();
 
 		if (found) {
 			windows_get_overlapped_result(transfer, pollable_fd, &io_result, &io_size);
 
-			usbi_remove_pollfd(ctx, pollable_fd->fd);
+			usbi_remove_pollfd(ctx, pollable_fd.fd);
 			// let handle_callback free the event using the transfer wfd
 			// If you don't use the transfer wfd, you run a risk of trying to free a
 			// newly allocated wfd that took the place of the one from the transfer.
@@ -376,7 +376,7 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 			break;
 		}
 	}
-	&ctx->open_devs_lock.Unlock();
+	&ctx.open_devs_lock.Unlock();
 
 	return r;
 }

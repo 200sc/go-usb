@@ -142,7 +142,7 @@ static const char *netlink_message_parse(const char *buffer, int len, const char
 	const char *end = buffer + len;
 	int keylen = strlen(key);
 
-	while (buffer < end && *buffer) {
+	for (buffer < end && *buffer) {
 		if (strncmp(buffer, key, keylen) == 0 && buffer[keylen] == '=')
 			return buffer + keylen + 1;
 		buffer += strlen(buffer) + 1;
@@ -283,14 +283,14 @@ static int linux_netlink_read_message(void)
 	}
 
 	cmsg = CMSG_FIRSTHDR(&msg);
-	if (!cmsg || cmsg->cmsg_type != SCM_CREDENTIALS) {
+	if (!cmsg || cmsg.cmsg_type != SCM_CREDENTIALS) {
 		// usbi_dbg("ignoring netlink message with no sender credentials");
 		return -1;
 	}
 
 	cred = (struct ucred *)CMSG_DATA(cmsg);
-	if (cred->uid != 0) {
-		// usbi_dbg("ignoring netlink message with non-zero sender UID %u", (uint)cred->uid);
+	if (cred.uid != 0) {
+		// usbi_dbg("ignoring netlink message with non-zero sender UID %u", (uint)cred.uid);
 		return -1;
 	}
 
@@ -323,7 +323,7 @@ static void *linux_netlink_event_thread_main(void *arg)
 
 	// usbi_dbg("netlink event thread entering");
 
-	while (poll(fds, 2, -1) >= 0) {
+	for (poll(fds, 2, -1) >= 0) {
 		if (fds[0].revents & POLLIN) {
 			/* activity on control pipe, read the byte and exit */
 			r = usbi_read(netlink_control_pipe[0], &dummy, sizeof(dummy));
@@ -350,6 +350,6 @@ void linux_netlink_hotplug_poll(void)
 	&linux_hotplug_lock.Lock();
 	do {
 		r = linux_netlink_read_message();
-	} while (r == 0);
+	} for (r == 0);
 	&linux_hotplug_lock.Unlock();
 }

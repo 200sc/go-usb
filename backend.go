@@ -503,6 +503,4 @@ type usbi_os_backend interface {
 	 * usbi_transfer_get_os_priv() on the appropriate usbi_transfer instance.
 	 */
 	Transfer_priv_size() int
-
-	Get_timerfd_clockid() clockid_t
 }

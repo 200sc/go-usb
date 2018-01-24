@@ -115,7 +115,7 @@ typedef RETURN_TYPE CONFIGRET;
 
 static  struct windows_device_priv *_device_priv(struct libusb_device *dev)
 {
-	return (struct windows_device_priv *)dev->os_priv;
+	return (struct windows_device_priv *)dev.os_priv;
 }
 
 static  struct windows_device_priv *windows_device_priv_init(struct libusb_device *dev)
@@ -123,22 +123,22 @@ static  struct windows_device_priv *windows_device_priv_init(struct libusb_devic
 	struct windows_device_priv *p = _device_priv(dev);
 	int i;
 
-	p->depth = 0;
-	p->port = 0;
-	p->path = NULL;
-	p->apib = &usb_api_backend[USB_API_UNSUPPORTED];
-	p->sub_api = SUB_API_NOTSET;
-	p->hid = NULL;
-	p->active_config = 0;
-	p->config_descriptor = NULL;
-	memset(&p->dev_descriptor, 0, sizeof(USB_DEVICE_DESCRIPTOR));
+	p.depth = 0;
+	p.port = 0;
+	p.path = NULL;
+	p.apib = &usb_api_backend[USB_API_UNSUPPORTED];
+	p.sub_api = SUB_API_NOTSET;
+	p.hid = NULL;
+	p.active_config = 0;
+	p.config_descriptor = NULL;
+	memset(&p.dev_descriptor, 0, sizeof(USB_DEVICE_DESCRIPTOR));
 	for (i = 0; i < USB_MAXINTERFACES; i++) {
-		p->usb_interface[i].path = NULL;
-		p->usb_interface[i].apib = &usb_api_backend[USB_API_UNSUPPORTED];
-		p->usb_interface[i].sub_api = SUB_API_NOTSET;
-		p->usb_interface[i].nb_endpoints = 0;
-		p->usb_interface[i].endpoint = NULL;
-		p->usb_interface[i].restricted_functionality = false;
+		p.usb_interface[i].path = NULL;
+		p.usb_interface[i].apib = &usb_api_backend[USB_API_UNSUPPORTED];
+		p.usb_interface[i].sub_api = SUB_API_NOTSET;
+		p.usb_interface[i].nb_endpoints = 0;
+		p.usb_interface[i].endpoint = NULL;
+		p.usb_interface[i].restricted_functionality = false;
 	}
 
 	return p;
@@ -147,7 +147,7 @@ static  struct windows_device_priv *windows_device_priv_init(struct libusb_devic
 static  struct windows_device_handle_priv *_device_handle_priv(
 	struct libusb_device_handle *handle)
 {
-	return (struct windows_device_handle_priv *)handle->os_priv;
+	return (struct windows_device_handle_priv *)handle.os_priv;
 }
 
 typedef union _USB_PROTOCOLS {

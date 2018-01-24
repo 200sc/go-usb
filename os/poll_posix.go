@@ -19,3 +19,25 @@ package os
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+
+func usbi_pipe(pipefd [2]int) int {
+	r := pipe(pipefd)
+	if r != 0 {
+		return r
+	}
+	r = fcntl(pipefd[1], F_GETFL)
+	if r == -1 {
+		// usbi_dbg("Failed to get pipe fd flags: %d", errno);
+		usbi_close(pipefd[0])
+		usbi_close(pipefd[1])
+		return r
+	}
+	r = fcntl(pipefd[1], F_SETFL, ret|O_NONBLOCK)
+	if r != 0 {
+		// usbi_dbg("Failed to set non-blocking on new pipe: %d", errno);
+		usbi_close(pipefd[0])
+		usbi_close(pipefd[1])
+		return r
+	}
+	return 0
+}

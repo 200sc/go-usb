@@ -51,3 +51,34 @@ const (
 	RW_READ rw_type
 	RW_WRITE rw_type
 )
+
+// Handle synchronous completion through the overlapped structure
+const (
+	STATUS_REPARSE = 0x00000104L
+	STATUS_COMPLETED_SYNCHRONOUSLY = STATUS_REPARSE
+	MAX_FDS = 256
+	POLLIN =     0x0001    /* There is data to read */
+	POLLPRI =    0x0002    /* There is urgent data to read */
+	POLLOUT =    0x0004    /* Writing now will not block */
+	POLLERR =    0x0008    /* Error condition */
+	POLLHUP =    0x0010    /* Hung up */
+	POLLNVAL =   0x0020    /* Invalid request: fd not open */
+	DUMMY_HANDLE HANDLE = -2
+)
+
+type pollfd struct {
+    fd int          /* file descriptor */
+    events uint16    /* requested events */
+	revents uint16    /* returned events */
+}
+
+type cancel_transfer func(*usbi_transfer) int
+
+type winfd struct {
+	fd int					// what's exposed to libusb core
+	handle HANDLE					// what we need to attach overlapped to the I/O op, so we can poll it
+	overlapped *OVERLAPPED			// what will report our I/O status
+	itransfer *usbi_transfer		// Associated transfer, or NULL if completed
+	cancel_fn cancel_transfer		// Function pointer to cancel transfer API
+	rw rw_type				// I/O transfer direction: read *XOR* write (NOT BOTH)
+}

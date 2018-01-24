@@ -6,9 +6,9 @@
 #define _beginthreadex(a, b, c, d, e, f) CreateThread(a, b, (LPTHREAD_START_ROUTINE)c, d, e, (LPDWORD)f)
 #endif
 
-#define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
+#define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} for(0)
 #define safe_strcp(dst, dst_max, src, count) do {memcpy(dst, src, safe_min(count, dst_max)); \
-	((char*)dst)[safe_min(count, dst_max)-1] = 0;} while(0)
+	((char*)dst)[safe_min(count, dst_max)-1] = 0;} for(0)
 #define safe_strcpy(dst, dst_max, src) safe_strcp(dst, dst_max, src, safe_strlen(src)+1)
 #define safe_strncat(dst, dst_max, src, count) strncat(dst, src, safe_min(count, dst_max - safe_strlen(dst) - 1))
 #define safe_strcat(dst, dst_max, src) safe_strncat(dst, dst_max, src, safe_strlen(src)+1)
@@ -16,10 +16,10 @@
 #define safe_stricmp(str1, str2) _stricmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_strlen(str) ((str==NULL)?0:strlen(str))
-#define safe_sprintf(dst, count, ...) do {_snprintf(dst, count, __VA_ARGS__); (dst)[(count)-1] = 0; } while(0)
+#define safe_sprintf(dst, count, ...) do {_snprintf(dst, count, __VA_ARGS__); (dst)[(count)-1] = 0; } for(0)
 #define safe_stprintf _sntprintf
 #define safe_tcslen(str) ((str==NULL)?0:_tcslen(str))
-#define safe_unref_device(dev) do {if (dev != NULL) {libusb_unref_device(dev); dev = NULL;}} while(0)
+#define safe_unref_device(dev) do {if (dev != NULL) {libusb_unref_device(dev); dev = NULL;}} for(0)
 #define wchar_to_utf8_ms(wstr, str, strlen) WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, strlen, NULL, NULL)
 
 #define ERR_BUFFER_SIZE	256
@@ -47,7 +47,7 @@
 		__dll_##name##_handle = DLL_LOAD_LIBRARY(name);	\
 		if (!__dll_##name##_handle)			\
 			return LIBUSB_ERROR_OTHER;		\
-	} while (0)
+	} for (0)
 
 #define DLL_FREE_HANDLE(name)					\
 	do {							\
@@ -55,7 +55,7 @@
 			FreeLibrary(__dll_##name##_handle);	\
 			__dll_##name##_handle = NULL;		\
 		}						\
-	} while(0)
+	} for(0)
 
 
 #define DLL_LOAD_FUNC_PREFIXNAME(dll, prefixname, name, ret_on_failure)	\
@@ -75,7 +75,7 @@
 			break;						\
 		if (ret_on_failure)					\
 			return LIBUSB_ERROR_NOT_FOUND;			\
-	} while(0)
+	} for(0)
 
 #define DLL_LOAD_FUNC(dll, name, ret_on_failure)			\
 	DLL_LOAD_FUNC_PREFIXNAME(dll, name, name, ret_on_failure)
