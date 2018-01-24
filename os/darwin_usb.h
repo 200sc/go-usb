@@ -1,3 +1,4 @@
+// Go todo: ????
 /* IOUSBInterfaceInferface */
 #if defined (kIOUSBInterfaceInterfaceID700) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
 
@@ -76,60 +77,4 @@
 #error "IOUSBFamily is too old. Please upgrade your OS"
 
 #endif
-
-#if !defined(IO_OBJECT_NULL)
-#define IO_OBJECT_NULL ((io_object_t) 0)
-#endif
-
-typedef IOCFPlugInInterface *io_cf_plugin_ref_t;
-typedef IONotificationPortRef io_notification_port_t;
-
-/* private structures */
-struct darwin_cached_device {
-  struct list_head      list;
-  IOUSBDeviceDescriptor dev_descriptor;
-  UInt32                location;
-  UInt64                parent_session;
-  UInt64                session;
-  UInt16                address;
-  char                  sys_path[21];
-  usb_device_t        **device;
-  int                   open_count;
-  UInt8                 first_config, active_config, port;  
-  int                   can_enumerate;
-  int                   refcount;
-};
-
-struct darwin_device_priv {
-  struct darwin_cached_device *dev;
-};
-
-struct darwin_device_handle_priv {
-  int                  is_open;
-  CFRunLoopSourceRef   cfSource;
-
-  struct darwin_interface {
-    usb_interface_t    **interface;
-    uint8              num_endpoints;
-    CFRunLoopSourceRef   cfSource;
-    uint64_t             frames[256];
-    uint8              endpoint_addrs[USB_MAXENDPOINTS];
-  } interfaces[USB_MAXINTERFACES];
-};
-
-struct darwin_transfer_priv {
-  /* Isoc */
-  IOUSBIsocFrame *isoc_framelist;
-  int num_iso_packets;
-
-  /* Control */
-  IOUSBDevRequestTO req;
-
-  /* Bulk */
-
-  /* Completion status */
-  IOReturn result;
-  UInt32 size;
-};
-
-#endif
+// end go todo ????
