@@ -1,5 +1,7 @@
 package usb
 
+import "sync"
+
 /*
  * Internal header for libusb
  * Copyright © 2007-2009 Daniel Drake <dsd@gentoo.org>
@@ -21,89 +23,92 @@ package usb
  */
 
 const (
-	DEVICE_DESC_LENGTH = 18
-	USB_MAXENDPOINTS = 32
+	USB_MAXENDPOINTS  = 32
 	USB_MAXINTERFACES = 32
-	USB_MAXCONFIG = 8
+	USB_MAXCONFIG     = 8
 
-/* Backend specific capabilities */
-	USBI_CAP_HAS_HID_ACCESS	= 0x00010000
+	/* Backend specific capabilities */
+	USBI_CAP_HAS_HID_ACCESS                = 0x00010000
 	USBI_CAP_SUPPORTS_DETACH_KERNEL_DRIVER = 0x00020000
 
-/* Maximum number of bytes in a log line */
+	/* Maximum number of bytes in a log line */
 	USBI_MAX_LOG_LEN = 1024
 )
 
 type usbi_event_flags uint8
-const(
+
+const (
 	/* The list of pollfds has been modified */
-	USBI_EVENT_POLLFDS_MODIFIED usbi_event_flags = 1 << 0,
+	USBI_EVENT_POLLFDS_MODIFIED usbi_event_flags = 1 << 0
 
 	/* The user has interrupted the event handler */
-	USBI_EVENT_USER_INTERRUPT usbi_event_flags = 1 << 1,
+	USBI_EVENT_USER_INTERRUPT usbi_event_flags = 1 << 1
 )
 
 type usbi_clock uint8
-const(
+
+const (
 	USBI_CLOCK_MONOTONIC usbi_clock = iota
-	USBI_CLOCK_REALTIME usbi_clock
+	USBI_CLOCK_REALTIME  usbi_clock = iota
 )
 
 type usbi_transfer_state_flags uint8
-const(
+
+const (
 	/* Transfer successfully submitted by backend */
-	USBI_TRANSFER_IN_FLIGHT usbi_transfer_state_flags = 1 << 0,
+	USBI_TRANSFER_IN_FLIGHT usbi_transfer_state_flags = 1 << 0
 
 	/* Cancellation was requested via libusb_cancel_transfer() */
-	USBI_TRANSFER_CANCELLING usbi_transfer_state_flags = 1 << 1,
+	USBI_TRANSFER_CANCELLING usbi_transfer_state_flags = 1 << 1
 
 	/* Operation on the transfer failed because the device disappeared */
-	USBI_TRANSFER_DEVICE_DISAPPEARED usbi_transfer_state_flags = 1 << 2,
+	USBI_TRANSFER_DEVICE_DISAPPEARED usbi_transfer_state_flags = 1 << 2
 )
 
 type usbi_transfer_timeout_flags uint8
-const(
+
+const (
 	/* Set by backend submit_transfer() if the OS handles timeout */
-	USBI_TRANSFER_OS_HANDLES_TIMEOUT usbi_transfer_timeout_flags = 1 << 0,
+	USBI_TRANSFER_OS_HANDLES_TIMEOUT usbi_transfer_timeout_flags = 1 << 0
 
 	/* The transfer timeout has been handled */
-	USBI_TRANSFER_TIMEOUT_HANDLED usbi_transfer_timeout_flags = 1 << 1,
+	USBI_TRANSFER_TIMEOUT_HANDLED usbi_transfer_timeout_flags = 1 << 1
 
 	/* The transfer timeout was successfully processed */
-	USBI_TRANSFER_TIMED_OUT usbi_transfer_timeout_flags = 1 << 2,
+	USBI_TRANSFER_TIMED_OUT usbi_transfer_timeout_flags = 1 << 2
 )
 
 type libusb_context struct {
-	debug int
+	debug       int
 	debug_fixed int
 
 	/* internal event pipe, used for signalling occurrence of an internal event. */
 	event_pipe [2]int
 
-	usb_devs list_head 
+	usb_devs      list_head
 	usb_devs_lock sync.Mutex
 
 	/* A list of open handles. Backends are free to traverse this if required.
 	 */
-	open_devs list_head 
+	open_devs      list_head
 	open_devs_lock sync.Mutex
 
 	/* A list of registered hotplug callbacks */
-	hotplug_cbs list_head 
+	hotplug_cbs      list_head
 	hotplug_cbs_lock sync.Mutex
 
 	/* this is a list of in-flight transfer handles, sorted by timeout
 	 * expiration. URBs to timeout the soonest are placed at the beginning of
 	 * the list, URBs that will time out later are placed after, and urbs with
 	 * infinite timeout are always placed at the very end. */
-	flying_transfers list_head 
+	flying_transfers list_head
 	/* Note paths taking both this and usbi_transfer->lock must always
 	 * take this lock first */
 	flying_transfers_lock sync.Mutex
 
 	/* user callbacks for pollfd changes */
-	fd_added_cb libusb_pollfd_added_cb 
-	fd_removed_cb libusb_pollfd_removed_cb 
+	fd_added_cb     libusb_pollfd_added_cb
+	fd_removed_cb   libusb_pollfd_removed_cb
 	fd_cb_user_data interface{}
 
 	/* ensures that only one thread is handling events at any one time */
@@ -114,7 +119,7 @@ type libusb_context struct {
 
 	/* A thread-local storage key to track which thread is performing event
 	 * handling */
-	//event_handling_key usbi_tls_key_t 
+	//event_handling_key usbi_tls_key_t
 
 	/* used to wait for event completion in threads other than the one that is
 	 * event handling */
@@ -134,57 +139,56 @@ type libusb_context struct {
 
 	/* list and count of poll fds and an array of poll fd structures that is
 	 * (re)allocated as necessary prior to polling. Protected by event_data_lock. */
-	ipollfds list_head 
-	pollfds []pollfd 
-	pollfds_cnt POLL_NFDS_TYPE 
+	ipollfds    list_head
+	pollfds     []pollfd
+	pollfds_cnt POLL_NFDS_TYPE
 
 	/* A list of pending hotplug messages. Protected by event_data_lock. */
-	hotplug_msgs list_head 
+	hotplug_msgs list_head
 
 	/* A list of pending completed transfers. Protected by event_data_lock. */
-	completed_transfers list_head 
+	completed_transfers list_head
 
 	/* used for timeout handling, if supported by OS.
 	 * this timerfd is maintained to trigger on the next pending timeout */
 	timerfd int
 
-	list list_head 
+	list list_head
 }
 
 type libusb_device struct {
-struct libusb_device {
 	/* lock protects refcnt, everything else is finalized at initialization
 	 * time */
-	lock sync.Mutex
+	lock   sync.Mutex
 	refcnt int
 
 	ctx *libusb_context
 
-	bus_number uint8
-	port_number uint8
-	parent_dev *libusb_device 
-	device_address uint8
+	bus_number         uint8
+	port_number        uint8
+	parent_dev         *libusb_device
+	device_address     uint8
 	num_configurations uint8
-	speed libusb_speed
+	speed              libusb_speed
 
-	list list_head 
+	list   list_head
 	uint64 session_data
 
-	device_descriptor libusb_device_descriptor 
-	attached int
+	device_descriptor libusb_device_descriptor
+	attached          int
 
 	os_priv uint8
 }
 
 type libusb_device_handle struct {
 	/* lock protects claimed_interfaces */
-	lock sync.Mutex
+	lock               sync.Mutex
 	claimed_interfaces uint64
 
-	list list_head
-	dev *libusb_device 
+	list                      list_head
+	dev                       *libusb_device
 	auto_detach_kernel_driver int
-	os_priv uint8
+	os_priv                   uint8
 }
 
 /* in-memory transfer layout:
@@ -201,15 +205,15 @@ type libusb_device_handle struct {
  */
 
 type usbi_transfer struct {
-	libusbTransfer *libusb_transfer 
+	libusbTransfer  *libusb_transfer
 	num_iso_packets int
-	list list_head 
-	completed_list list_head 
-	timeout timeval 
-	transferred int
-	stream_id uint32
-	state_flags uint8   /* Protected by usbi_transfer->lock */ 
-	timeout_flags uint8 /* Protected by the flying_stransfers_lock */ 
+	list            list_head
+	completed_list  list_head
+	timeout         timeval
+	transferred     int
+	stream_id       uint32
+	state_flags     uint8 /* Protected by usbi_transfer->lock */
+	timeout_flags   uint8 /* Protected by the flying_stransfers_lock */
 
 	/* this lock is held during libusb_submit_transfer() and
 	 * libusb_cancel_transfer() (allowing the OS backend to prevent duplicate
@@ -220,7 +224,7 @@ type usbi_transfer struct {
 	 * if this were possible).
 	 * Note paths taking both this and the flying_transfers_lock must
 	 * always take the flying_transfers_lock first */
-	lock sync.Mutex
+	lock  sync.Mutex
 	tpriv interface{}
 }
 
@@ -231,14 +235,14 @@ func (usbt *usbi_transfer) usbi_transfer_get_os_priv() interface{} {
 
 /* All standard descriptors have these 2 fields in common */
 type usb_descriptor_header struct {
-	bLength uint8
+	bLength         uint8
 	bDescriptorType uint8
 }
 
 type usbi_pollfd struct {
 	/* must come first */
 	pollfd libusb_pollfd
-	list list_head
+	list   list_head
 }
 
 /* device discovery */
@@ -249,17 +253,17 @@ type usbi_pollfd struct {
  * eliminating the need for a list node in the libusb_device structure
  * itself. */
 type discovered_devs struct {
-	len int
+	len      int
 	capacity int
-	devices []libusb_device
+	devices  []libusb_device
 }
 
 func IS_EPIN(ep uint8) bool {
-	return ep & LIBUSB_ENDPOINT_IN != 0
+	return ep&LIBUSB_ENDPOINT_IN != 0
 }
 
 func IS_XFERIN(xfer usbfs_urb) bool {
-	return xfer.endpoint & LIBUSB_ENDPOINT_IN != 0
+	return xfer.endpoint&LIBUSB_ENDPOINT_IN != 0
 }
 
 func USBI_GET_CONTEXT(ctx *libusb_context) *libusb_context {
@@ -272,7 +276,7 @@ func USBI_GET_CONTEXT(ctx *libusb_context) *libusb_context {
 /* Update the following macro if new event sources are added */
 func usbi_pending_events(ctx *libusb_context) bool {
 	return ctx.event_flags != nil ||
-		 ctx.device_close != nil || 
-		 !list_empty(ctx.hotplug_msgs) || 
-		 !list_empty(ctx.completed_transfers)
+		ctx.device_close != nil ||
+		!list_empty(ctx.hotplug_msgs) ||
+		!list_empty(ctx.completed_transfers)
 }

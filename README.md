@@ -14,7 +14,7 @@ Syntax:
 * [x] io_unix.go
 * [x] io_windows.go
 * [x] libusb.go
-* [ ] libusbi.go
+* [x] libusbi.go
 * [ ] list.go
 * [ ] strerror.go
 * [ ] sync.go
