@@ -47,7 +47,7 @@ type libusb_hotplug_callback struct {
 	 // Callback is marked for deletion 
 	needs_free int
 	 // List this callback is registered in (ctx.hotplug_cbs) 
-	list list_head
+	list *LinkedList
  }
  
  type libusb_hotplug_message struct {
@@ -56,7 +56,7 @@ type libusb_hotplug_callback struct {
 	// The device for which this hotplug event occurred 
 	device *libusb_device
 	// List this message is contained in (ctx.hotplug_msgs) 
-	list list_head
+	list *LinkedList
  }
  
 func usbi_hotplug_match_cb(ctx *libusb_context, dev *libusb_device, 
@@ -124,7 +124,7 @@ func usbi_hotplug_notification(ctx *libusb_context, dev *libusb_device, event li
 	ctx.event_data_lock.Unlock()
 }
 
-func libusb_hotplug_register_callback(libusb_context *ctx,
+func libusb_hotplug_register_callback(ctx *libusb_context,
 	events libusb_hotplug_event, flags libusb_hotplug_flag,
 	vendor_id, product_id, dev_class int,
 	cb_fn libusb_hotplug_callback_fn, user_data interface{},

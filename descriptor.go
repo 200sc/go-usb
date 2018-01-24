@@ -492,7 +492,7 @@ func libusb_get_device_descriptor(dev *libusb_device) libusb_device_descriptor {
 	return dev.device_descriptor
 }
 
-func usbi_device_cache_descriptor(dev *libusb_device) int {
+func usbi_device_cache_descriptor(dev *libusb_device) libusb_error {
 	host_endian := false
 	r := usbi_backend.get_device_descriptor(dev, []uint8(&dev.device_descriptor), &host_endian)
 	if r < 0 {

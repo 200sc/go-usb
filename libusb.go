@@ -739,7 +739,7 @@ type libusb_interface_descriptor struct {
 
 	/** Array of endpoint descriptors. This length of this array is determined
 	 * by the bNumEndpoints field. */
-	libusb_endpoint_descriptor *endpoint
+	endpoint *libusb_endpoint_descriptor
 
 	/** Extra descriptors. If libusb encounters unknown interface descriptors,
 	 * it will store them here, should you wish to parse them. */
@@ -752,7 +752,7 @@ type libusb_interface_descriptor struct {
 type libusb_interface struct {
 	/** Array of interface descriptors. The length of this array is determined
 	 * by the num_altsetting field. */
-	libusb_interface_descriptor *altsetting
+	altsetting *libusb_interface_descriptor
 
 	/** The number of alternate settings that belong to this interface */
 	num_altsetting int
@@ -1026,10 +1026,10 @@ type libusb_version struct {
  * Isochronous packet descriptor. */
 type libusb_iso_packet_descriptor struct {
 	/** Length of data to request in this packet */
-	uint length
+	length uint
 
 	/** Amount of data that was actually transferred */
-	uint actual_length
+	actual_length uint
 
 	/** Status code for this packet */
 	status libusb_transfer_status

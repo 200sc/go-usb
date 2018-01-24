@@ -1,6 +1,9 @@
 package usb
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 /*
  * Internal header for libusb
@@ -36,6 +39,13 @@ const (
 )
 
 type usbi_event_flags uint8
+
+type pollfd struct {
+	fd      int    /* file descriptor */
+	events  uint16 /* requested events */
+	revents uint16 /* returned events */
+}
+type POLL_NFDS_TYPE uint32
 
 const (
 	/* The list of pollfds has been modified */
@@ -80,28 +90,28 @@ const (
 
 type libusb_context struct {
 	debug       int
-	debug_fixed int
+	debug_fixed bool
 
 	/* internal event pipe, used for signalling occurrence of an internal event. */
 	event_pipe [2]int
 
-	usb_devs      list_head
+	usb_devs      *LinkedList
 	usb_devs_lock sync.Mutex
 
 	/* A list of open handles. Backends are free to traverse this if required.
 	 */
-	open_devs      list_head
+	open_devs      *LinkedList
 	open_devs_lock sync.Mutex
 
 	/* A list of registered hotplug callbacks */
-	hotplug_cbs      list_head
+	hotplug_cbs      *LinkedList
 	hotplug_cbs_lock sync.Mutex
 
 	/* this is a list of in-flight transfer handles, sorted by timeout
 	 * expiration. URBs to timeout the soonest are placed at the beginning of
 	 * the list, URBs that will time out later are placed after, and urbs with
 	 * infinite timeout are always placed at the very end. */
-	flying_transfers list_head
+	flying_transfers *LinkedList
 	/* Note paths taking both this and usbi_transfer->lock must always
 	 * take this lock first */
 	flying_transfers_lock sync.Mutex
@@ -139,21 +149,21 @@ type libusb_context struct {
 
 	/* list and count of poll fds and an array of poll fd structures that is
 	 * (re)allocated as necessary prior to polling. Protected by event_data_lock. */
-	ipollfds    list_head
+	ipollfds    *LinkedList
 	pollfds     []pollfd
 	pollfds_cnt POLL_NFDS_TYPE
 
 	/* A list of pending hotplug messages. Protected by event_data_lock. */
-	hotplug_msgs list_head
+	hotplug_msgs *LinkedList
 
 	/* A list of pending completed transfers. Protected by event_data_lock. */
-	completed_transfers list_head
+	completed_transfers *LinkedList
 
 	/* used for timeout handling, if supported by OS.
 	 * this timerfd is maintained to trigger on the next pending timeout */
 	timerfd int
 
-	list list_head
+	list *LinkedList
 }
 
 type libusb_device struct {
@@ -171,11 +181,11 @@ type libusb_device struct {
 	num_configurations uint8
 	speed              libusb_speed
 
-	list   list_head
-	uint64 session_data
+	list         *LinkedList
+	session_data uint64
 
 	device_descriptor libusb_device_descriptor
-	attached          int
+	attached          bool
 
 	os_priv uint8
 }
@@ -185,7 +195,7 @@ type libusb_device_handle struct {
 	lock               sync.Mutex
 	claimed_interfaces uint64
 
-	list                      list_head
+	list                      *LinkedList
 	dev                       *libusb_device
 	auto_detach_kernel_driver int
 	os_priv                   uint8
@@ -207,9 +217,9 @@ type libusb_device_handle struct {
 type usbi_transfer struct {
 	libusbTransfer  *libusb_transfer
 	num_iso_packets int
-	list            list_head
-	completed_list  list_head
-	timeout         timeval
+	list            *LinkedList
+	completed_list  *LinkedList
+	timeout         time.Time
 	transferred     int
 	stream_id       uint32
 	state_flags     uint8 /* Protected by usbi_transfer->lock */
@@ -242,7 +252,7 @@ type usb_descriptor_header struct {
 type usbi_pollfd struct {
 	/* must come first */
 	pollfd libusb_pollfd
-	list   list_head
+	list   *LinkedList
 }
 
 /* device discovery */
@@ -255,14 +265,14 @@ type usbi_pollfd struct {
 type discovered_devs struct {
 	len      int
 	capacity int
-	devices  []libusb_device
+	devices  []*libusb_device
 }
 
 func IS_EPIN(ep uint8) bool {
 	return ep&LIBUSB_ENDPOINT_IN != 0
 }
 
-func IS_XFERIN(xfer usbfs_urb) bool {
+func IS_XFERIN(xfer *libusb_transfer) bool {
 	return xfer.endpoint&LIBUSB_ENDPOINT_IN != 0
 }
 

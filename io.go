@@ -292,8 +292,8 @@ func libusb_alloc_transfer(iso_packets int) *libusb_transfer {
  * \returns 0 on success, or a LIBUSB_ERROR code on failure
  * \ref libusb_mtasync
  */
-func libusb_handle_events_locked(ctx *libusb_context, tv *timeval) int {
-	var poll_timeout timeval
+func libusb_handle_events_locked(ctx *libusb_context, tv *time.Time) int {
+	var poll_timeout time.Time
 
 	ctx = USBI_GET_CONTEXT(ctx)
 	r := get_next_timeout(ctx, tv, &poll_timeout)
@@ -822,7 +822,7 @@ func libusb_unlock_event_waiters(ctx *libusb_context) {
  * timeval struct for non-blocking mode
  * \returns 0 on success, or a LIBUSB_ERROR code on failure
  */
-func libusb_handle_events_timeout(ctx *libusb_context, tv *timeval) int {
+func libusb_handle_events_timeout(ctx *libusb_context, tv *time.Time) int {
 	return libusb_handle_events_timeout_completed(ctx, tv, nil)
 }
 
@@ -873,7 +873,7 @@ func libusb_handle_events(ctx *libusb_context) int {
  * \returns 0 if there are no pending timeouts, 1 if a timeout was returned,
  * or LIBUSB_ERROR_OTHER on failure
  */
-func libusb_get_next_timeout(ctx *libusb_context, tv *timeval) int {
+func libusb_get_next_timeout(ctx *libusb_context, tv *time.Time) int {
 	var next_timeout, cur_tv time.Time
 
 	ctx = USBI_GET_CONTEXT(ctx)
@@ -1044,7 +1044,7 @@ func usbi_remove_pollfd(ctx *libusb_context, fd int) {
  * \returns 0 on success, or a LIBUSB_ERROR code on failure
  * \ref libusb_mtasync
  */
-func libusb_handle_events_timeout_completed(ctx *libusb_context, tv *timeval, completed *int) int {
+func libusb_handle_events_timeout_completed(ctx *libusb_context, tv *time.Time, completed *int) int {
 	var poll_timeout time.Duration
 
 	ctx = USBI_GET_CONTEXT(ctx)
@@ -1101,7 +1101,7 @@ already_done:
  * returns 1 if there is an already-expired timeout, otherwise returns 0
  * and populates out
  */
-func get_next_timeout(ctx *libusb_context, tv *timeval, out *timeval) int {
+func get_next_timeout(ctx *libusb_context, tv *time.Time, out *time.Time) int {
 	var timeout time.Duration
 	r := libusb_get_next_timeout(ctx, &timeout)
 	if r != 0 {
@@ -1147,7 +1147,7 @@ func get_next_timeout(ctx *libusb_context, tv *timeval, out *timeval) int {
  * \returns 1 if the timeout expired
  * \ref libusb_mtasync
  */
-func libusb_wait_for_event(ctx *libusb_context, tv *timeval) int {
+func libusb_wait_for_event(ctx *libusb_context, tv *time.Time) int {
 
 	ctx = USBI_GET_CONTEXT(ctx)
 	if tv == nil {
@@ -1248,7 +1248,7 @@ func handle_timerfd_trigger(ctx *libusb_context) int {
 
 /* do the actual event handling. assumes that no other thread is concurrently
  * doing the same thing. */
-func handle_events(ctx *libusb_context, tv *timeval) int {
+func handle_events(ctx *libusb_context, tv *time.Time) int {
 	var ipollfd *usbi_pollfd
 	var timeout_ms int
 	var special_event int

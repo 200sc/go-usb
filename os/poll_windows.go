@@ -66,12 +66,6 @@ const (
 	DUMMY_HANDLE HANDLE = -2
 )
 
-type pollfd struct {
-    fd int          /* file descriptor */
-    events uint16    /* requested events */
-	revents uint16    /* returned events */
-}
-
 type cancel_transfer func(*usbi_transfer) int
 
 type winfd struct {

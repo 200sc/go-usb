@@ -336,10 +336,10 @@ type usbi_os_backend interface {
 	Reset_device(*libusb_device_handle) libusb_error
 
 	/* Alloc num_streams usb3 bulk streams on the passed in endpoints */
-	Alloc_streams(*libusb_device_handle, uint32, *uint8, int) libusb_error
+	Alloc_streams(*libusb_device_handle, uint32, []uint8, int) libusb_error
 
 	/* Free usb3 bulk streams allocated with alloc_streams */
-	Free_streams(*libusb_device_handle, *uint8, int) libusb_error
+	Free_streams(*libusb_device_handle, []uint8, int) libusb_error
 
 	/* Allocate persistent DMA memory for the given device, suitable for
 	 * zerocopy. May return NULL on failure. Optional to implement.
@@ -376,7 +376,7 @@ type usbi_os_backend interface {
 	 *   was opened
 	 * - another LIBUSB_ERROR code on other failure
 	 */
-	Detatch_kernel_driver(*libusb_device_handle, int) libusb_error
+	Detach_kernel_driver(*libusb_device_handle, int) libusb_error
 
 	/* Attach a kernel driver to an interface. Optional.
 	 *
