@@ -19,20 +19,22 @@ package usb
  */
 
 func libusb_get_pollfds(ctx *libusb_context) **libusb_pollfd {
-	var ipollfd *usbi_pollfd
 	ret := make([]*libusb_pollfd, ctx.pollfds_cnt+1)
 
 	i := 0
 	ctx = USBI_GET_CONTEXT(ctx)
 
 	ctx.event_data_lock.Lock()
+		
+	for ipollfd := list_entry((ctx.ipollfds).next, usbi_pollfd, list);
+		&ipollfd.list != (ctx.ipollfds);
+		ipollfd = list_entry(ipollfd.list.next, usbi_pollfd, list)) {
 
-	list_for_each_entry(ipollfd, ctx.ipollfds, list, usbi_pollfd) {
-		ret[i++] = (struct libusb_pollfd *) ipollfd;
+		ret[i++] = ipollfd
 	}
 	
 	ret[ctx.pollfds_cnt] = nil
 
-	ctx.event_data_lock.Unlock();
-	return ret;
+	ctx.event_data_lock.Unlock()
+	return ret
 }

@@ -207,13 +207,12 @@ func libusb_hotplug_deregister_callback (ctx *libusb_context, callback_handle li
 		return;
 	}
 
-	var hotplug_cb *libusb_hotplug_callback
-
 	ctx = USBI_GET_CONTEXT(ctx);
 
 	ctx.hotplug_cbs_lock.Lock()
-	// TODO: replace this defined nonsense
-	list_for_each_entry(hotplug_cb, &ctx.hotplug_cbs, list, libusb_hotplug_callback) {
+	for hotplug_cb := list_entry((&ctx.hotplug_cbs).next, libusb_hotplug_callback, list);
+		&hotplug_cb.list != (&ctx.hotplug_cbs);			
+		hotplug_cb = list_entry(hotplug_cb.list.next, libusb_hotplug_callback, list)) {
 		if (callback_handle == hotplug_cb.handle) {
 			/* Mark this callback for deregistration */
 			hotplug_cb.needs_free = 1;

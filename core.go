@@ -940,10 +940,9 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 	ctx.flying_transfers_lock.Lock()
 
 	/* safe iteration because transfers may be being deleted */
-	#define list_for_each_entry_safe(pos, n, head, member, type)		\
- 	for (itransfer := list_entry((&ctx.flying_transfers).next, usbi_transfer, list),		\
-		  tmp := list_entry(pos.member.next, usbi_transfer, list);	\
-		  &itransfer.list != (&ctx.flying_transfers)				\
+ 	for (itransfer := list_entry((&ctx.flying_transfers).next, usbi_transfer, list),		
+		  tmp := list_entry(pos.member.next, usbi_transfer, list);	
+		  &itransfer.list != (&ctx.flying_transfers)				
 		  itransfer = tmp, tmp = list_entry(tmp.member.next, usbi_transfer, list))
 
 		transfer := itransfer.libusbTransfer
