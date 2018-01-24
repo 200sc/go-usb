@@ -83,7 +83,6 @@ func list_del(entry *LinkedList) {
 	  pos = list_entry(pos.member.next, type, member))
 
 #define list_for_each_entry_safe(pos, n, head, member, type)		\
- for (pos = list_entry((head).next, type, member),		\
-	  n = list_entry(pos.member.next, type, member);	\
-	  &pos.member != (head)				\
-	  pos = n, n = list_entry(n.member.next, type, member))
+ for pos, n = list_entry((head).next, type, member), list_entry(pos.member.next, type, member);
+	  &pos.member != (head);
+	  pos, n = n, list_entry(n.member.next, type, member)

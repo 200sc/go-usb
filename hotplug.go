@@ -91,24 +91,20 @@ func usbi_hotplug_match_cb(ctx *libusb_context, dev *libusb_device,
 }
 
 func usbi_hotplug_match(ctx *libusb_context, dev *libusb_device, event libusb_hotplug_event) {
-
-	var next, hotplug_cb *libusb_hotplug_callback
-	var ret int
-
 	ctx.hotplug_cbs_lock.Lock()
-	// TODO: replace this defined nonsense	
-	list_for_each_entry_safe(hotplug_cb, next, &ctx.hotplug_cbs, list, libusb_hotplug_callback) {
+ 	for hotplug_cb, next := list_entry((&ctx.hotplug_cbs).next, libusb_hotplug_callback, list), list_entry(hotplug_cb.member.next, libusb_hotplug_callback, list);
+		  &hotplug_cb.list != (&ctx.hotplug_cbs);
+		  hotplug_cb, next = next, list_entry(n.list.next, libusb_hotplug_callback, list) {
+
 		ctx.hotplug_cbs_lock.Unlock()
-		ret = usbi_hotplug_match_cb(ctx, dev, event, hotplug_cb);
+		ret := usbi_hotplug_match_cb(ctx, dev, event, hotplug_cb)
 		ctx.hotplug_cbs_lock.Lock()
 		
-		if (ret) {
-			list_del(hotplug_cb.list);	
+		if ret != 0 {
+			list_del(hotplug_cb.list)
 		}
 	}
-
 	ctx.hotplug_cbs_lock.Unlock()
-
 	/* the backend is expected to call the callback for each active transfer */
 }
 
@@ -143,9 +139,9 @@ func libusb_hotplug_register_callback(libusb_context *ctx,
 	handle_id := 1 
 
 	/* check for sane values */
-	if (LIBUSB_HOTPLUG_MATCH_ANY != vendor_id && (~0xffff & vendor_id)) ||
-	    (LIBUSB_HOTPLUG_MATCH_ANY != product_id && (~0xffff & product_id)) ||
-	    (LIBUSB_HOTPLUG_MATCH_ANY != dev_class && (~0xff & dev_class)) ||
+	if (LIBUSB_HOTPLUG_MATCH_ANY != vendor_id && (^0xffff & vendor_id)) ||
+	    (LIBUSB_HOTPLUG_MATCH_ANY != product_id && (^0xffff & product_id)) ||
+	    (LIBUSB_HOTPLUG_MATCH_ANY != dev_class && (^0xff & dev_class)) ||
 	    cb_fn == nil {
 		return LIBUSB_ERROR_INVALID_PARAM;
 	}
@@ -167,7 +163,8 @@ func libusb_hotplug_register_callback(libusb_context *ctx,
 
 	/* protect the handle by the context hotplug lock. it doesn't matter if the same handle
 	 * is used for different contexts only that the handle is unique for this context */
-	new_callback.handle = handle_id++;
+	new_callback.handle = handle_id
+	handle_id++
 
 	list_add(&new_callback.list, &ctx.hotplug_cbs);
 
@@ -175,17 +172,16 @@ func libusb_hotplug_register_callback(libusb_context *ctx,
 
 
 	if flags & LIBUSB_HOTPLUG_ENUMERATE != 0 {
-		var l, i int
 		var devs **libusb_device
 
-		l = (int) libusb_get_device_list(ctx, &devs);
+		l := int(libusb_get_device_list(ctx, &devs))
 		if l < 0 {
 			libusb_hotplug_deregister_callback(ctx,
 							new_callback.handle);
 			return l;
 		}
 
-		for i = 0; i < l; i++ {
+		for i := 0; i < l; i++ {
 			usbi_hotplug_match_cb(ctx, devs[i],
 					LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED,
 					new_callback);
@@ -212,7 +208,7 @@ func libusb_hotplug_deregister_callback (ctx *libusb_context, callback_handle li
 	ctx.hotplug_cbs_lock.Lock()
 	for hotplug_cb := list_entry((&ctx.hotplug_cbs).next, libusb_hotplug_callback, list);
 		&hotplug_cb.list != (&ctx.hotplug_cbs);			
-		hotplug_cb = list_entry(hotplug_cb.list.next, libusb_hotplug_callback, list)) {
+		hotplug_cb = list_entry(hotplug_cb.list.next, libusb_hotplug_callback, list) {
 		if (callback_handle == hotplug_cb.handle) {
 			/* Mark this callback for deregistration */
 			hotplug_cb.needs_free = 1;
@@ -223,15 +219,14 @@ func libusb_hotplug_deregister_callback (ctx *libusb_context, callback_handle li
 	usbi_hotplug_notification(ctx, nil, 0);
 }
 
-usbi_hotplug_deregister_all(*ctx libusb_context) {
+func usbi_hotplug_deregister_all(ctx *libusb_context) {
 	var hotplug_cb, next *libusb_hotplug_callback
 
 	ctx.hotplug_cbs_lock.Lock()
-	// TODO: replace this defined nonsense	
-	list_for_each_entry_safe(hotplug_cb, next, &ctx.hotplug_cbs, list,
-				 struct libusb_hotplug_callback) {
-		list_del(&hotplug_cb.list);
-		
+	for hotplug_cb, next = list_entry((&ctx.hotplug_cbs).next, libusb_hotplug_callback, list), list_entry(hotplug_cb.member.next, libusb_hotplug_callback, list);
+		&hotplug_cb.list != (&ctx.hotplug_cbs);
+		hotplug_cb, next = next, list_entry(n.list.next, libusb_hotplug_callback, list)	{
+		list_del(&hotplug_cb.list)
 	}
 	ctx.hoplug_cbs_lock.Unlock()
 }
