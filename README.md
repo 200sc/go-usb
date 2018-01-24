@@ -15,9 +15,9 @@ Syntax:
 * [x] io_windows.go
 * [x] libusb.go
 * [x] libusbi.go
-* [ ] list.go
-* [ ] strerror.go
-* [ ] sync.go
+* [x] list.go
+* [x] strerror.go
+* [x] sync.go
 
 Semantic:
 * [ ] backend.go

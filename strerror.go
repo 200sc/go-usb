@@ -81,24 +81,25 @@ var (
 			"Системный вызов прерван (возможно, сигналом)",
 			"Память исчерпана",
 			"Операция не поддерживается данной платформой",
-			"Неизвестная ошибка"
-		}
+			"Неизвестная ошибка",
+		},
 	}
-}
+)
 
 type Locale string
+
 const (
 	ENGLISH Locale = "en"
-	DUTCH Locale = "nl" 
-	FRENCH Locale = "fr"
+	DUTCH   Locale = "nl"
+	FRENCH  Locale = "fr"
 	RUSSIAN Locale = "ru"
 )
 
 var (
 	localeIndex = map[Locale]int{
 		ENGLISH: 0,
-		DUTCH: 1,
-		FRENCH: 2,
+		DUTCH:   1,
+		FRENCH:  2,
 		RUSSIAN: 3,
 	}
 	usbi_locale = 0
@@ -113,7 +114,7 @@ var (
  * used, and only 2 letter ISO 639-1 codes are accepted for it, such as "de".
  * The optional region, country_region or codeset parts are ignored. This
  * means that functions which return translatable strings will NOT honor the
- * specified encoding. 
+ * specified encoding.
  * All strings returned are encoded as UTF-8 strings.
  *
  * If libusb_setlocale() is not called, all messages will be in English.
@@ -139,8 +140,8 @@ func libusb_setlocale(locale Locale) libusb_error {
 	if !ok {
 		return LIBUSB_ERROR_NOT_FOUND
 	}
-	usbi_locale = found;
-	return LIBUSB_SUCCESS;
+	usbi_locale = found
+	return LIBUSB_SUCCESS
 }
 
 /** \ingroup libusb_misc
@@ -178,48 +179,48 @@ func libusb_strerror(errcode libusb_error) string {
  * error_code is not a known error / status code.
  */
 func libusb_error_name(error_code libusb_error) string {
-	 switch (error_code) {
-	 case LIBUSB_ERROR_IO:
-		 return "LIBUSB_ERROR_IO";
-	 case LIBUSB_ERROR_INVALID_PARAM:
-		 return "LIBUSB_ERROR_INVALID_PARAM";
-	 case LIBUSB_ERROR_ACCESS:
-		 return "LIBUSB_ERROR_ACCESS";
-	 case LIBUSB_ERROR_NO_DEVICE:
-		 return "LIBUSB_ERROR_NO_DEVICE";
-	 case LIBUSB_ERROR_NOT_FOUND:
-		 return "LIBUSB_ERROR_NOT_FOUND";
-	 case LIBUSB_ERROR_BUSY:
-		 return "LIBUSB_ERROR_BUSY";
-	 case LIBUSB_ERROR_TIMEOUT:
-		 return "LIBUSB_ERROR_TIMEOUT";
-	 case LIBUSB_ERROR_OVERFLOW:
-		 return "LIBUSB_ERROR_OVERFLOW";
-	 case LIBUSB_ERROR_PIPE:
-		 return "LIBUSB_ERROR_PIPE";
-	 case LIBUSB_ERROR_INTERRUPTED:
-		 return "LIBUSB_ERROR_INTERRUPTED";
-	 case LIBUSB_ERROR_NO_MEM:
-		 return "LIBUSB_ERROR_NO_MEM";
-	 case LIBUSB_ERROR_NOT_SUPPORTED:
-		 return "LIBUSB_ERROR_NOT_SUPPORTED";
-	 case LIBUSB_ERROR_OTHER:
-		 return "LIBUSB_ERROR_OTHER";
-	 case LIBUSB_TRANSFER_ERROR:
-		 return "LIBUSB_TRANSFER_ERROR";
-	 case LIBUSB_TRANSFER_TIMED_OUT:
-		 return "LIBUSB_TRANSFER_TIMED_OUT";
-	 case LIBUSB_TRANSFER_CANCELLED:
-		 return "LIBUSB_TRANSFER_CANCELLED";
-	 case LIBUSB_TRANSFER_STALL:
-		 return "LIBUSB_TRANSFER_STALL";
-	 case LIBUSB_TRANSFER_NO_DEVICE:
-		 return "LIBUSB_TRANSFER_NO_DEVICE";
-	 case LIBUSB_TRANSFER_OVERFLOW:
-		 return "LIBUSB_TRANSFER_OVERFLOW";
-	 case 0:
-		 return "LIBUSB_SUCCESS / LIBUSB_TRANSFER_COMPLETED";
-	 default:
-		 return "**UNKNOWN**";
-	 }
- }
+	switch error_code {
+	case LIBUSB_ERROR_IO:
+		return "LIBUSB_ERROR_IO"
+	case LIBUSB_ERROR_INVALID_PARAM:
+		return "LIBUSB_ERROR_INVALID_PARAM"
+	case LIBUSB_ERROR_ACCESS:
+		return "LIBUSB_ERROR_ACCESS"
+	case LIBUSB_ERROR_NO_DEVICE:
+		return "LIBUSB_ERROR_NO_DEVICE"
+	case LIBUSB_ERROR_NOT_FOUND:
+		return "LIBUSB_ERROR_NOT_FOUND"
+	case LIBUSB_ERROR_BUSY:
+		return "LIBUSB_ERROR_BUSY"
+	case LIBUSB_ERROR_TIMEOUT:
+		return "LIBUSB_ERROR_TIMEOUT"
+	case LIBUSB_ERROR_OVERFLOW:
+		return "LIBUSB_ERROR_OVERFLOW"
+	case LIBUSB_ERROR_PIPE:
+		return "LIBUSB_ERROR_PIPE"
+	case LIBUSB_ERROR_INTERRUPTED:
+		return "LIBUSB_ERROR_INTERRUPTED"
+	case LIBUSB_ERROR_NO_MEM:
+		return "LIBUSB_ERROR_NO_MEM"
+	case LIBUSB_ERROR_NOT_SUPPORTED:
+		return "LIBUSB_ERROR_NOT_SUPPORTED"
+	case LIBUSB_ERROR_OTHER:
+		return "LIBUSB_ERROR_OTHER"
+	case LIBUSB_TRANSFER_ERROR:
+		return "LIBUSB_TRANSFER_ERROR"
+	case LIBUSB_TRANSFER_TIMED_OUT:
+		return "LIBUSB_TRANSFER_TIMED_OUT"
+	case LIBUSB_TRANSFER_CANCELLED:
+		return "LIBUSB_TRANSFER_CANCELLED"
+	case LIBUSB_TRANSFER_STALL:
+		return "LIBUSB_TRANSFER_STALL"
+	case LIBUSB_TRANSFER_NO_DEVICE:
+		return "LIBUSB_TRANSFER_NO_DEVICE"
+	case LIBUSB_TRANSFER_OVERFLOW:
+		return "LIBUSB_TRANSFER_OVERFLOW"
+	case 0:
+		return "LIBUSB_SUCCESS / LIBUSB_TRANSFER_COMPLETED"
+	default:
+		return "**UNKNOWN**"
+	}
+}

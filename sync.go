@@ -34,17 +34,18 @@ func sync_transfer_cb(transfer *libusb_transfer) {
 func sync_transfer_wait_for_completion(transfer *libusb_transfer) {
 	var completed *int = transfer.user_data //user_data is probably an interface{}?
 
-	ctx := transfer.dev_handle.dev.ctx;
+	ctx := transfer.dev_handle.dev.ctx
 
 	for *completed == 0 {
-		r := libusb_handle_events_completed(ctx, completed);
-		if (r < 0) {
-			if (r == LIBUSB_ERROR_INTERRUPTED)
-				continue;
+		r := libusb_handle_events_completed(ctx, completed)
+		if r < 0 {
+			if r == LIBUSB_ERROR_INTERRUPTED {
+				continue
+			}
 			// usbi_err(ctx, "libusb_handle_events failed: %s, cancelling transfer and retrying",
-				 libusb_error_name(r));
-			libusb_cancel_transfer(transfer);
-			continue;
+			//  libusb_error_name(r));
+			libusb_cancel_transfer(transfer)
+			continue
 		}
 	}
 }
@@ -88,13 +89,13 @@ func ibusb_control_transfer(dev_handle *libusb_device_handle,
 
 	transfer := libusb_alloc_transfer(0)
 	buffer := make([]uint8, LIBUSB_CONTROL_SETUP_SIZE)
-	
+
 	libusb_fill_control_setup(buffer, bmRequestType, bRequest, wValue, wIndex, wLength)
 
 	if (bmRequestType & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_OUT {
 		buffer = append(buffer, data[0:wLength])
 	} else {
-		buffer = make([]uint8, LIBUSB_CONTROL_SETUP_SIZE + wLength)	
+		buffer = make([]uint8, LIBUSB_CONTROL_SETUP_SIZE+wLength)
 	}
 
 	libusb_fill_control_transfer(transfer, dev_handle, buffer,
@@ -102,12 +103,12 @@ func ibusb_control_transfer(dev_handle *libusb_device_handle,
 
 	transfer.flags = LIBUSB_TRANSFER_FREE_BUFFER
 
-	r := libusb_submit_transfer(transfer);
-	if (r < 0) {
-		return r;
+	r := libusb_submit_transfer(transfer)
+	if r < 0 {
+		return r
 	}
 
-	sync_transfer_wait_for_completion(transfer);
+	sync_transfer_wait_for_completion(transfer)
 
 	if (bmRequestType & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN {
 		tdata := libusb_control_transfer_get_data(transfer)
@@ -133,16 +134,16 @@ func ibusb_control_transfer(dev_handle *libusb_device_handle,
 		r = LIBUSB_ERROR_IO
 	default:
 		// usbi_warn(dev_handle.dev.ctx,
-			"unrecognised status code %d", transfer.status);
-		r = LIBUSB_ERROR_OTHER;
+		// "unrecognised status code %d", transfer.status);
+		r = LIBUSB_ERROR_OTHER
 	}
 
-	return r 
+	return r
 }
 
 func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 	endpoint uint8, buffer []uint8, length int,
-	transferred *int, timeout uint, type uint8) int {
+	transferred *int, timeout uint, _type uint8) int {
 
 	completed := 0
 
@@ -150,10 +151,10 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 
 	libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length,
 		sync_transfer_cb, &completed, timeout)
-	transfer.type = type
+	transfer._type = _type
 
 	r := libusb_submit_transfer(transfer)
-	if (r < 0) {
+	if r < 0 {
 		return r
 	}
 
@@ -163,9 +164,9 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 		*transferred = transfer.actual_length
 	}
 
-	switch (transfer.status) {
+	switch transfer.status {
 	case LIBUSB_TRANSFER_COMPLETED:
-		r = 0;
+		r = 0
 	case LIBUSB_TRANSFER_TIMED_OUT:
 		r = LIBUSB_ERROR_TIMEOUT
 	case LIBUSB_TRANSFER_STALL:
@@ -180,11 +181,11 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
 		r = LIBUSB_ERROR_IO
 	default:
 		// usbi_warn(dev_handle.dev.ctx,
-			"unrecognised status code %d", transfer.status);
-		r = LIBUSB_ERROR_OTHER;
+		// "unrecognised status code %d", transfer.status);
+		r = LIBUSB_ERROR_OTHER
 	}
 
-	return r;
+	return r
 }
 
 /** \ingroup libusb_syncio
@@ -230,10 +231,10 @@ func do_sync_bulk_transfer(dev_handle *libusb_device_handle,
  * \returns LIBUSB_ERROR_BUSY if called from event handling context
  * \returns another LIBUSB_ERROR code on other failures
  */
-func libusb_bulk_transfer(*dev_handle libusb_device_handle, endpoint uint8, 
+func libusb_bulk_transfer(dev_handle *libusb_device_handle, endpoint uint8,
 	data *uint8, length int, transferred *int, timeout uint) int {
 	return do_sync_bulk_transfer(dev_handle, endpoint, data, length,
-		transferred, timeout, LIBUSB_TRANSFER_TYPE_BULK);
+		transferred, timeout, LIBUSB_TRANSFER_TYPE_BULK)
 }
 
 /** \ingroup libusb_syncio

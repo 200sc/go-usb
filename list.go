@@ -21,8 +21,8 @@ package usb
  */
 
 type LinkedList struct {
-	prev, next  *LinkedList
-	member interface{}
+	prev, next *LinkedList
+	member     interface{}
 }
 
 func list_empty(ll *LinkedList) bool {
@@ -58,15 +58,10 @@ func list_del(entry *LinkedList) {
 	entry.prev = nil
 }
 
-// these 'modular' defines are borked
+func list_entry(ll *LinkedList) interface{} {
+	return ll.member
+}
 
-/* Get an entry from the list
- *  ptr - the address of this list_head element in "type"
- *  type - the data type that contains "member"
- *  member - the list_head element in "type"
- */
- #define list_entry(ptr, type, member) \
- ((type *)((uintptr_t)(ptr) - (uintptr_t)offsetof(type, member)))
-
-#define list_first_entry(ptr, type, member) \
- list_entry((ptr).next, type, member)
+func list_first_entry(ll *LinkedList) interface{} {
+	return ll.next.member
+}
