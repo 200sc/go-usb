@@ -1,5 +1,10 @@
 package usb
 
+import (
+	"sync"
+	"time"
+)
+
 /*
  * I/O functions for libusb
  * Copyright © 2007-2009 Daniel Drake <dsd@gentoo.org>
@@ -20,41 +25,41 @@ package usb
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
- func usbi_io_init(ctx *libusb_context) int {
-	 ctx.event_waiters_cond = sync.NewCond(ctx.event_waiters_lock)
-	 list_init(ctx.flying_transfers)
-	 list_init(ctx.ipollfds)
-	 list_init(ctx.hotplug_msgs)
-	 list_init(ctx.completed_transfers)
- 
-	 /* FIXME should use an eventfd on kernels that support it */
-	 r := usbi_pipe(ctx.event_pipe)
-	 if (r < 0) {
-		 return LIBUSB_ERROR_OTHER
-	 }
- 
-	 r = usbi_add_pollfd(ctx, ctx.event_pipe[0], POLLIN)
-	 if (r < 0) {
+func usbi_io_init(ctx *libusb_context) int {
+	ctx.event_waiters_cond = sync.NewCond(ctx.event_waiters_lock)
+	list_init(ctx.flying_transfers)
+	list_init(ctx.ipollfds)
+	list_init(ctx.hotplug_msgs)
+	list_init(ctx.completed_transfers)
+
+	/* FIXME should use an eventfd on kernels that support it */
+	r := usbi_pipe(ctx.event_pipe)
+	if r < 0 {
+		return LIBUSB_ERROR_OTHER
+	}
+
+	r = usbi_add_pollfd(ctx, ctx.event_pipe[0], POLLIN)
+	if r < 0 {
 		usbi_close(ctx.event_pipe[0])
 		usbi_close(ctx.event_pipe[1])
 		return r
-	 }
- 
-	 ctx.timerfd = timerfd_create(usbi_backend.get_timerfd_clockid(), TFD_NONBLOCK)
-	 if (ctx.timerfd >= 0) {
-		 // usbi_dbg("using timerfd for timeouts")
-		 r = usbi_add_pollfd(ctx, ctx.timerfd, POLLIN)
-		 if (r < 0) {
+	}
+
+	ctx.timerfd = timerfd_create(usbi_backend.get_timerfd_clockid(), TFD_NONBLOCK)
+	if ctx.timerfd >= 0 {
+		// usbi_dbg("using timerfd for timeouts")
+		r = usbi_add_pollfd(ctx, ctx.timerfd, POLLIN)
+		if r < 0 {
 			close(ctx.timerfd)
 			usbi_remove_pollfd(ctx, ctx.event_pipe[0])
 			usbi_close(ctx.event_pipe[0])
-	 		usbi_close(ctx.event_pipe[1])
-	 		return r
-		 }
-	 }
- 
-	 return 0
- }
+			usbi_close(ctx.event_pipe[1])
+			return r
+		}
+	}
+
+	return 0
+}
 
 func usbi_io_exit(ctx *libusb_context) {
 	usbi_remove_pollfd(ctx, ctx.event_pipe[0])
@@ -65,10 +70,10 @@ func usbi_io_exit(ctx *libusb_context) {
 }
 
 func calculate_timeout(transfer *usbi_transfer) int {
-	
+
 	timeout := transfer.libusbTransfer.timeout
 
-	if (timeout == 0) {
+	if timeout == 0 {
 		return 0
 	}
 
@@ -77,7 +82,7 @@ func calculate_timeout(transfer *usbi_transfer) int {
 	current_time.tv_sec += timeout / 1000
 	current_time.tv_nsec += (timeout % 1000) * 1000000
 
-	while (current_time.tv_nsec >= 1000000000) {
+	for current_time.tv_nsec >= 1000000000 {
 		current_time.tv_nsec -= 1000000000
 		current_time.tv_sec++
 	}
@@ -105,17 +110,17 @@ func calculate_timeout(transfer *usbi_transfer) int {
  */
 
 func disarm_timerfd(ctx *libusb_context) int {
-	disarm_timer := itimerspec{{0,0},{0,0}}
+	disarm_timer := itimerspec{{0, 0}, {0, 0}}
 
 	r := timerfd_settime(ctx.timerfd, 0, &disarm_timer, NULL)
-	if (r < 0) {
+	if r < 0 {
 		return LIBUSB_ERROR_OTHER
 	}
-	
-	return 0
- }
 
- /* iterates through the flying transfers, and rearms the timerfd based on the
+	return 0
+}
+
+/* iterates through the flying transfers, and rearms the timerfd based on the
  * next upcoming timeout.
  * must be called with flying_list locked.
  * returns 0 on success or a LIBUSB_ERROR code on failure.
@@ -123,26 +128,24 @@ func disarm_timerfd(ctx *libusb_context) int {
 func arm_timerfd_for_next_timeout(ctx *libusb_context) int {
 	var transfer *usbi_transfer
 
-	for transfer = list_entry(ctx.flying_transfers.next, usbi_transfer, list) 
-		&transfer.list != ctx.flying_transfers 
-		transfer = list_entry(transfer.list.next, usbi_transfer, list) {
+	for transfer = list_entry(ctx.flying_transfers.next, usbi_transfer, list); &transfer.list != ctx.flying_transfers; transfer = list_entry(transfer.list.next, usbi_transfer, list) {
 
 		cur_tv := &transfer.timeout
 
 		/* if we've reached transfers of infinite timeout, then we have no
 		 * arming to do */
-		if (!timerisset(cur_tv)) {
+		if !timerisset(cur_tv) {
 			return disarm_timerfd(ctx)
 		}
 
 		/* act on first transfer that has not already been handled */
-		if (!(transfer.timeout_flags & (USBI_TRANSFER_TIMEOUT_HANDLED | USBI_TRANSFER_OS_HANDLES_TIMEOUT))) {
+		if !(transfer.timeout_flags & (USBI_TRANSFER_TIMEOUT_HANDLED | USBI_TRANSFER_OS_HANDLES_TIMEOUT)) {
 
-			it = itimerspec{{0, 0}, {cur_tv.tv_sec, cur_tv.tv_usec * 1000 }}
+			it = itimerspec{{0, 0}, {cur_tv.tv_sec, cur_tv.tv_usec * 1000}}
 
 			// usbi_dbg("next timeout originally %dms", USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer).timeout)
 			r := timerfd_settime(ctx.timerfd, TFD_TIMER_ABSTIME, &it, NULL)
-			if (r < 0) {
+			if r < 0 {
 				return LIBUSB_ERROR_OTHER
 			}
 			return 0
@@ -154,40 +157,38 @@ func arm_timerfd_for_next_timeout(ctx *libusb_context) int {
 /* add a transfer to the (timeout-sorted) active transfers list.
  * This function will return non 0 if fails to update the timer,
  * in which case the transfer is *not* on the flying_transfers list. */
- func add_to_flying_list(transfer *usbi_transfer) int {
+func add_to_flying_list(transfer *usbi_transfer) int {
 	var cur *usbi_transfer
-	struct timeval *timeout = &transfer.timeout
-	struct libusb_context *ctx = transfer.libusbTransfer.dev_handle.dev.ctx
+	timeout := &transfer.timeout
+	ctx := transfer.libusbTransfer.dev_handle.dev.ctx
 	first := true
 
 	r := calculate_timeout(transfer)
-	if (r != 0) {
+	if r != 0 {
 		return r
 	}
 
 	/* if we have no other flying transfers, start the list with this one */
-	if (list_empty(ctx.flying_transfers)) {
+	if list_empty(ctx.flying_transfers) {
 		list_add(transfer.list, ctx.flying_transfers)
 		goto out
 	}
 
 	/* if we have infinite timeout, append to end of list */
-	if (!timerisset(timeout)) {
+	if !timerisset(timeout) {
 		list_add_tail(transfer.list, ctx.flying_transfers)
 		/* first is irrelevant in this case */
 		goto out
 	}
 
 	/* otherwise, find appropriate place in list */
-	for cur = list_entry(ctx.flying_transfers.next, usbi_transfer, list) 
-		&cur.list != ctx.flying_transfers 
-		cur = list_entry(cur.list.next, usbi_transfer, list) {
+	for cur = list_entry(ctx.flying_transfers.next, usbi_transfer, list); &cur.list != ctx.flying_transfers; cur = list_entry(cur.list.next, usbi_transfer, list) {
 		/* find first timeout that occurs after the transfer in question */
 		cur_tv := cur.timeout
 
-		if (!timerisset(cur_tv) || (cur_tv.tv_sec > timeout.tv_sec) ||
-				(cur_tv.tv_sec == timeout.tv_sec &&
-					cur_tv.tv_usec > timeout.tv_usec)) {
+		if !timerisset(cur_tv) || (cur_tv.tv_sec > timeout.tv_sec) ||
+			(cur_tv.tv_sec == timeout.tv_sec &&
+				cur_tv.tv_usec > timeout.tv_usec) {
 			list_add_tail(transfer.list, cur.list)
 			goto out
 		}
@@ -198,20 +199,20 @@ func arm_timerfd_for_next_timeout(ctx *libusb_context) int {
 	/* otherwise we need to be inserted at the end */
 	list_add_tail(transfer.list, ctx.flying_transfers)
 out:
-	if (first && timerisset(timeout)) {
+	if first && timerisset(timeout) {
 		/* if this transfer has the lowest timeout of all active transfers,
 		 * rearm the timerfd with this transfer's timeout */
 		it := itimerspec{{0, 0}, {timeout.tv_sec, timeout.tv_usec * 1000}}
 		// usbi_dbg("arm timerfd for timeout in %dms (first in line)",
-			// USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer.libusbTransfer.timeout)
+		// USBI_TRANSFER_TO_LIBUSB_TRANSFER(transfer.libusbTransfer.timeout)
 		r = timerfd_settime(ctx.timerfd, TFD_TIMER_ABSTIME, &it, nil)
-		if (r < 0) {
+		if r < 0 {
 			// usbi_warn(ctx, "failed to arm first timerfd (errno %d)", errno)
 			r = LIBUSB_ERROR_OTHER
 		}
 	}
 
-	if (r != 0) {
+	if r != 0 {
 		list_del(transfer.list)
 	}
 
@@ -223,7 +224,7 @@ out:
  * flying_transfers list. It will return a LIBUSB_ERROR code
  * if it fails to update the timer for the next timeout. */
 func remove_from_flying_list(transfer *usbi_transfer) int {
-	
+
 	ctx := transfer.libusbTransfer.dev_handle.dev.ctx
 	r := 0
 
@@ -233,10 +234,10 @@ func remove_from_flying_list(transfer *usbi_transfer) int {
 
 	list_del(transfer.list)
 
-	if (rearm_timerfd != 0) {
+	if rearm_timerfd != 0 {
 		r = arm_timerfd_for_next_timeout(ctx)
 	}
-	
+
 	ctx.flying_transfers_lock.Unlock()
 
 	return r
@@ -266,7 +267,7 @@ func remove_from_flying_list(transfer *usbi_transfer) int {
  * \returns a newly allocated transfer, or NULL on error
  */
 
- func libusb_alloc_transfer(iso_packets int) *libusb_transfer {
+func libusb_alloc_transfer(iso_packets int) *libusb_transfer {
 	// surely this is wrong
 	itransfer := &usbi_transfer{}
 	itransfer.num_iso_packets = iso_packets
@@ -274,7 +275,7 @@ func remove_from_flying_list(transfer *usbi_transfer) int {
 	return itransfer.libusbTransfer
 }
 
- /** \ingroup libusb_poll
+/** \ingroup libusb_poll
  * Handle any pending events by polling file descriptors, without checking if
  * any other threads are already doing so. Must be called with the event lock
  * held, see libusb_lock_events().
@@ -292,11 +293,11 @@ func remove_from_flying_list(transfer *usbi_transfer) int {
  * \ref libusb_mtasync
  */
 func libusb_handle_events_locked(ctx *libusb_context, tv *timeval) int {
-	var poll_timeout timeval 
+	var poll_timeout timeval
 
 	ctx = USBI_GET_CONTEXT(ctx)
 	r := get_next_timeout(ctx, tv, &poll_timeout)
-	if (r != 0) {
+	if r != 0 {
 		/* timeout already expired */
 		return handle_timeouts(ctx)
 	}
@@ -325,7 +326,7 @@ func libusb_handle_events_completed(ctx *libusb_context, completed *int) int {
 	return libusb_handle_events_timeout_completed(ctx, &tv, completed)
 }
 
- /** \ingroup libusb_poll
+/** \ingroup libusb_poll
  * Determines whether your application must apply special timing considerations
  * when monitoring libusb's file descriptors.
  *
@@ -375,82 +376,82 @@ func libusb_pollfds_handle_timeouts(ctx *libusb_context) int {
  * \returns another LIBUSB_ERROR code on other failure
  */
 func libusb_submit_transfer(transfer *libusb_transfer) int {
-	 itransfer := transfer.usbiTransfer
-	 ctx := transfer.dev_handle.dev.ctx
-	 var r int
- 
-	 // usbi_dbg("transfer %p", transfer)
- 
-	 /*
-	  * Important note on locking, this function takes / releases locks
-	  * in the following order:
-	  *  take flying_transfers_lock
-	  *  take itransfer->lock
-	  *  clear transfer
-	  *  add to flying_transfers list
-	  *  release flying_transfers_lock
-	  *  submit transfer
-	  *  release itransfer->lock
-	  *  if submit failed:
-	  *   take flying_transfers_lock
-	  *   remove from flying_transfers list
-	  *   release flying_transfers_lock
-	  *
-	  * Note that it takes locks in the order a-b and then releases them
-	  * in the same order a-b. This is somewhat unusual but not wrong,
-	  * release order is not important as long as *all* locks are released
-	  * before re-acquiring any locks.
-	  *
-	  * This means that the ordering of first releasing itransfer->lock
-	  * and then re-acquiring the flying_transfers_list on error is
-	  * important and must not be changed!
-	  *
-	  * This is done this way because when we take both locks we must always
-	  * take flying_transfers_lock first to avoid ab-ba style deadlocks with
-	  * the timeout handling and usbi_handle_disconnect paths.
-	  *
-	  * And we cannot release itransfer->lock before the submission is
-	  * complete otherwise timeout handling for transfers with short
-	  * timeouts may run before submission.
-	  */
-	 ctx.flying_transfers_lock.Lock()
-	 itransfer.lock.Lock()
-	 if (itransfer.state_flags & USBI_TRANSFER_IN_FLIGHT) {
+	itransfer := transfer.usbiTransfer
+	ctx := transfer.dev_handle.dev.ctx
+	var r int
+
+	// usbi_dbg("transfer %p", transfer)
+
+	/*
+	 * Important note on locking, this function takes / releases locks
+	 * in the following order:
+	 *  take flying_transfers_lock
+	 *  take itransfer->lock
+	 *  clear transfer
+	 *  add to flying_transfers list
+	 *  release flying_transfers_lock
+	 *  submit transfer
+	 *  release itransfer->lock
+	 *  if submit failed:
+	 *   take flying_transfers_lock
+	 *   remove from flying_transfers list
+	 *   release flying_transfers_lock
+	 *
+	 * Note that it takes locks in the order a-b and then releases them
+	 * in the same order a-b. This is somewhat unusual but not wrong,
+	 * release order is not important as long as *all* locks are released
+	 * before re-acquiring any locks.
+	 *
+	 * This means that the ordering of first releasing itransfer->lock
+	 * and then re-acquiring the flying_transfers_list on error is
+	 * important and must not be changed!
+	 *
+	 * This is done this way because when we take both locks we must always
+	 * take flying_transfers_lock first to avoid ab-ba style deadlocks with
+	 * the timeout handling and usbi_handle_disconnect paths.
+	 *
+	 * And we cannot release itransfer->lock before the submission is
+	 * complete otherwise timeout handling for transfers with short
+	 * timeouts may run before submission.
+	 */
+	ctx.flying_transfers_lock.Lock()
+	itransfer.lock.Lock()
+	if itransfer.state_flags & USBI_TRANSFER_IN_FLIGHT {
 		ctx.flying_transfers_lock.Unlock()
 		itransfer.lock.Unlock()
 		return LIBUSB_ERROR_BUSY
-	 }
-	 itransfer.transferred = 0
-	 itransfer.state_flags = 0
-	 itransfer.timeout_flags = 0
-	 r = add_to_flying_list(itransfer) 
-	 if (r) {
+	}
+	itransfer.transferred = 0
+	itransfer.state_flags = 0
+	itransfer.timeout_flags = 0
+	r = add_to_flying_list(itransfer)
+	if r {
 		ctx.flying_transfers_lock.Unlock()
 		itransfer.lock.Unlock()
 		return r
-	 }
-	 /*
-	  * We must release the flying transfers lock here, because with
-	  * some backends the submit_transfer method is synchroneous.
-	  */
-	 ctx.flying_transfers_lock.Unlock()
- 
-	 r = usbi_backend.submit_transfer(itransfer)
-	 if (r == LIBUSB_SUCCESS) {
-		 itransfer.state_flags |= USBI_TRANSFER_IN_FLIGHT
-		 /* keep a reference to this device */
-		 libusb_ref_device(transfer.dev_handle.dev)
-	 }
-	 itransfer.lock.Unlock()
- 
-	 if (r != LIBUSB_SUCCESS) {
-		 remove_from_flying_list(itransfer)
-	 }
- 
-	 return r
- }
- 
- /** \ingroup libusb_asyncio
+	}
+	/*
+	 * We must release the flying transfers lock here, because with
+	 * some backends the submit_transfer method is synchroneous.
+	 */
+	ctx.flying_transfers_lock.Unlock()
+
+	r = usbi_backend.submit_transfer(itransfer)
+	if r == LIBUSB_SUCCESS {
+		itransfer.state_flags |= USBI_TRANSFER_IN_FLIGHT
+		/* keep a reference to this device */
+		libusb_ref_device(transfer.dev_handle.dev)
+	}
+	itransfer.lock.Unlock()
+
+	if r != LIBUSB_SUCCESS {
+		remove_from_flying_list(itransfer)
+	}
+
+	return r
+}
+
+/** \ingroup libusb_asyncio
  * Asynchronously cancel a previously submitted transfer.
  * This function returns immediately, but this does not indicate cancellation
  * is complete. Your callback function will be invoked at some later time
@@ -475,16 +476,17 @@ func libusb_cancel_transfer(transfer *libusb_transfer) int {
 		return LIBUSB_ERROR_NOT_FOUND
 	}
 	r = usbi_backend.cancel_transfer(itransfer)
-	if (r < 0) {
+	if r < 0 {
 		// if (r != LIBUSB_ERROR_NOT_FOUND &&
 		//     r != LIBUSB_ERROR_NO_DEVICE)
-			// usbi_err(TRANSFER_CTX(transfer),
-			//  "cancel transfer failed error %d", r)
+		// usbi_err(TRANSFER_CTX(transfer),
+		//  "cancel transfer failed error %d", r)
 		// else
-			// usbi_dbg("cancel transfer failed error %d", r)
+		// usbi_dbg("cancel transfer failed error %d", r)
 
-		if (r == LIBUSB_ERROR_NO_DEVICE)
+		if r == LIBUSB_ERROR_NO_DEVICE {
 			itransfer.state_flags |= USBI_TRANSFER_DEVICE_DISAPPEARED
+		}
 	}
 
 	itransfer.state_flags |= USBI_TRANSFER_CANCELLING
@@ -503,7 +505,7 @@ func libusb_cancel_transfer(transfer *libusb_transfer) int {
  * \param stream_id the stream id to set
  * \see libusb_alloc_streams()
  */
-func libusb_transfer_set_stream_id(transfer* libusb_transfer, stream_id uint32) {
+func libusb_transfer_set_stream_id(transfer *libusb_transfer, stream_id uint32) {
 	transfer.usbiTransfer.stream_id = stream_id
 }
 
@@ -535,15 +537,15 @@ func usbi_handle_transfer_completion(itransfer *usbi_transfer, status libusb_tra
 
 	r = remove_from_flying_list(itransfer)
 	//if (r < 0)
-		// usbi_err(ITRANSFER_CTX(itransfer), "failed to set timer for next timeout, errno=%d", errno)
+	// usbi_err(ITRANSFER_CTX(itransfer), "failed to set timer for next timeout, errno=%d", errno)
 
 	itransfer.lock.Lock()
-	itransfer.state_flags &= ~USBI_TRANSFER_IN_FLIGHT
+	itransfer.state_flags &= ^USBI_TRANSFER_IN_FLIGHT
 	itransfer.lock.Unlock()
 
-	if status == LIBUSB_TRANSFER_COMPLETED && transfer.flags & LIBUSB_TRANSFER_SHORT_NOT_OK {
+	if status == LIBUSB_TRANSFER_COMPLETED && transfer.flags&LIBUSB_TRANSFER_SHORT_NOT_OK {
 		rqlen := transfer.length
-		if transfer.type == LIBUSB_TRANSFER_TYPE_CONTROL {
+		if transfer._type == LIBUSB_TRANSFER_TYPE_CONTROL {
 			rqlen -= LIBUSB_CONTROL_SETUP_SIZE
 		}
 		if rqlen != itransfer.transferred {
@@ -571,240 +573,238 @@ func usbi_handle_transfer_completion(itransfer *usbi_transfer, status libusb_tra
  * callback functions may attempt to directly resubmit the transfer, which
  * will attempt to take the lock. */
 func usbi_handle_transfer_cancellation(transfer *usbi_transfer) int {
-	 ctx := transfer.libusbTransfer.dev_handle.dev.ctx
- 
-	 ctx.flying_transfers_lock.Lock()
-	 timed_out := transfer.timeout_flags & USBI_TRANSFER_TIMED_OUT
-	 ctx.flying_transfers_lock.Unlock()
- 
-	 /* if the URB was cancelled due to timeout, report timeout to the user */
-	 if timed_out != 0 {
-		 // usbi_dbg("detected timeout cancellation")
-		 return usbi_handle_transfer_completion(transfer, LIBUSB_TRANSFER_TIMED_OUT)
-	 }
- 
-	 /* otherwise its a normal async cancel */
-	 return usbi_handle_transfer_completion(transfer, LIBUSB_TRANSFER_CANCELLED)
- }
- 
- /* Add a completed transfer to the completed_transfers list of the
-  * context and signal the event. The backend's handle_transfer_completion()
-  * function will be called the next time an event handler runs. */
-func usbi_signal_transfer_completion(transfer *usbi_transfer) {
-	 ctx := transfer.libusbTransfer.dev_handle.dev.ctx
+	ctx := transfer.libusbTransfer.dev_handle.dev.ctx
 
-	 ctx.event_data_lock.Lock()
-	 pending_events := usbi_pending_events(ctx)
-	 list_add_tail(&transfer.completed_list, &ctx.completed_transfers)
-	 if pending_events != 0 {
-		 usbi_signal_event(ctx)
-	 }
-	 ctx.event_data_lock.Unlock()
- }
- 
- /** \ingroup libusb_poll
-  * Attempt to acquire the event handling lock. This lock is used to ensure that
-  * only one thread is monitoring libusb event sources at any one time.
-  *
-  * You only need to use this lock if you are developing an application
-  * which calls poll() or select() on libusb's file descriptors directly.
-  * If you stick to libusb's event handling loop functions (e.g.
-  * libusb_handle_events()) then you do not need to be concerned with this
-  * locking.
-  *
-  * While holding this lock, you are trusted to actually be handling events.
-  * If you are no longer handling events, you must call libusb_unlock_events()
-  * as soon as possible.
-  *
-  * \param ctx the context to operate on, or NULL for the default context
-  * \returns 0 if the lock was obtained successfully
-  * \returns 1 if the lock was not obtained (i.e. another thread holds the lock)
-  * \ref libusb_mtasync
-  */
+	ctx.flying_transfers_lock.Lock()
+	timed_out := transfer.timeout_flags & USBI_TRANSFER_TIMED_OUT
+	ctx.flying_transfers_lock.Unlock()
+
+	/* if the URB was cancelled due to timeout, report timeout to the user */
+	if timed_out != 0 {
+		// usbi_dbg("detected timeout cancellation")
+		return usbi_handle_transfer_completion(transfer, LIBUSB_TRANSFER_TIMED_OUT)
+	}
+
+	/* otherwise its a normal async cancel */
+	return usbi_handle_transfer_completion(transfer, LIBUSB_TRANSFER_CANCELLED)
+}
+
+/* Add a completed transfer to the completed_transfers list of the
+ * context and signal the event. The backend's handle_transfer_completion()
+ * function will be called the next time an event handler runs. */
+func usbi_signal_transfer_completion(transfer *usbi_transfer) {
+	ctx := transfer.libusbTransfer.dev_handle.dev.ctx
+
+	ctx.event_data_lock.Lock()
+	pending_events := usbi_pending_events(ctx)
+	list_add_tail(&transfer.completed_list, &ctx.completed_transfers)
+	if pending_events != 0 {
+		usbi_signal_event(ctx)
+	}
+	ctx.event_data_lock.Unlock()
+}
+
+/** \ingroup libusb_poll
+ * Attempt to acquire the event handling lock. This lock is used to ensure that
+ * only one thread is monitoring libusb event sources at any one time.
+ *
+ * You only need to use this lock if you are developing an application
+ * which calls poll() or select() on libusb's file descriptors directly.
+ * If you stick to libusb's event handling loop functions (e.g.
+ * libusb_handle_events()) then you do not need to be concerned with this
+ * locking.
+ *
+ * While holding this lock, you are trusted to actually be handling events.
+ * If you are no longer handling events, you must call libusb_unlock_events()
+ * as soon as possible.
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \returns 0 if the lock was obtained successfully
+ * \returns 1 if the lock was not obtained (i.e. another thread holds the lock)
+ * \ref libusb_mtasync
+ */
 func libusb_try_lock_events(ctx *libusb_context) int {
 
-	 ctx = USBI_GET_CONTEXT(ctx)
- 
-	 /* is someone else waiting to close a device? if so, don't let this thread
-	  * start event handling */
-	 ctx.event_data_lock.Lock()
-	 ru := ctx.device_close
-	 ctx.event_data_lock.Unlock()
-	 if ru != 0 {
-		 // usbi_dbg("someone else is closing a device")
-		 return 1
-	 }
- 
-	 // GO problem: sync.Mutex doesn't have an equivalent to this
-	 r := usbi_mutex_trylock(&ctx.events_lock)
-	 if r != 0 {
-		 return 1
-	 }
- 
-	 ctx.event_handler_active = 1
-	 return 0
- }
- 
- /** \ingroup libusb_poll
-  * Acquire the event handling lock, blocking until successful acquisition if
-  * it is contended. This lock is used to ensure that only one thread is
-  * monitoring libusb event sources at any one time.
-  *
-  * You only need to use this lock if you are developing an application
-  * which calls poll() or select() on libusb's file descriptors directly.
-  * If you stick to libusb's event handling loop functions (e.g.
-  * libusb_handle_events()) then you do not need to be concerned with this
-  * locking.
-  *
-  * While holding this lock, you are trusted to actually be handling events.
-  * If you are no longer handling events, you must call libusb_unlock_events()
-  * as soon as possible.
-  *
-  * \param ctx the context to operate on, or NULL for the default context
-  * \ref libusb_mtasync
-  */
-func libusb_lock_events(ctx *libusb_context) {
-	 ctx = USBI_GET_CONTEXT(ctx)
-	 ctx.events_lock.Lock()
-	 ctx.event_handler_active = 1
- }
- 
- /** \ingroup libusb_poll
-  * Release the lock previously acquired with libusb_try_lock_events() or
-  * libusb_lock_events(). Releasing this lock will wake up any threads blocked
-  * on libusb_wait_for_event().
-  *
-  * \param ctx the context to operate on, or NULL for the default context
-  * \ref libusb_mtasync
-  */
- func libusb_unlock_events(ctx *libusb_context) {
-	 ctx = USBI_GET_CONTEXT(ctx)
-	 ctx.event_handler_active = 0
-	 ctx.events_lock.Unlock()
- 
-	 /* FIXME: perhaps we should be a bit more efficient by not broadcasting
-	  * the availability of the events lock when we are modifying pollfds
-	  * (check ctx.device_close)? */
-	 ctx.event_waiters_lock.Lock()
-	 ctx.event_waiters_cond.Broadcast()
-	 ctx.event_waiters_lock.Unlock()
- }
- 
- /** \ingroup libusb_poll
-  * Determine if it is still OK for this thread to be doing event handling.
-  *
-  * Sometimes, libusb needs to temporarily pause all event handlers, and this
-  * is the function you should use before polling file descriptors to see if
-  * this is the case.
-  *
-  * If this function instructs your thread to give up the events lock, you
-  * should just continue the usual logic that is documented in \ref libusb_mtasync.
-  * On the next iteration, your thread will fail to obtain the events lock,
-  * and will hence become an event waiter.
-  *
-  * This function should be called while the events lock is held: you don't
-  * need to worry about the results of this function if your thread is not
-  * the current event handler.
-  *
-  * \param ctx the context to operate on, or NULL for the default context
-  * \returns 1 if event handling can start or continue
-  * \returns 0 if this thread must give up the events lock
-  * \ref fullstory "Multi-threaded I/O: the full story"
-  */
-func libusb_event_handling_ok(ctx *libusb_context) int {
-	 ctx = USBI_GET_CONTEXT(ctx)
- 
-	 /* is someone else waiting to close a device? if so, don't let this thread
-	  * continue event handling */
-	 ctx.event_data_lock.Lock()
-	 r := ctx.device_close
-	 ctx.event_data_lock.Unlock()
-	 if r != 0 {
-		 // usbi_dbg("someone else is closing a device")
-		 return 0
-	 }
-	 return 1
- }
- 
- 
- /** \ingroup libusb_poll
-  * Determine if an active thread is handling events (i.e. if anyone is holding
-  * the event handling lock).
-  *
-  * \param ctx the context to operate on, or NULL for the default context
-  * \returns 1 if a thread is handling events
-  * \returns 0 if there are no threads currently handling events
-  * \ref libusb_mtasync
-  */
- func libusb_event_handler_active(ctx *libusb_context) int {
-	 ctx = USBI_GET_CONTEXT(ctx)
- 
-	 /* is someone else waiting to close a device? if so, don't let this thread
-	  * start event handling -- indicate that event handling is happening */
-	 ctx.event_data_lock.Lock()
-	 r := ctx.device_close
-	 ctx.event_data_lock.Unlock()
-	 if r != 0 {
-		 // usbi_dbg("someone else is closing a device")
-		 return 1
-	 }
- 
-	 return ctx.event_handler_active
- }
- 
- /** \ingroup libusb_poll
-  * Interrupt any active thread that is handling events. This is mainly useful
-  * for interrupting a dedicated event handling thread when an application
-  * wishes to call libusb_exit().
-  *
-  * Since version 1.0.21, \ref LIBUSB_API_VERSION >= 0x01000105
-  *
-  * \param ctx the context to operate on, or NULL for the default context
-  * \ref libusb_mtasync
-  */
-func libusb_interrupt_event_handler(ctx *libusb_context) {
-	 ctx = USBI_GET_CONTEXT(ctx)
- 
-	 ctx.event_data_lock.Lock()
-	 if !usbi_pending_events(ctx) {
-		 ctx.event_flags |= USBI_EVENT_USER_INTERRUPT
-		 usbi_signal_event(ctx)
-	 }
-	 ctx.event_data_lock.Unlock()
+	ctx = USBI_GET_CONTEXT(ctx)
+
+	/* is someone else waiting to close a device? if so, don't let this thread
+	 * start event handling */
+	ctx.event_data_lock.Lock()
+	ru := ctx.device_close
+	ctx.event_data_lock.Unlock()
+	if ru != 0 {
+		// usbi_dbg("someone else is closing a device")
+		return 1
+	}
+
+	// GO problem: sync.Mutex doesn't have an equivalent to this
+	r := usbi_mutex_trylock(&ctx.events_lock)
+	if r != 0 {
+		return 1
+	}
+
+	ctx.event_handler_active = 1
+	return 0
 }
- 
- /** \ingroup libusb_poll
-  * Acquire the event waiters lock. This lock is designed to be obtained under
-  * the situation where you want to be aware when events are completed, but
-  * some other thread is event handling so calling libusb_handle_events() is not
-  * allowed.
-  *
-  * You then obtain this lock, re-check that another thread is still handling
-  * events, then call libusb_wait_for_event().
-  *
-  * You only need to use this lock if you are developing an application
-  * which calls poll() or select() on libusb's file descriptors directly,
-  * <b>and</b> may potentially be handling events from 2 threads simultaenously.
-  * If you stick to libusb's event handling loop functions (e.g.
-  * libusb_handle_events()) then you do not need to be concerned with this
-  * locking.
-  *
-  * \param ctx the context to operate on, or NULL for the default context
-  * \ref libusb_mtasync
-  */
+
+/** \ingroup libusb_poll
+ * Acquire the event handling lock, blocking until successful acquisition if
+ * it is contended. This lock is used to ensure that only one thread is
+ * monitoring libusb event sources at any one time.
+ *
+ * You only need to use this lock if you are developing an application
+ * which calls poll() or select() on libusb's file descriptors directly.
+ * If you stick to libusb's event handling loop functions (e.g.
+ * libusb_handle_events()) then you do not need to be concerned with this
+ * locking.
+ *
+ * While holding this lock, you are trusted to actually be handling events.
+ * If you are no longer handling events, you must call libusb_unlock_events()
+ * as soon as possible.
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \ref libusb_mtasync
+ */
+func libusb_lock_events(ctx *libusb_context) {
+	ctx = USBI_GET_CONTEXT(ctx)
+	ctx.events_lock.Lock()
+	ctx.event_handler_active = 1
+}
+
+/** \ingroup libusb_poll
+ * Release the lock previously acquired with libusb_try_lock_events() or
+ * libusb_lock_events(). Releasing this lock will wake up any threads blocked
+ * on libusb_wait_for_event().
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \ref libusb_mtasync
+ */
+func libusb_unlock_events(ctx *libusb_context) {
+	ctx = USBI_GET_CONTEXT(ctx)
+	ctx.event_handler_active = 0
+	ctx.events_lock.Unlock()
+
+	/* FIXME: perhaps we should be a bit more efficient by not broadcasting
+	 * the availability of the events lock when we are modifying pollfds
+	 * (check ctx.device_close)? */
+	ctx.event_waiters_lock.Lock()
+	ctx.event_waiters_cond.Broadcast()
+	ctx.event_waiters_lock.Unlock()
+}
+
+/** \ingroup libusb_poll
+ * Determine if it is still OK for this thread to be doing event handling.
+ *
+ * Sometimes, libusb needs to temporarily pause all event handlers, and this
+ * is the function you should use before polling file descriptors to see if
+ * this is the case.
+ *
+ * If this function instructs your thread to give up the events lock, you
+ * should just continue the usual logic that is documented in \ref libusb_mtasync.
+ * On the next iteration, your thread will fail to obtain the events lock,
+ * and will hence become an event waiter.
+ *
+ * This function should be called while the events lock is held: you don't
+ * need to worry about the results of this function if your thread is not
+ * the current event handler.
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \returns 1 if event handling can start or continue
+ * \returns 0 if this thread must give up the events lock
+ * \ref fullstory "Multi-threaded I/O: the full story"
+ */
+func libusb_event_handling_ok(ctx *libusb_context) int {
+	ctx = USBI_GET_CONTEXT(ctx)
+
+	/* is someone else waiting to close a device? if so, don't let this thread
+	 * continue event handling */
+	ctx.event_data_lock.Lock()
+	r := ctx.device_close
+	ctx.event_data_lock.Unlock()
+	if r != 0 {
+		// usbi_dbg("someone else is closing a device")
+		return 0
+	}
+	return 1
+}
+
+/** \ingroup libusb_poll
+ * Determine if an active thread is handling events (i.e. if anyone is holding
+ * the event handling lock).
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \returns 1 if a thread is handling events
+ * \returns 0 if there are no threads currently handling events
+ * \ref libusb_mtasync
+ */
+func libusb_event_handler_active(ctx *libusb_context) int {
+	ctx = USBI_GET_CONTEXT(ctx)
+
+	/* is someone else waiting to close a device? if so, don't let this thread
+	 * start event handling -- indicate that event handling is happening */
+	ctx.event_data_lock.Lock()
+	r := ctx.device_close
+	ctx.event_data_lock.Unlock()
+	if r != 0 {
+		// usbi_dbg("someone else is closing a device")
+		return 1
+	}
+
+	return ctx.event_handler_active
+}
+
+/** \ingroup libusb_poll
+ * Interrupt any active thread that is handling events. This is mainly useful
+ * for interrupting a dedicated event handling thread when an application
+ * wishes to call libusb_exit().
+ *
+ * Since version 1.0.21, \ref LIBUSB_API_VERSION >= 0x01000105
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \ref libusb_mtasync
+ */
+func libusb_interrupt_event_handler(ctx *libusb_context) {
+	ctx = USBI_GET_CONTEXT(ctx)
+
+	ctx.event_data_lock.Lock()
+	if !usbi_pending_events(ctx) {
+		ctx.event_flags |= USBI_EVENT_USER_INTERRUPT
+		usbi_signal_event(ctx)
+	}
+	ctx.event_data_lock.Unlock()
+}
+
+/** \ingroup libusb_poll
+ * Acquire the event waiters lock. This lock is designed to be obtained under
+ * the situation where you want to be aware when events are completed, but
+ * some other thread is event handling so calling libusb_handle_events() is not
+ * allowed.
+ *
+ * You then obtain this lock, re-check that another thread is still handling
+ * events, then call libusb_wait_for_event().
+ *
+ * You only need to use this lock if you are developing an application
+ * which calls poll() or select() on libusb's file descriptors directly,
+ * <b>and</b> may potentially be handling events from 2 threads simultaenously.
+ * If you stick to libusb's event handling loop functions (e.g.
+ * libusb_handle_events()) then you do not need to be concerned with this
+ * locking.
+ *
+ * \param ctx the context to operate on, or NULL for the default context
+ * \ref libusb_mtasync
+ */
 func libusb_lock_event_waiters(ctx *libusb_context) {
 	USBI_GET_CONTEXT(ctx).event_waiters_lock.Lock()
 }
- 
- /** \ingroup libusb_poll
-  * Release the event waiters lock.
-  * \param ctx the context to operate on, or NULL for the default context
-  * \ref libusb_mtasync
-  */
- func libusb_unlock_event_waiters(ctx *libusb_context) {
+
+/** \ingroup libusb_poll
+ * Release the event waiters lock.
+ * \param ctx the context to operate on, or NULL for the default context
+ * \ref libusb_mtasync
+ */
+func libusb_unlock_event_waiters(ctx *libusb_context) {
 	USBI_GET_CONTEXT(ctx).event_waiters_lock.Unlock()
 }
-
 
 /** \ingroup libusb_poll
  * Handle any pending events
@@ -822,7 +822,7 @@ func libusb_lock_event_waiters(ctx *libusb_context) {
  * timeval struct for non-blocking mode
  * \returns 0 on success, or a LIBUSB_ERROR code on failure
  */
- func libusb_handle_events_timeout(ctx *libusb_context,  tv *timeval) int {
+func libusb_handle_events_timeout(ctx *libusb_context, tv *timeval) int {
 	return libusb_handle_events_timeout_completed(ctx, tv, nil)
 }
 
@@ -873,7 +873,7 @@ func libusb_handle_events(ctx *libusb_context) int {
  * \returns 0 if there are no pending timeouts, 1 if a timeout was returned,
  * or LIBUSB_ERROR_OTHER on failure
  */
-func libusb_get_next_timeout(ctx *libusb_context,  tv *timeval) int {
+func libusb_get_next_timeout(ctx *libusb_context, tv *timeval) int {
 	var next_timeout, cur_tv time.Time
 
 	ctx = USBI_GET_CONTEXT(ctx)
@@ -888,9 +888,7 @@ func libusb_get_next_timeout(ctx *libusb_context,  tv *timeval) int {
 
 	/* find next transfer which hasn't already been processed as timed out */
 
- 	for (transfer = list_entry((ctx.flying_transfers).next, usbi_transfer, list);
-	  	transfer.list != (ctx.flying_transfers);
-	  	transfer = list_entry(transfer.list.next, usbi_transfer, list)) {
+	for transfer = list_entry((ctx.flying_transfers).next, usbi_transfer, list); transfer.list != (ctx.flying_transfers); transfer = list_entry(transfer.list.next, usbi_transfer, list) {
 
 		if transfer.timeout_flags & (USBI_TRANSFER_TIMEOUT_HANDLED | USBI_TRANSFER_OS_HANDLES_TIMEOUT) {
 			continue
@@ -914,7 +912,7 @@ func libusb_get_next_timeout(ctx *libusb_context,  tv *timeval) int {
 	cur_ts := time.Now()
 	TIMESPEC_TO_TIMEVAL(&cur_tv, &cur_ts)
 
-	if !timercmp(&cur_tv, &next_timeout, <) {
+	if time.After(next_timeout, cur_tv) {
 		// usbi_dbg("first timeout already expired")
 		timerclear(tv)
 	} else {
@@ -960,7 +958,7 @@ func libusb_set_pollfd_notifiers(ctx *libusb_context,
  * Interrupt the iteration of the event handling thread, so that it picks
  * up the fd change. Callers of this function must hold the event_data_lock.
  */
-func usbi_fd_notification( ctx *libusb_context) {
+func usbi_fd_notification(ctx *libusb_context) {
 	/* Record that there is a new poll fd.
 	 * Only signal an event if there are no prior pending events. */
 	pending_events := usbi_pending_events(ctx)
@@ -973,7 +971,7 @@ func usbi_fd_notification( ctx *libusb_context) {
 /* Add a file descriptor to the list of file descriptors to be monitored.
  * events should be specified as a bitmask of events passed to poll(), e.g.
  * POLLIN and/or POLLOUT. */
-func usbi_add_pollfd( ctx *libusb_context, fd int, events int16 ) int {
+func usbi_add_pollfd(ctx *libusb_context, fd int, events int16) int {
 	ipollfd := &usbi_pollfd{}
 
 	// usbi_dbg("add fd %d events %d", fd, events)
@@ -992,14 +990,14 @@ func usbi_add_pollfd( ctx *libusb_context, fd int, events int16 ) int {
 }
 
 /* Remove a file descriptor from the list of file descriptors to be polled. */
-func usbi_remove_pollfd( ctx *libusb_context, fd int) {
-	
+func usbi_remove_pollfd(ctx *libusb_context, fd int) {
+
 	var found bool
 
 	// usbi_dbg("remove fd %d", fd)
 	ctx.event_data_lock.Lock()
-	for ipollfd := list_entry((&ctx.ipollfds).next, usbi_pollfd, list); &ipollfd.member != (&ctx.ipollfds); ipollfd = list_entry(ipollfd.list.next, usbi_pollfd, list); {
-		if (ipollfd.pollfd.fd == fd) {
+	for ipollfd := list_entry((&ctx.ipollfds).next, usbi_pollfd, list); &ipollfd.member != (&ctx.ipollfds); ipollfd = list_entry(ipollfd.list.next, usbi_pollfd, list) {
+		if ipollfd.pollfd.fd == fd {
 			found = true
 			break
 		}
@@ -1046,7 +1044,7 @@ func usbi_remove_pollfd( ctx *libusb_context, fd int) {
  * \returns 0 on success, or a LIBUSB_ERROR code on failure
  * \ref libusb_mtasync
  */
- func libusb_handle_events_timeout_completed(ctx *libusb_context,  tv *timeval, completed *int) int {
+func libusb_handle_events_timeout_completed(ctx *libusb_context, tv *timeval, completed *int) int {
 	var poll_timeout time.Duration
 
 	ctx = USBI_GET_CONTEXT(ctx)
@@ -1058,7 +1056,7 @@ func usbi_remove_pollfd( ctx *libusb_context, fd int) {
 
 retry:
 	if libusb_try_lock_events(ctx) == 0 {
-		if (completed == nil || *completed == 0) {
+		if completed == nil || *completed == 0 {
 			/* we obtained the event lock: do our own event handling */
 			// usbi_dbg("doing our own event handling")
 			r = handle_events(ctx, &poll_timeout)
@@ -1075,7 +1073,7 @@ retry:
 		goto already_done
 	}
 
-	if (!libusb_event_handler_active(ctx)) {
+	if !libusb_event_handler_active(ctx) {
 		/* we hit a race: whoever was event handling earlier finished in the
 		 * time it took us to reach this point. try the cycle again. */
 		libusb_unlock_event_waiters(ctx)
@@ -1103,7 +1101,7 @@ already_done:
  * returns 1 if there is an already-expired timeout, otherwise returns 0
  * and populates out
  */
- func get_next_timeout(ctx *libusb_context,  tv *timeval, out *timeval) int {
+func get_next_timeout(ctx *libusb_context, tv *timeval, out *timeval) int {
 	var timeout time.Duration
 	r := libusb_get_next_timeout(ctx, &timeout)
 	if r != 0 {
@@ -1149,10 +1147,10 @@ already_done:
  * \returns 1 if the timeout expired
  * \ref libusb_mtasync
  */
- func libusb_wait_for_event(ctx *libusb_context,  tv *timeval) int {
+func libusb_wait_for_event(ctx *libusb_context, tv *timeval) int {
 
 	ctx = USBI_GET_CONTEXT(ctx)
-	if (tv == nil) {
+	if tv == nil {
 		ctx.event_waiters_cond.Wait()
 		return 0
 	}
@@ -1163,27 +1161,26 @@ already_done:
 		close(done)
 	}()
 	select {
-		case <-time.After(tv):
-			return 1
-		case <-done:
-			return 0
+	case <-time.After(tv):
+		return 1
+	case <-done:
+		return 0
 	}
 }
 
-func handle_timeout( itransfer *usbi_transfer) {
+func handle_timeout(itransfer *usbi_transfer) {
 	transfer := itransfer.libusbTransfer
-	
+
 	itransfer.timeout_flags |= USBI_TRANSFER_TIMEOUT_HANDLED
 	r := libusb_cancel_transfer(transfer)
 	if r == LIBUSB_SUCCESS {
 		itransfer.timeout_flags |= USBI_TRANSFER_TIMED_OUT
 	}
-		// usbi_warn(TRANSFER_CTX(transfer),
+	// usbi_warn(TRANSFER_CTX(transfer),
 	//		"async cancel failed %d errno=%d", r, errno)
 }
 
-
-func handle_timeouts_locked( ctx *libusb_context) int {
+func handle_timeouts_locked(ctx *libusb_context) int {
 
 	if list_empty(ctx.flying_transfers) {
 		return 0
@@ -1197,12 +1194,9 @@ func handle_timeouts_locked( ctx *libusb_context) int {
 
 	/* iterate through flying transfers list, finding all transfers that
 	 * have expired timeouts */
-	for (transfer = list_entry(( &ctx.flying_transfers).next, usbi_transfer, list);	
-		&transfer.list != ( &ctx.flying_transfers);
-		transfer = list_entry(transfer.list.next, usbi_transfer, list)) {
+	for transfer = list_entry((&ctx.flying_transfers).next, usbi_transfer, list); &transfer.list != (&ctx.flying_transfers); transfer = list_entry(transfer.list.next, usbi_transfer, list) {
 
-
-		 timeval *cur_tv = &transfer.timeout
+		timeval * cur_tv = &transfer.timeout
 
 		/* if we've reached transfers of infinite timeout, we're all done */
 		if !timerisset(cur_tv) {
@@ -1216,8 +1210,8 @@ func handle_timeouts_locked( ctx *libusb_context) int {
 
 		/* if transfer has non-expired timeout, nothing more to do */
 		if ((cur_tv.tv_sec > systime.tv_sec) ||
-				(cur_tv.tv_sec == systime.tv_sec &&
-					cur_tv.tv_usec > systime.tv_usec)) != 0 {
+			(cur_tv.tv_sec == systime.tv_sec &&
+				cur_tv.tv_usec > systime.tv_usec)) != 0 {
 			return 0
 		}
 
@@ -1227,7 +1221,7 @@ func handle_timeouts_locked( ctx *libusb_context) int {
 	return 0
 }
 
-func handle_timeouts( ctx *libusb_context) int {
+func handle_timeouts(ctx *libusb_context) int {
 	ctx = USBI_GET_CONTEXT(ctx)
 	ctx.flying_transfers_lock.Lock()
 	r := handle_timeouts_locked(ctx)
@@ -1235,12 +1229,12 @@ func handle_timeouts( ctx *libusb_context) int {
 	return r
 }
 
-func handle_timerfd_trigger( ctx *libusb_context) int {
+func handle_timerfd_trigger(ctx *libusb_context) int {
 	ctx.flying_transfers_lock.Lock()
 
 	/* process the timeout that just happened */
 	r := handle_timeouts_locked(ctx)
-	if (r < 0) {
+	if r < 0 {
 		ctx.flying_transfers_lock.Unlock()
 		return r
 	}
@@ -1254,7 +1248,7 @@ func handle_timerfd_trigger( ctx *libusb_context) int {
 
 /* do the actual event handling. assumes that no other thread is concurrently
  * doing the same thing. */
- func handle_events( ctx *libusb_context,  tv *timeval) int {
+func handle_events(ctx *libusb_context, tv *timeval) int {
 	var ipollfd *usbi_pollfd
 	var timeout_ms int
 	var special_event int
@@ -1271,11 +1265,10 @@ func handle_timerfd_trigger( ctx *libusb_context) int {
 	 * be adjusted to skip over these internal fds */
 	var internal_nfds POLL_NFDS_TYPE = 2
 
-
 	/* only reallocate the poll fds when the list of poll fds has been modified
 	 * since the last poll, otherwise reuse them to save the additional overhead */
 	ctx.event_data_lock.Lock()
-	if ctx.event_flags & USBI_EVENT_POLLFDS_MODIFIED != 0 {
+	if ctx.event_flags&USBI_EVENT_POLLFDS_MODIFIED != 0 {
 		// usbi_dbg("poll fds modified, reallocating")
 
 		/* sanity check - it is invalid for a context to have fewer than the
@@ -1285,12 +1278,10 @@ func handle_timerfd_trigger( ctx *libusb_context) int {
 		}
 
 		ctx.pollfds = make([]int, ctx.pollfds_cnt)
-	
-		for ipollfd = list_entry((&ctx.ipollfds).next, usbi_pollfd, list);	
-			&ipollfd.list != (&ctx.ipollfds);
-			ipollfd = list_entry(ipollfd.list.next, usbi_pollfd, list) {
 
-			 libusb_pollfd *pollfd = &ipollfd.pollfd
+		for ipollfd = list_entry((&ctx.ipollfds).next, usbi_pollfd, list); &ipollfd.list != (&ctx.ipollfds); ipollfd = list_entry(ipollfd.list.next, usbi_pollfd, list) {
+
+			libusb_pollfd * pollfd = &ipollfd.pollfd
 			i++
 			ctx.pollfds[i].fd = pollfd.fd
 			ctx.pollfds[i].events = pollfd.events
@@ -1318,9 +1309,9 @@ redo_poll:
 	// usbi_dbg("poll() returned %d", r)
 	if r == 0 {
 		return handle_timeouts(ctx)
-	} else if (r == -1 && errno == EINTR) {
+	} else if r == -1 && errno == EINTR {
 		return LIBUSB_ERROR_INTERRUPTED
-	} else if (r < 0) {
+	} else if r < 0 {
 		// usbi_err(ctx, "poll failed %d err=%d", r, errno)
 		return LIBUSB_ERROR_IO
 	}
@@ -1340,16 +1331,16 @@ redo_poll:
 
 		/* check if someone added a new poll fd */
 		// if (ctx.event_flags & USBI_EVENT_POLLFDS_MODIFIED)
-			// usbi_dbg("someone updated the poll fds")
+		// usbi_dbg("someone updated the poll fds")
 
-		if (ctx.event_flags & USBI_EVENT_USER_INTERRUPT) {
+		if ctx.event_flags & USBI_EVENT_USER_INTERRUPT {
 			// usbi_dbg("someone purposely interrupted")
-			ctx.event_flags &= ~USBI_EVENT_USER_INTERRUPT
+			ctx.event_flags &= ^USBI_EVENT_USER_INTERRUPT
 		}
 
 		/* check if someone is closing a device */
 		// if (ctx.device_close)
-			// usbi_dbg("someone is closing a device")
+		// usbi_dbg("someone is closing a device")
 
 		/* check for any pending hotplug messages */
 		if !list_empty(&ctx.hotplug_msgs) {
@@ -1361,12 +1352,12 @@ redo_poll:
 
 		/* complete any pending transfers */
 		for ret == 0 && !list_empty(&ctx.completed_transfers) {
-			itransfer := list_first_entry(&ctx.completed_transfers,  usbi_transfer, completed_list)
+			itransfer := list_first_entry(&ctx.completed_transfers, usbi_transfer, completed_list)
 			list_del(&itransfer.completed_list)
 			ctx.event_data_lock.Unlock()
 			ret = usbi_backend.handle_transfer_completion(itransfer)
 			// if (ret)
-				// usbi_err(ctx, "backend handle_transfer_completion failed with error %d", ret)
+			// usbi_err(ctx, "backend handle_transfer_completion failed with error %d", ret)
 			ctx.event_data_lock.Lock()
 		}
 
@@ -1391,8 +1382,8 @@ redo_poll:
 			/* return error code */
 			return ret
 		}
-		
-		r-- 
+
+		r--
 		if r == 0 {
 			goto handled
 		}
@@ -1411,19 +1402,20 @@ redo_poll:
 		}
 
 		r--
-		if 0 == r
+		if 0 == r {
 			goto handled
+		}
 	}
 
-	r = usbi_backend.handle_events(ctx, fds + internal_nfds, nfds - internal_nfds, r)
+	r = usbi_backend.handle_events(ctx, fds+internal_nfds, nfds-internal_nfds, r)
 	// if r
-		// usbi_err(ctx, "backend handle_events failed with error %d", r)
+	// usbi_err(ctx, "backend handle_events failed with error %d", r)
 
 handled:
 	if r == 0 && special_event != 0 {
 		timeout_ms = 0
 		goto redo_poll
 	}
-	
+
 	return r
 }

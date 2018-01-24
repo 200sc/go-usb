@@ -9,7 +9,7 @@ OS-Agnostic code is converted and needs to be passed over for compile errors:
 * [x] core.go
 * [x] descriptor.go
 * [x] hotplug.go
-* [ ] io.go
+* [x] io.go
 * [ ] io_unix.go
 * [ ] io_windows.go
 * [ ] libusb.go
