@@ -653,3 +653,124 @@ type HIDP_CAPS struct {
 	uint16 NumberFeatureValueCaps
 	uint16 NumberFeatureDataIndices
 } 
+
+const (
+	LIBUSB_DT_HID_SIZE	=	9
+	HID_MAX_CONFIG_DESC_SIZE = (LIBUSB_DT_CONFIG_SIZE + LIBUSB_DT_INTERFACE_SIZE + LIBUSB_DT_HID_SIZE + 2 * LIBUSB_DT_ENDPOINT_SIZE)
+	HID_MAX_REPORT_SIZE =	1024
+	HID_IN_EP =			0x81
+	HID_OUT_EP	=		0x02
+)
+
+// Handle code for HID interface that have been claimed ("dibs")
+const INTERFACE_CLAIMED 0xD1B5
+// Additional return code for HID operations that completed synchronously
+// http://msdn.microsoft.com/en-us/library/ff545978.aspx
+// http://msdn.microsoft.com/en-us/library/ff545972.aspx
+// http://msdn.microsoft.com/en-us/library/ff545982.aspx
+var GUID_DEVINTERFACE_USB_HOST_CONTROLLER GUID = { 0x3ABF6F2D, 0x71C4, 0x462A, {0x8A, 0x92, 0x1E, 0x68, 0x61, 0xE6, 0xAF, 0x27} }
+var GUID_DEVINTERFACE_USB_DEVICE GUID = { 0xA5DCBF10, 0x6530, 0x11D2, {0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED} }
+var GUID_DEVINTERFACE_USB_HUB GUID = { 0xF18A0E88, 0xC30C, 0x11D0, {0x88, 0x15, 0x00, 0xA0, 0xC9, 0x06, 0xBE, 0xD8} }
+var GUID_DEVINTERFACE_LIBUSB0_FILTER GUID = { 0xF9F3FF14, 0xAE21, 0x48A0, {0x8A, 0x25, 0x80, 0x11, 0xA7, 0xA9, 0x31, 0xD9} }
+
+/*
+ * Windows DDK API definitions. Most of it copied from MinGW's includes
+ */
+const (
+	USB_GET_NODE_CONNECTION_INFORMATION_EX =	274
+	USB_GET_HUB_CAPABILITIES_EX	=	276
+	USB_GET_NODE_CONNECTION_INFORMATION_EX_V2 =	279
+	METHOD_BUFFERED	=			0
+	FILE_ANY_ACCESS	=			0x00000000
+	FILE_DEVICE_UNKNOWN =			0x00000022
+	FILE_DEVICE_USB	=			FILE_DEVICE_UNKNOWN
+)
+
+func CTL_CODE(DeviceType, Function, Method, Access int) int {
+	return (((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
+}
+
+var (
+ IOCTL_USB_GET_HUB_CAPABILITIES_EX = CTL_CODE( FILE_DEVICE_USB, USB_GET_HUB_CAPABILITIES_EX, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_HUB_CAPABILITIES = CTL_CODE(FILE_DEVICE_USB, USB_GET_HUB_CAPABILITIES, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION = CTL_CODE(FILE_DEVICE_USB, USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_ROOT_HUB_NAME = CTL_CODE(FILE_DEVICE_USB, HCD_GET_ROOT_HUB_NAME, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_NODE_INFORMATION = CTL_CODE(FILE_DEVICE_USB, USB_GET_NODE_INFORMATION, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX = CTL_CODE(FILE_DEVICE_USB, USB_GET_NODE_CONNECTION_INFORMATION_EX, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX_V2 = CTL_CODE(FILE_DEVICE_USB, USB_GET_NODE_CONNECTION_INFORMATION_EX_V2, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_NODE_CONNECTION_ATTRIBUTES = CTL_CODE(FILE_DEVICE_USB, USB_GET_NODE_CONNECTION_ATTRIBUTES, METHOD_BUFFERED, FILE_ANY_ACCESS)
+ IOCTL_USB_GET_NODE_CONNECTION_NAME = CTL_CODE(FILE_DEVICE_USB, USB_GET_NODE_CONNECTION_NAME, METHOD_BUFFERED, FILE_ANY_ACCESS)
+)
+
+// The following are used for HID reports IOCTLs
+func HID_CTL_CODE(id int) int { return CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_NEITHER, FILE_ANY_ACCESS) }
+func HID_BUFFER_CTL_CODE(id int) int { return CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_BUFFERED, FILE_ANY_ACCESS) }
+func HID_IN_CTL_CODE(id int) int { return CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_IN_DIRECT, FILE_ANY_ACCESS) }
+func HID_OUT_CTL_CODE(id int) int { return CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_OUT_DIRECT, FILE_ANY_ACCESS) }
+
+var (
+ IOCTL_HID_GET_FEATURE	=	HID_OUT_CTL_CODE(100)
+ IOCTL_HID_GET_INPUT_REPORT =	HID_OUT_CTL_CODE(104)
+ IOCTL_HID_SET_FEATURE =		HID_IN_CTL_CODE(100)
+ IOCTL_HID_SET_OUTPUT_REPORT =	HID_IN_CTL_CODE(101)
+)
+
+
+func LIBUSB_REQ_RECIPIENT(request_type int) int { return ((request_type) & 0x1F) }
+func LIBUSB_REQ_TYPE(request_type int) int { return	((request_type) & (0x03 << 5)) }
+func LIBUSB_REQ_IN(request_type int) int { return ((request_type) & LIBUSB_ENDPOINT_IN) }
+func LIBUSB_REQ_OUT(request_type int) int { return (!LIBUSB_REQ_IN(request_type)) }
+
+func _device_handle_priv(handle *libusb_device_handle) *windows_device_handle_priv {
+	return handle.os_priv
+}
+
+func _device_priv(dev *libusb_device) *windows_device_priv {
+	return dev.os_priv
+}
+
+func windows_device_priv_init(dev *libusb_device) *windows_device_priv {
+	p := _device_priv(dev)
+	p.apib = &usb_api_backend[USB_API_UNSUPPORTED]
+	p.sub_api = SUB_API_NOTSET
+	for (i := 0; i < USB_MAXINTERFACES; i++) {
+		p.usb_interface[i].apib = &usb_api_backend[USB_API_UNSUPPORTED]
+		p.usb_interface[i].sub_api = SUB_API_NOTSET
+	}
+	return p
+}
+
+type HIDP_VALUE_CAPS struct {
+	UsagePage USAGE
+	ReportID uint8
+	IsAlias bool
+	BitField uint16
+	LinkCollection uint16
+	LinkUsage USAGE
+	LinkUsagePage USAGE
+	IsRange bool
+	IsStringRange bool
+	IsDesignatorRange bool
+	IsAbsolute bool
+	HasNull bool
+	Reserved uint8
+	BitSize uint16
+	ReportCount uint16
+	Reserved2 [5]uint16
+	UnitsExp uint64
+	Units uint64
+	LogicalMin, LogicalMax int32
+	PhysicalMin, PhysicalMax int32
+	u Range 
+}
+
+type Range struct {
+	UsageMin, UsageMax USAGE
+	StringMin, StringMax uint16
+	DesignatorMin, DesignatorMax uint16
+	DataIndexMin, DataIndexMax uint16
+}
+
+type USB_HUB_NAME_FIXED struct {
+	root_or_node USB_ROOT_HUB_NAME_FIXED
+}
