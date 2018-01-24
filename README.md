@@ -5,11 +5,26 @@ An in-progress port of libusb to Go
 
 OS-Agnostic code is converted and needs to be passed over for compile errors:
 
+Syntax: 
 * [x] backend.go
 * [x] core.go
 * [x] descriptor.go
 * [x] hotplug.go
 * [x] io.go
+* [x] io_unix.go
+* [x] io_windows.go
+* [x] libusb.go
+* [ ] libusbi.go
+* [ ] list.go
+* [ ] strerror.go
+* [ ] sync.go
+
+Semantic:
+* [ ] backend.go
+* [ ] core.go
+* [ ] descriptor.go
+* [ ] hotplug.go
+* [ ] io.go
 * [ ] io_unix.go
 * [ ] io_windows.go
 * [ ] libusb.go

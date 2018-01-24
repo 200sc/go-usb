@@ -2,6 +2,7 @@ package usb
 
 import (
 	"encoding/binary"
+	"errors"
 )
 
 /*
@@ -27,13 +28,13 @@ import (
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
 /* standard USB stuff */
 
 /** \ingroup libusb_desc
  * Device and/or Interface Class codes */
 type libusb_class_code uint8
-const(
+
+const (
 	/** In the context of a \ref libusb_device_descriptor "device descriptor",
 	 * this bDeviceClass value indicates that each interface specifies its
 	 * own class information and all interfaces operate independently.
@@ -95,7 +96,8 @@ const(
 /** \ingroup libusb_desc
  * Descriptor types as defined by the USB specification. */
 type libusb_descriptor_type uint8
-const(
+
+const (
 	/** Device descriptor. See libusb_device_descriptor. */
 	LIBUSB_DT_DEVICE libusb_descriptor_type = 0x01
 
@@ -141,7 +143,8 @@ const(
  * \ref libusb_endpoint_descriptor::bEndpointAddress "endpoint address" scheme.
  */
 type libusb_endpoint_direction uint8
-const(
+
+const (
 	/** In: device-to-host */
 	LIBUSB_ENDPOINT_IN libusb_endpoint_direction = 0x80
 
@@ -154,27 +157,29 @@ const(
  * \ref libusb_endpoint_descriptor::bmAttributes "endpoint attributes" field.
  */
 type libusb_transfer_type uint8
-const(
+
+const (
 	/** Control endpoint */
 	LIBUSB_TRANSFER_TYPE_CONTROL libusb_transfer_type = iota
 
 	/** Isochronous endpoint */
-	LIBUSB_TRANSFER_TYPE_ISOCHRONOUS libusb_transfer_type
+	LIBUSB_TRANSFER_TYPE_ISOCHRONOUS libusb_transfer_type = iota
 
 	/** Bulk endpoint */
-	LIBUSB_TRANSFER_TYPE_BULK libusb_transfer_type
+	LIBUSB_TRANSFER_TYPE_BULK libusb_transfer_type = iota
 
 	/** Interrupt endpoint */
-	LIBUSB_TRANSFER_TYPE_INTERRUPT libusb_transfer_type
+	LIBUSB_TRANSFER_TYPE_INTERRUPT libusb_transfer_type = iota
 
 	/** Stream endpoint */
-	LIBUSB_TRANSFER_TYPE_BULK_STREAM libusb_transfer_type
+	LIBUSB_TRANSFER_TYPE_BULK_STREAM libusb_transfer_type = iota
 )
 
 /** \ingroup libusb_misc
  * Standard requests, as defined in table 9-5 of the USB 3.0 specifications */
 type libusb_standard_request uint8
-const(
+
+const (
 	/** Request status of the specific recipient */
 	LIBUSB_REQUEST_GET_STATUS libusb_standard_request = 0x00
 
@@ -216,7 +221,7 @@ const(
 	LIBUSB_REQUEST_SET_SEL libusb_standard_request = 0x30
 
 	/** Delay from the time a host transmits a packet to the time it is
-	  * received by the device. */
+	 * received by the device. */
 	LIBUSB_SET_ISOCH_DELAY libusb_standard_request = 0x31
 )
 
@@ -225,6 +230,7 @@ const(
  * \ref libusb_control_setup::bmRequestType "bmRequestType" field in control
  * transfers. */
 type libusb_request_type int
+
 const (
 	/** Standard */
 	LIBUSB_REQUEST_TYPE_STANDARD libusb_request_type = (0x00 << 5)
@@ -244,18 +250,19 @@ const (
  * \ref libusb_control_setup::bmRequestType "bmRequestType" field in control
  * transfers. Values 4 through 31 are reserved. */
 type libusb_request_recipient uint8
-const(
+
+const (
 	/** Device */
 	LIBUSB_RECIPIENT_DEVICE libusb_request_recipient = iota
 
 	/** Interface */
-	LIBUSB_RECIPIENT_INTERFACE libusb_request_recipient
+	LIBUSB_RECIPIENT_INTERFACE libusb_request_recipient = iota
 
 	/** Endpoint */
-	LIBUSB_RECIPIENT_ENDPOINT libusb_request_recipient 
+	LIBUSB_RECIPIENT_ENDPOINT libusb_request_recipient = iota
 
 	/** Other */
-	LIBUSB_RECIPIENT_OTHER libusb_request_recipient
+	LIBUSB_RECIPIENT_OTHER libusb_request_recipient = iota
 )
 
 /** \ingroup libusb_desc
@@ -264,18 +271,19 @@ const(
  * libusb_endpoint_descriptor.
  */
 type libusb_iso_sync_type uint8
+
 const (
 	/** No synchronization */
 	LIBUSB_ISO_SYNC_TYPE_NONE libusb_iso_sync_type = iota
 
 	/** Asynchronous */
-	LIBUSB_ISO_SYNC_TYPE_ASYNC libusb_iso_sync_type
+	LIBUSB_ISO_SYNC_TYPE_ASYNC libusb_iso_sync_type = iota
 
 	/** Adaptive */
-	LIBUSB_ISO_SYNC_TYPE_ADAPTIVE libusb_iso_sync_type
+	LIBUSB_ISO_SYNC_TYPE_ADAPTIVE libusb_iso_sync_type = iota
 
 	/** Synchronous */
-	LIBUSB_ISO_SYNC_TYPE_SYNC libusb_iso_sync_type
+	LIBUSB_ISO_SYNC_TYPE_SYNC libusb_iso_sync_type = iota
 )
 
 /** \ingroup libusb_desc
@@ -284,36 +292,38 @@ const (
  * libusb_endpoint_descriptor.
  */
 type libusb_iso_usage_type uint8
-const(
+
+const (
 	/** Data endpoint */
 	LIBUSB_ISO_USAGE_TYPE_DATA libusb_iso_usage_type = iota
 
 	/** Feedback endpoint */
-	LIBUSB_ISO_USAGE_TYPE_FEEDBACK libusb_iso_usage_type 
+	LIBUSB_ISO_USAGE_TYPE_FEEDBACK libusb_iso_usage_type = iota
 
 	/** Implicit feedback Data endpoint */
-	LIBUSB_ISO_USAGE_TYPE_IMPLICIT libusb_iso_usage_type
+	LIBUSB_ISO_USAGE_TYPE_IMPLICIT libusb_iso_usage_type = iota
 )
 
 /** \ingroup libusb_dev
  * Speed codes. Indicates the speed at which the device is operating.
  */
 type libusb_speed uint8
-const(
+
+const (
 	/** The OS doesn't report or know the device speed. */
 	LIBUSB_SPEED_UNKNOWN libusb_speed = iota
 
 	/** The device is operating at low speed (1.5MBit/s). */
-	LIBUSB_SPEED_LOW libusb_speed 
+	LIBUSB_SPEED_LOW libusb_speed = iota
 
 	/** The device is operating at full speed (12MBit/s). */
-	LIBUSB_SPEED_FULL libusb_speed 
+	LIBUSB_SPEED_FULL libusb_speed = iota
 
 	/** The device is operating at high speed (480MBit/s). */
-	LIBUSB_SPEED_HIGH libusb_speed 
+	LIBUSB_SPEED_HIGH libusb_speed = iota
 
 	/** The device is operating at super speed (5000MBit/s). */
-	LIBUSB_SPEED_SUPER libusb_speed 
+	LIBUSB_SPEED_SUPER libusb_speed = iota
 )
 
 /** \ingroup libusb_dev
@@ -321,15 +331,16 @@ const(
  * speeds the device supports.
  */
 type libusb_supported_speed uint8
-const(
+
+const (
 	/** Low speed operation supported (1.5MBit/s). */
-	LIBUSB_LOW_SPEED_OPERATION   libusb_supported_speed = 1
+	LIBUSB_LOW_SPEED_OPERATION libusb_supported_speed = 1
 
 	/** Full speed operation supported (12MBit/s). */
-	LIBUSB_FULL_SPEED_OPERATION  libusb_supported_speed = 2
+	LIBUSB_FULL_SPEED_OPERATION libusb_supported_speed = 2
 
 	/** High speed operation supported (480MBit/s). */
-	LIBUSB_HIGH_SPEED_OPERATION  libusb_supported_speed = 4
+	LIBUSB_HIGH_SPEED_OPERATION libusb_supported_speed = 4
 
 	/** Superspeed operation supported (5000MBit/s). */
 	LIBUSB_SUPER_SPEED_OPERATION libusb_supported_speed = 8
@@ -341,6 +352,7 @@ const(
  * of the USB 2.0 Extension descriptor.
  */
 type libusb_usb_2_0_extension_attributes uint8
+
 /** Supports Link Power Management (LPM) */
 const LIBUSB_BM_LPM_SUPPORT libusb_usb_2_0_extension_attributes = 2
 
@@ -350,6 +362,7 @@ const LIBUSB_BM_LPM_SUPPORT libusb_usb_2_0_extension_attributes = 2
  * field of the SuperSpeed USB Device Capability descriptor.
  */
 type libusb_ss_usb_device_capability_attributes uint8
+
 /** Supports Latency Tolerance Messages (LTM) */
 const LIBUSB_BM_LTM_SUPPORT libusb_ss_usb_device_capability_attributes = 2
 
@@ -357,12 +370,13 @@ const LIBUSB_BM_LTM_SUPPORT libusb_ss_usb_device_capability_attributes = 2
  * USB capability types
  */
 type libusb_bos_type uint8
-const(
+
+const (
 	/** Wireless USB device capability */
 	LIBUSB_BT_WIRELESS_USB_DEVICE_CAPABILITY libusb_bos_type = 1
 
 	/** USB 2.0 extensions */
-	LIBUSB_BT_USB_2_0_EXTENSION	libusb_bos_type = 2
+	LIBUSB_BT_USB_2_0_EXTENSION libusb_bos_type = 2
 
 	/** SuperSpeed USB device capability */
 	LIBUSB_BT_SS_USB_DEVICE_CAPABILITY libusb_bos_type = 3
@@ -379,7 +393,8 @@ const(
  * an error code.
  */
 type libusb_error int8
-const(
+
+const (
 	/** Success (no error) */
 	LIBUSB_SUCCESS libusb_error = 0
 
@@ -428,30 +443,31 @@ const(
 
 /** \ingroup libusb_asyncio
  * Transfer status codes */
-type libusb_transfer_status uint8 
-const(
+type libusb_transfer_status uint8
+
+const (
 	/** Transfer completed without error. Note that this does not indicate
 	 * that the entire amount of requested data was transferred. */
 	LIBUSB_TRANSFER_COMPLETED libusb_transfer_status = iota
 
 	/** Transfer failed */
-	LIBUSB_TRANSFER_ERROR libusb_transfer_status
+	LIBUSB_TRANSFER_ERROR libusb_transfer_status = iota
 
 	/** Transfer timed out */
-	LIBUSB_TRANSFER_TIMED_OUT libusb_transfer_status
+	LIBUSB_TRANSFER_TIMED_OUT libusb_transfer_status = iota
 
 	/** Transfer was cancelled */
-	LIBUSB_TRANSFER_CANCELLED libusb_transfer_status
+	LIBUSB_TRANSFER_CANCELLED libusb_transfer_status = iota
 
 	/** For bulk/interrupt endpoints: halt condition detected (endpoint
 	 * stalled). For control endpoints: control request not supported. */
-	LIBUSB_TRANSFER_STALL libusb_transfer_status
+	LIBUSB_TRANSFER_STALL libusb_transfer_status = iota
 
 	/** Device was disconnected */
-	LIBUSB_TRANSFER_NO_DEVICE libusb_transfer_status
+	LIBUSB_TRANSFER_NO_DEVICE libusb_transfer_status = iota
 
 	/** Device sent more data than requested */
-	LIBUSB_TRANSFER_OVERFLOW libusb_transfer_status
+	LIBUSB_TRANSFER_OVERFLOW libusb_transfer_status = iota
 
 	/* NB! Remember to update libusb_error_name()
 	   when adding new status codes here. */
@@ -460,21 +476,22 @@ const(
 /** \ingroup libusb_asyncio
  * libusb_transfer.flags values */
 type libusb_transfer_flags uint8
-const(
+
+const (
 	/** Report short frames as errors */
-	LIBUSB_TRANSFER_SHORT_NOT_OK libusb_transfer_flags = 1<<0
+	LIBUSB_TRANSFER_SHORT_NOT_OK libusb_transfer_flags = 1 << 0
 
 	/** Automatically free() transfer buffer during libusb_free_transfer().
 	 * Note that buffers allocated with libusb_dev_mem_alloc() should not
 	 * be attempted freed in this way, since free() is not an appropriate
 	 * way to release such memory. */
-	LIBUSB_TRANSFER_FREE_BUFFER libusb_transfer_flags = 1<<1
+	LIBUSB_TRANSFER_FREE_BUFFER libusb_transfer_flags = 1 << 1
 
 	/** Automatically call libusb_free_transfer() after callback returns.
 	 * If this flag is set, it is illegal to call libusb_free_transfer()
 	 * from your transfer callback, as this will result in a double-free
 	 * when this flag is acted upon. */
-	LIBUSB_TRANSFER_FREE_TRANSFER libusb_transfer_flags = 1<<2
+	LIBUSB_TRANSFER_FREE_TRANSFER libusb_transfer_flags = 1 << 2
 
 	/** Terminate transfers that are a multiple of the endpoint's
 	 * wMaxPacketSize with an extra zero length packet. This is useful
@@ -508,7 +525,8 @@ const(
  * \ref libusb_has_capability().
  */
 type libusb_capability int
-const(
+
+const (
 	/** The libusb_has_capability() API is available. */
 	LIBUSB_CAP_HAS_CAPABILITY libusb_capability = 0x0000
 	/** Hotplug support is available on this platform. */
@@ -518,7 +536,7 @@ const(
 	 * still have to call additional libusb functions such as
 	 * \ref libusb_detach_kernel_driver(). */
 	LIBUSB_CAP_HAS_HID_ACCESS libusb_capability = 0x0100
-	/** The library supports detaching of the default USB driver, using 
+	/** The library supports detaching of the default USB driver, using
 	 * \ref libusb_detach_kernel_driver(), if one is set by the OS kernel */
 	LIBUSB_CAP_SUPPORTS_DETACH_KERNEL_DRIVER libusb_capability = 0x0101
 )
@@ -534,12 +552,13 @@ const(
  *    warnings and errors to stderr
  */
 type libusb_log_level uint8
-const(
-	LIBUSB_LOG_LEVEL_NONE libusb_log_level = iota
-	LIBUSB_LOG_LEVEL_ERROR libusb_log_level
-	LIBUSB_LOG_LEVEL_WARNING libusb_log_level
-	LIBUSB_LOG_LEVEL_INFO libusb_log_level
-	LIBUSB_LOG_LEVEL_DEBUG libusb_log_level
+
+const (
+	LIBUSB_LOG_LEVEL_NONE    libusb_log_level = iota
+	LIBUSB_LOG_LEVEL_ERROR   libusb_log_level = iota
+	LIBUSB_LOG_LEVEL_WARNING libusb_log_level = iota
+	LIBUSB_LOG_LEVEL_INFO    libusb_log_level = iota
+	LIBUSB_LOG_LEVEL_DEBUG   libusb_log_level = iota
 )
 
 /** \ingroup libusb_hotplug
@@ -548,11 +567,12 @@ const(
  *
  * Flags for hotplug events */
 type libusb_hotplug_flag uint8
-const(/** Default value when not using any flags. */
+
+const ( /** Default value when not using any flags. */
 	LIBUSB_HOTPLUG_NO_FLAGS libusb_hotplug_flag = 0
 
 	/** Arm the callback and fire it for all matching currently attached devices. */
-	LIBUSB_HOTPLUG_ENUMERATE libusb_hotplug_flag = 1<<0
+	LIBUSB_HOTPLUG_ENUMERATE libusb_hotplug_flag = 1 << 0
 )
 
 /** \ingroup libusb_hotplug
@@ -561,20 +581,21 @@ const(/** Default value when not using any flags. */
  *
  * Hotplug events */
 type libusb_hotplug_event uint8
-const(
+
+const (
 	/** A device has been plugged in and is ready to use */
 	LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED libusb_hotplug_event = 0x01
 
 	/** A device has left and is no longer available.
 	 * It is the user's responsibility to call libusb_close on any handle associated with a disconnected device.
 	 * It is safe to call libusb_get_device_descriptor on a device that has left */
-	LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT    libusb_hotplug_event = 0x02
+	LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT libusb_hotplug_event = 0x02
 )
 
 const (
-	LIBUSB_TRANSFER_TYPE_MASK = 0x03    /* in bmAttributes */
+	LIBUSB_TRANSFER_TYPE_MASK  = 0x03 /* in bmAttributes */
 	LIBUSB_ISO_USAGE_TYPE_MASK = 0x30
-	LIBUSB_ISO_SYNC_TYPE_MASK = 0x0C
+	LIBUSB_ISO_SYNC_TYPE_MASK  = 0x0C
 )
 
 /** \ingroup libusb_desc
@@ -582,32 +603,32 @@ const (
  * descriptor is documented in section 9.6.1 of the USB 3.0 specification.
  * All multiple-byte fields are represented in host-endian format.
  */
- type libusb_device_descriptor struct {
+type libusb_device_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE LIBUSB_DT_DEVICE in this
 	 * context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** USB specification release number in binary-coded decimal. A value of
 	 * 0x0200 indicates USB 2.0, 0x0110 indicates USB 1.1, etc. */
 	bcdUSB uint16
 
 	/** USB-IF class code for the device. See \ref libusb_class_code. */
-	 bDeviceClass uint8
+	bDeviceClass uint8
 
 	/** USB-IF subclass code for the device, qualified by the bDeviceClass
 	 * value */
-	 bDeviceSubClass uint8
+	bDeviceSubClass uint8
 
 	/** USB-IF protocol code for the device, qualified by the bDeviceClass and
 	 * bDeviceSubClass values */
-	 bDeviceProtocol uint8
+	bDeviceProtocol uint8
 
 	/** Maximum packet size for endpoint 0 */
-	 bMaxPacketSize0 uint8
+	bMaxPacketSize0 uint8
 
 	/** USB-IF vendor ID */
 	idVendor uint16
@@ -619,16 +640,16 @@ const (
 	bcdDevice uint16
 
 	/** Index of string descriptor describing manufacturer */
-	 iManufacturer uint8
+	iManufacturer uint8
 
 	/** Index of string descriptor describing product */
-	 iProduct uint8
+	iProduct uint8
 
 	/** Index of string descriptor containing device serial number */
-	 iSerialNumber uint8
+	iSerialNumber uint8
 
 	/** Number of possible configurations */
-	 bNumConfigurations uint8
+	bNumConfigurations uint8
 }
 
 /** \ingroup libusb_desc
@@ -638,18 +659,18 @@ const (
  */
 type libusb_endpoint_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_ENDPOINT LIBUSB_DT_ENDPOINT in
 	 * this context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** The address of the endpoint described by this descriptor. Bits 0:3 are
 	 * the endpoint number. Bits 4:6 are reserved. Bit 7 indicates direction,
 	 * see \ref libusb_endpoint_direction.
 	 */
-	 bEndpointAddress uint8
+	bEndpointAddress uint8
 
 	/** Attributes which apply to the endpoint when it is configured using
 	 * the bConfigurationValue. Bits 0:1 determine the transfer type and
@@ -658,20 +679,20 @@ type libusb_endpoint_descriptor struct {
 	 * Bits 4:5 are also only used for isochronous endpoints and correspond to
 	 * \ref libusb_iso_usage_type. Bits 6:7 are reserved.
 	 */
-	 bmAttributes uint8
+	bmAttributes uint8
 
 	/** Maximum packet size this endpoint is capable of sending/receiving. */
 	wMaxPacketSize uint16
 
 	/** Interval for polling endpoint for data transfers. */
-	 bInterval uint8
+	bInterval uint8
 
 	/** For audio devices only: the rate at which synchronization feedback
 	 * is provided. */
-	 bRefresh uint8
+	bRefresh uint8
 
 	/** For audio devices only: the address if the synch endpoint */
-	 bSynchAddress uint8
+	bSynchAddress uint8
 
 	/** Extra descriptors. If libusb encounters unknown endpoint descriptors,
 	 * it will store them here, should you wish to parse them. */
@@ -685,36 +706,36 @@ type libusb_endpoint_descriptor struct {
  */
 type libusb_interface_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_INTERFACE LIBUSB_DT_INTERFACE
 	 * in this context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** Number of this interface */
-	 bInterfaceNumber uint8
+	bInterfaceNumber uint8
 
 	/** Value used to select this alternate setting for this interface */
-	 bAlternateSetting uint8
+	bAlternateSetting uint8
 
 	/** Number of endpoints used by this interface (excluding the control
 	 * endpoint). */
-	 bNumEndpoints uint8
+	bNumEndpoints uint8
 
 	/** USB-IF class code for this interface. See \ref libusb_class_code. */
-	 bInterfaceClass uint8
+	bInterfaceClass uint8
 
 	/** USB-IF subclass code for this interface, qualified by the
 	 * bInterfaceClass value */
-	 bInterfaceSubClass uint8
+	bInterfaceSubClass uint8
 
 	/** USB-IF protocol code for this interface, qualified by the
 	 * bInterfaceClass and bInterfaceSubClass values */
-	 bInterfaceProtocol uint8
+	bInterfaceProtocol uint8
 
 	/** Index of string descriptor describing this interface */
-	 iInterface uint8
+	iInterface uint8
 
 	/** Array of endpoint descriptors. This length of this array is determined
 	 * by the bNumEndpoints field. */
@@ -744,33 +765,33 @@ type libusb_interface struct {
  */
 type libusb_config_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_CONFIG LIBUSB_DT_CONFIG
 	 * in this context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** Total length of data returned for this configuration */
 	wTotalLength uint16
 
 	/** Number of interfaces supported by this configuration */
-	 bNumInterfaces uint8
+	bNumInterfaces uint8
 
 	/** Identifier value for this configuration */
-	 bConfigurationValue uint8
+	bConfigurationValue uint8
 
 	/** Index of string descriptor describing this configuration */
-	 iConfiguration uint8
+	iConfiguration uint8
 
 	/** Configuration characteristics */
-	 bmAttributes uint8
+	bmAttributes uint8
 
 	/** Maximum power consumption of the USB device from this bus in this
 	 * configuration when the device is fully operation. Expressed in units
 	 * of 2 mA when the device is operating in high-speed mode and in units
 	 * of 8 mA when the device is operating in super-speed mode. */
-	 MaxPower uint8
+	MaxPower uint8
 
 	/** Array of interfaces supported by this configuration. The length of
 	 * this array is determined by the bNumInterfaces field. */
@@ -791,23 +812,22 @@ type libusb_config_descriptor struct {
 type libusb_ss_endpoint_companion_descriptor struct {
 
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_SS_ENDPOINT_COMPANION in
 	 * this context. */
-	 bDescriptorType uint8
-
+	bDescriptorType uint8
 
 	/** The maximum number of packets the endpoint can send or
 	 *  receive as part of a burst. */
-	 bMaxBurst uint8
+	bMaxBurst uint8
 
 	/** In bulk EP:	bits 4:0 represents the	maximum	number of
 	 *  streams the	EP supports. In	isochronous EP:	bits 1:0
 	 *  represents the Mult	- a zero based value that determines
 	 *  the	maximum	number of packets within a service interval  */
-	 bmAttributes uint8
+	bmAttributes uint8
 
 	/** The	total number of bytes this EP will transfer every
 	 *  service interval. valid only for periodic EPs. */
@@ -839,19 +859,19 @@ type libusb_bos_dev_capability_descriptor struct {
  */
 type libusb_bos_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_BOS LIBUSB_DT_BOS
 	 * in this context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** Length of this descriptor and all of its sub descriptors */
 	wTotalLength uint16
 
 	/** The number of separate device capability descriptors in
 	 * the BOS */
-	 bNumDeviceCaps uint8
+	bNumDeviceCaps uint8
 
 	/** bNumDeviceCap Device Capability Descriptors */
 	dev_capability *libusb_bos_dev_capability_descriptor
@@ -864,17 +884,17 @@ type libusb_bos_descriptor struct {
  */
 type libusb_usb_2_0_extension_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE_CAPABILITY
 	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** Capability type. Will have value
 	 * \ref libusb_capability_type::LIBUSB_BT_USB_2_0_EXTENSION
 	 * LIBUSB_BT_USB_2_0_EXTENSION in this context. */
-	 bDevCapabilityType uint8
+	bDevCapabilityType uint8
 
 	/** Bitmap encoding of supported device level features.
 	 * A value of one in a bit location indicates a feature is
@@ -890,23 +910,23 @@ type libusb_usb_2_0_extension_descriptor struct {
  */
 type libusb_ss_usb_device_capability_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE_CAPABILITY
 	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** Capability type. Will have value
 	 * \ref libusb_capability_type::LIBUSB_BT_SS_USB_DEVICE_CAPABILITY
 	 * LIBUSB_BT_SS_USB_DEVICE_CAPABILITY in this context. */
-	 bDevCapabilityType uint8
+	bDevCapabilityType uint8
 
 	/** Bitmap encoding of supported device level features.
 	 * A value of one in a bit location indicates a feature is
 	 * supported a value of zero indicates it is not supported.
 	 * See \ref libusb_ss_usb_device_capability_attributes. */
-	 bmAttributes uint8
+	bmAttributes uint8
 
 	/** Bitmap encoding of the speed supported by this device when
 	 * operating in SuperSpeed mode. See \ref libusb_supported_speed. */
@@ -916,10 +936,10 @@ type libusb_ss_usb_device_capability_descriptor struct {
 	 * by the device is available to the user. For example if the
 	 * device supports all its functionality when connected at
 	 * full speed and above then it sets this value to 1. */
-	 bFunctionalitySupport uint8
+	bFunctionalitySupport uint8
 
 	/** U1 Device Exit Latency. */
-	 bU1DevExitLat uint8
+	bU1DevExitLat uint8
 
 	/** U2 Device Exit Latency. */
 	bU2DevExitLat uint16
@@ -932,23 +952,23 @@ type libusb_ss_usb_device_capability_descriptor struct {
  */
 type libusb_container_id_descriptor struct {
 	/** Size of this descriptor (in bytes) */
-	 bLength uint8
+	bLength uint8
 
 	/** Descriptor type. Will have value
 	 * \ref libusb_descriptor_type::LIBUSB_DT_DEVICE_CAPABILITY
 	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
-	 bDescriptorType uint8
+	bDescriptorType uint8
 
 	/** Capability type. Will have value
 	 * \ref libusb_capability_type::LIBUSB_BT_CONTAINER_ID
 	 * LIBUSB_BT_CONTAINER_ID in this context. */
-	 bDevCapabilityType uint8
+	bDevCapabilityType uint8
 
 	/** Reserved field */
 	bReserved uint8
 
 	/** 128 bit UUID */
-	 ContainerID [16]uint8
+	ContainerID [16]uint8
 }
 
 /** \ingroup libusb_asyncio
@@ -982,30 +1002,29 @@ type libusb_control_setup struct {
 /** \ingroup libusb_lib
  * Structure providing the version of the libusb runtime
  */
- type libusb_version struct {
+type libusb_version struct {
 	/** Library major version. */
-	 major uint16
+	major uint16
 
 	/** Library minor version. */
-	 minor uint16
+	minor uint16
 
 	/** Library micro version. */
-	 micro uint16
+	micro uint16
 
 	/** Library nano version. */
-	 nano uint16
+	nano uint16
 
 	/** Library release candidate suffix string, e.g. "-rc4". */
-	 rc string
+	rc string
 
 	/** For ABI compatibility only. */
-	 describe string
+	describe string
 }
-
 
 /** \ingroup libusb_asyncio
  * Isochronous packet descriptor. */
- type libusb_iso_packet_descriptor struct {
+type libusb_iso_packet_descriptor struct {
 	/** Length of data to request in this packet */
 	uint length
 
@@ -1023,8 +1042,8 @@ type libusb_control_setup struct {
  * it back to the user.
  */
 type libusb_transfer struct {
-	usbiTransfer *usbi_transfer 
-	
+	usbiTransfer *usbi_transfer
+
 	/** Handle of the device that this transfer will be submitted to */
 	dev_handle *libusb_device_handle
 
@@ -1052,7 +1071,7 @@ type libusb_transfer struct {
 
 	/** Length of the data buffer */
 	length int
- 
+
 	/** Actual length of data that was transferred. Read-only, and only for
 	 * use within transfer callback function. Not valid for isochronous
 	 * endpoint transfers. */
@@ -1063,7 +1082,7 @@ type libusb_transfer struct {
 	callback libusb_transfer_cb_fn
 
 	/** User context data to pass to the callback function. */
-	interface{} user_data
+	user_data interface{}
 
 	/** Data buffer */
 	buffer []uint8
@@ -1079,7 +1098,7 @@ type libusb_transfer struct {
 /** \ingroup libusb_poll
  * File descriptor for polling
  */
- type libusb_pollfd struct {
+type libusb_pollfd struct {
 	/** Numeric file descriptor */
 	fd int
 
@@ -1111,15 +1130,15 @@ type libusb_transfer struct {
  * (libusb major << 24) | (libusb minor << 16) | (16 bit incremental)
  */
 const LIBUSB_API_VERSION = 0x01000105
- 
- /** \def libusb_le16_to_cpu
-  * \ingroup libusb_misc
-  * Convert a 16-bit value from little-endian to host-endian format. On
-  * little endian systems, this function does nothing. On big endian systems,
-  * the bytes are swapped.
-  * \param x the little-endian value to convert
-  * \returns the value in host-endian byte order
-  */
+
+/** \def libusb_le16_to_cpu
+ * \ingroup libusb_misc
+ * Convert a 16-bit value from little-endian to host-endian format. On
+ * little endian systems, this function does nothing. On big endian systems,
+ * the bytes are swapped.
+ * \param x the little-endian value to convert
+ * \returns the value in host-endian byte order
+ */
 var libusb_le16_to_cpu = libusb_cpu_to_le16
 
 /**
@@ -1134,47 +1153,47 @@ var libusb_le16_to_cpu = libusb_cpu_to_le16
 func libusb_cpu_to_le16(x uint16) uint16 {
 	return (n&0x00FF)<<8 | (n&0xFF00)>>8
 }
- 
- /* Descriptor sizes per descriptor type */
- const LIBUSB_DT_DEVICE_SIZE =			18
- const LIBUSB_DT_CONFIG_SIZE =			9
- const LIBUSB_DT_INTERFACE_SIZE =		9
- const LIBUSB_DT_ENDPOINT_SIZE	=		7
- const LIBUSB_DT_ENDPOINT_AUDIO_SIZE =		9	/* Audio extension */
- const LIBUSB_DT_HUB_NONVAR_SIZE =		7
- const LIBUSB_DT_SS_ENDPOINT_COMPANION_SIZE = 	6
- const LIBUSB_DT_BOS_SIZE =			5
- const LIBUSB_DT_DEVICE_CAPABILITY_SIZE =	3
- 
- /* BOS descriptor sizes */
- const LIBUSB_BT_USB_2_0_EXTENSION_SIZE	= 7
- const LIBUSB_BT_SS_USB_DEVICE_CAPABILITY_SIZE =	10
- const LIBUSB_BT_CONTAINER_ID_SIZE =		20
- 
- /* We unwrap the BOS => define its max size */
- const LIBUSB_DT_BOS_MAX_SIZE = ((LIBUSB_DT_BOS_SIZE)     +\
-					 (LIBUSB_BT_USB_2_0_EXTENSION_SIZE)       +\
-					 (LIBUSB_BT_SS_USB_DEVICE_CAPABILITY_SIZE) +\
-					 (LIBUSB_BT_CONTAINER_ID_SIZE))
- 
- const LIBUSB_ENDPOINT_ADDRESS_MASK =	0x0f    /* in bEndpointAddress */
- const LIBUSB_ENDPOINT_DIR_MASK	=	0x80
- 
- const LIBUSB_CONTROL_SETUP_SIZE = 8 // manually calculated in port
-  
- /* Total number of error codes in enum libusb_error */
- const LIBUSB_ERROR_COUNT = 14
- 
- /** \ingroup libusb_asyncio
-  * Asynchronous transfer callback function type. When submitting asynchronous
-  * transfers, you pass a pointer to a callback function of this type via the
-  * \ref libusb_transfer::callback "callback" member of the libusb_transfer
-  * structure. libusb will call this function later, when the transfer has
-  * completed or failed. See \ref libusb_asyncio for more information.
-  * \param transfer The libusb_transfer struct the callback function is being
-  * notified about.
-  */
- type libusb_transfer_cb_fn func(*libusb_transfer)
+
+/* Descriptor sizes per descriptor type */
+const LIBUSB_DT_DEVICE_SIZE = 18
+const LIBUSB_DT_CONFIG_SIZE = 9
+const LIBUSB_DT_INTERFACE_SIZE = 9
+const LIBUSB_DT_ENDPOINT_SIZE = 7
+const LIBUSB_DT_ENDPOINT_AUDIO_SIZE = 9 /* Audio extension */
+const LIBUSB_DT_HUB_NONVAR_SIZE = 7
+const LIBUSB_DT_SS_ENDPOINT_COMPANION_SIZE = 6
+const LIBUSB_DT_BOS_SIZE = 5
+const LIBUSB_DT_DEVICE_CAPABILITY_SIZE = 3
+
+/* BOS descriptor sizes */
+const LIBUSB_BT_USB_2_0_EXTENSION_SIZE = 7
+const LIBUSB_BT_SS_USB_DEVICE_CAPABILITY_SIZE = 10
+const LIBUSB_BT_CONTAINER_ID_SIZE = 20
+
+/* We unwrap the BOS => define its max size */
+const LIBUSB_DT_BOS_MAX_SIZE = ((LIBUSB_DT_BOS_SIZE) +
+	(LIBUSB_BT_USB_2_0_EXTENSION_SIZE) +
+	(LIBUSB_BT_SS_USB_DEVICE_CAPABILITY_SIZE) +
+	(LIBUSB_BT_CONTAINER_ID_SIZE))
+
+const LIBUSB_ENDPOINT_ADDRESS_MASK = 0x0f /* in bEndpointAddress */
+const LIBUSB_ENDPOINT_DIR_MASK = 0x80
+
+const LIBUSB_CONTROL_SETUP_SIZE = 8 // manually calculated in port
+
+/* Total number of error codes in enum libusb_error */
+const LIBUSB_ERROR_COUNT = 14
+
+/** \ingroup libusb_asyncio
+ * Asynchronous transfer callback function type. When submitting asynchronous
+ * transfers, you pass a pointer to a callback function of this type via the
+ * \ref libusb_transfer::callback "callback" member of the libusb_transfer
+ * structure. libusb will call this function later, when the transfer has
+ * completed or failed. See \ref libusb_asyncio for more information.
+ * \param transfer The libusb_transfer struct the callback function is being
+ * notified about.
+ */
+type libusb_transfer_cb_fn func(*libusb_transfer)
 
 /** \ingroup libusb_poll
  * Callback function, invoked when a new file descriptor should be added
@@ -1257,17 +1276,17 @@ type libusb_hotplug_callback_fn func(*libusb_context, *libusb_device, libusb_hot
  * \param transfer a transfer
  * \param packet the packet to return the address of
  * \returns the base address of the packet buffer inside the transfer buffer,
- * or NULL if the packet does not exist. 
+ * or NULL if the packet does not exist.
  * \see libusb_get_iso_packet_buffer()
  */
 
-func libusb_get_iso_packet_buffer_simple(transfer *libusb_transfer, packet int) []uint8
-{
-	if (packet >= transfer.num_iso_packets)
-		return NULL;
+func libusb_get_iso_packet_buffer_simple(transfer *libusb_transfer, packet int) []uint8 {
+	if packet >= transfer.num_iso_packets {
+		return nil
+	}
 
 	// GO this needs to be fixed, buffer should probably not be a []uint8
-	return transfer.buffer + ((int) transfer.iso_packet_desc[0].length * packet);
+	return transfer.buffer[transfer.iso_packet_desc[0].length*packet:]
 }
 
 /** \ingroup libusb_asyncio
@@ -1301,7 +1320,7 @@ func libusb_control_transfer_get_data(transfer *libusb_transfer) []uint8 {
 // go api change: this returns a byte slice so it preserves
 // its intention of having manipulatable shared data.
 // consider in the future having this return a struct built of pointers
-// also consider: not using an arbitrary buffer but having these 
+// also consider: not using an arbitrary buffer but having these
 // data and setup sections be their own fields
 func libusb_control_transfer_get_setup(transfer *libusb_transfer) []uint8 {
 	return transfer.buffer[:LIBUSB_CONTROL_SETUP_SIZE]
@@ -1379,7 +1398,7 @@ func libusb_fill_control_transfer(transfer *libusb_transfer,
 
 	transfer.dev_handle = dev_handle
 	transfer.endpoint = 0
-	transfer.type = LIBUSB_TRANSFER_TYPE_CONTROL
+	transfer._type = LIBUSB_TRANSFER_TYPE_CONTROL
 	transfer.timeout = timeout
 	transfer.buffer = buffer
 	if len(buffer) > 8 {
@@ -1410,7 +1429,7 @@ func libusb_fill_bulk_transfer(transfer *libusb_transfer,
 
 	transfer.dev_handle = dev_handle
 	transfer.endpoint = endpoint
-	transfer.type = LIBUSB_TRANSFER_TYPE_BULK
+	transfer._type = LIBUSB_TRANSFER_TYPE_BULK
 	transfer.timeout = timeout
 	transfer.buffer = buffer
 	transfer.length = length
@@ -1434,15 +1453,15 @@ func libusb_fill_bulk_transfer(transfer *libusb_transfer,
  * \param user_data user data to pass to callback function
  * \param timeout timeout for the transfer in milliseconds
  */
-func libusb_fill_bulk_stream_transfer(transfer *libusb_transfer, 
+func libusb_fill_bulk_stream_transfer(transfer *libusb_transfer,
 	dev_handle *libusb_device_handle,
 	endpoint uint8, stream_id uint32,
 	buffer []uint8, length int, callback libusb_transfer_cb_fn,
 	user_data interface{}, timeout uint) {
 
 	libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer,
-				  length, callback, user_data, timeout)
-	transfer.type = LIBUSB_TRANSFER_TYPE_BULK_STREAM
+		length, callback, user_data, timeout)
+	transfer._type = LIBUSB_TRANSFER_TYPE_BULK_STREAM
 	libusb_transfer_set_stream_id(transfer, stream_id)
 }
 
@@ -1459,14 +1478,14 @@ func libusb_fill_bulk_stream_transfer(transfer *libusb_transfer,
  * \param user_data user data to pass to callback function
  * \param timeout timeout for the transfer in milliseconds
  */
-func libusb_fill_interrupt_transfer(transfer *libusb_transfer, 
+func libusb_fill_interrupt_transfer(transfer *libusb_transfer,
 	dev_handle *libusb_device_handle,
 	endpoint uint8, buffer []uint8, length int,
 	callback libusb_transfer_cb_fn, user_data interface{}, timeout uint) {
 
 	transfer.dev_handle = dev_handle
 	transfer.endpoint = endpoint
-	transfer.type = LIBUSB_TRANSFER_TYPE_INTERRUPT
+	transfer._type = LIBUSB_TRANSFER_TYPE_INTERRUPT
 	transfer.timeout = timeout
 	transfer.buffer = buffer
 	transfer.length = length
@@ -1495,7 +1514,7 @@ func libusb_fill_iso_transfer(transfer *libusb_transfer,
 
 	transfer.dev_handle = dev_handle
 	transfer.endpoint = endpoint
-	transfer.type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS
+	transfer._type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS
 	transfer.timeout = timeout
 	transfer.buffer = buffer
 	transfer.length = length
@@ -1537,7 +1556,7 @@ func libusb_set_iso_packet_lengths(transfer *libusb_transfer, length uint) {
 func libusb_get_iso_packet_buffer(transfer *libusb_transfer, packet int32) ([]uint8, error) {
 	// Go api difference: packet is an int32, not a uint.
 
-	if (packet >= transfer.num_iso_packets) {
+	if packet >= transfer.num_iso_packets {
 		return []uint8{}, errors.New("packet exceeds transfer's iso packet count")
 	}
 
@@ -1561,7 +1580,7 @@ func libusb_get_iso_packet_buffer(transfer *libusb_transfer, packet int32) ([]ui
  * \param length size of data buffer
  * \returns number of bytes returned in data, or LIBUSB_ERROR code on failure
  */
-func libusb_get_descriptor(dev_handle *libusb_device_handle, desc_type, 
+func libusb_get_descriptor(dev_handle *libusb_device_handle, desc_type,
 	desc_index uint8, data []uint8, length int) int {
 
 	return libusb_control_transfer(dev_handle, LIBUSB_ENDPOINT_IN,

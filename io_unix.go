@@ -20,7 +20,7 @@ package usb
 
 func libusb_get_pollfds(ctx *libusb_context) **libusb_pollfd {
 	ret := make([]*libusb_pollfd, ctx.pollfds_cnt+1)
-
+ 
 	i := 0
 	ctx = USBI_GET_CONTEXT(ctx)
 
