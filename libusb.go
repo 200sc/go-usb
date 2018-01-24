@@ -847,9 +847,18 @@ type libusb_bos_dev_capability_descriptor struct {
 	 * LIBUSB_DT_DEVICE_CAPABILITY in this context. */
 	bDescriptorType uint8
 	/** Device Capability type */
-	bDevCapabilityType uint8
+	bDevCapabilityType libusb_bos_type
 	/** Device Capability data (bLength - 3 bytes) */
 	dev_capability_data uint8
+}
+
+func (bdcd libusb_bos_dev_capability_descriptor) ToBytes() []uint8 {
+	return []uint8{
+		bdcd.bLength,
+		bdcd.bDescriptorType,
+		bdcd.bDevCapabilityType,
+		bdcd.dev_capability_data,
+	}
 }
 
 /** \ingroup libusb_desc
@@ -969,6 +978,19 @@ type libusb_container_id_descriptor struct {
 
 	/** 128 bit UUID */
 	ContainerID [16]uint8
+}
+
+func containerIdFromBytes(bytes []uint8) (*libusb_container_id_descriptor, error) {
+	if len(bytes) != 20 {
+		return nil, errors.New("Expected 20 bytes")
+	}
+	return &libusb_container_id_descriptor{
+		bLength:            bytes[0],
+		bDescriptorType:    bytes[1],
+		bDevCapabilityType: bytes[2],
+		bReserved:          bytes[3],
+		ContainerID:        bytes[4:],
+	}, nil
 }
 
 /** \ingroup libusb_asyncio

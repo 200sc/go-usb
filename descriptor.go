@@ -42,9 +42,9 @@ const ENDPOINT_AUDIO_DESC_LENGTH = 9
  */
 func libusb_get_container_id_descriptor(ctx *libusb_context,
 	dev_cap *libusb_bos_dev_capability_descriptor,
-	container_id **libusb_container_id_descriptor) int {
+	container_id **libusb_container_id_descriptor) libusb_error {
 
-	_container_id * libusb_container_id_descriptor
+	var _container_id *libusb_container_id_descriptor
 	host_endian := false
 
 	if dev_cap.bDevCapabilityType != LIBUSB_BT_CONTAINER_ID {
@@ -59,11 +59,15 @@ func libusb_get_container_id_descriptor(ctx *libusb_context,
 		return LIBUSB_ERROR_IO
 	}
 
-	idDest := &libusb_container_id_descriptor{}
+	idDest := make([]uint8, 6)
 
-	usbi_parse_descriptor([]uint8(dev_cap), "bbbbu", idDest, host_endian)
+	usbi_parse_descriptor(dev_cap.ToBytes(), "bbbbu", idDest, host_endian)
 
-	*container_id = idDest
+	var err error
+	*container_id, err = containerIdFromBytes(idDest)
+	if err != nil {
+		return LIBUSB_ERROR_INVALID_PARAM
+	}
 	return LIBUSB_SUCCESS
 }
 
