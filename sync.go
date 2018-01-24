@@ -81,9 +81,9 @@ func sync_transfer_wait_for_completion(transfer *libusb_transfer) {
  * the operating system and/or hardware can support
  * \returns another LIBUSB_ERROR code on other failures
  */
-func ibusb_control_transfer(dev_handle *libusb_device_handle,
-	bmRequestType uint8, bRequest uint8, wValue uint16, wIndex uint16,
-	data []uint8, wLength uint16, timeout uint) int {
+func libusb_control_transfer(dev_handle *libusb_device_handle,
+	bmRequestType libusb_endpoint_direction, bRequest libusb_standard_request, wValue uint16, wIndex uint16,
+	data []uint8, wLength uint16, timeout uint) libusb_error {
 
 	var completed int
 

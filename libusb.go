@@ -739,7 +739,7 @@ type libusb_interface_descriptor struct {
 
 	/** Array of endpoint descriptors. This length of this array is determined
 	 * by the bNumEndpoints field. */
-	endpoint *libusb_endpoint_descriptor
+	endpoint []libusb_endpoint_descriptor
 
 	/** Extra descriptors. If libusb encounters unknown interface descriptors,
 	 * it will store them here, should you wish to parse them. */
@@ -752,7 +752,7 @@ type libusb_interface_descriptor struct {
 type libusb_interface struct {
 	/** Array of interface descriptors. The length of this array is determined
 	 * by the num_altsetting field. */
-	altsetting *libusb_interface_descriptor
+	altsetting []libusb_interface_descriptor
 
 	/** The number of alternate settings that belong to this interface */
 	num_altsetting int

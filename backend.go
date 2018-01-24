@@ -78,7 +78,7 @@ type usbi_os_backend interface {
 	 *
 	 * Return 0 on success, or a LIBUSB_ERROR code on failure.
 	 */
-	Get_device_list(*libusb_context, **discovered_devs) libusb_error
+	Get_device_list(*libusb_context, *[]*libusb_device) libusb_error
 
 	/* Apps which were written before hotplug support, may listen for
 	 * hotplug events on their own and call libusb_get_device_list on
@@ -269,7 +269,7 @@ type usbi_os_backend interface {
 	 *   was opened
 	 * - another LIBUSB_ERROR code on other failure
 	 */
-	Claim_interface(*libusb_device_handle, int) libusb_error
+	Claim_interface(*libusb_device_handle, uint) libusb_error
 
 	/* Release a previously claimed interface.
 	 *
@@ -286,7 +286,7 @@ type usbi_os_backend interface {
 	 *   was opened
 	 * - another LIBUSB_ERROR code on other failure
 	 */
-	Release_interface(*libusb_device_handle, int) libusb_error
+	Release_interface(*libusb_device_handle, uint) libusb_error
 
 	/* Set the alternate setting for an interface.
 	 *
@@ -302,7 +302,7 @@ type usbi_os_backend interface {
 	 *   was opened
 	 * - another LIBUSB_ERROR code on other failure
 	 */
-	Set_interface_altsetting(*libusb_device_handle, int, int) libusb_error
+	Set_interface_altsetting(*libusb_device_handle, uint, int) libusb_error
 
 	/* Clear a halt/stall condition on an endpoint.
 	 *
@@ -393,6 +393,8 @@ type usbi_os_backend interface {
 	 * - another LIBUSB_ERROR code on other failure
 	 */
 	Attach_kernel_driver(*libusb_device_handle, int) libusb_error
+
+	Destroy_device(*libusb_device)
 
 	/* Submit a transfer. Your implementation should take the transfer,
 	 * morph it into whatever form your platform requires, and submit it

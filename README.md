@@ -20,8 +20,8 @@ Syntax:
 * [x] sync.go
 
 Semantic:
-* [ ] backend.go
-* [ ] core.go
+* [x] backend.go
+* [x] core.go
 * [ ] descriptor.go
 * [ ] hotplug.go
 * [ ] io.go

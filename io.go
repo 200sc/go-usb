@@ -25,7 +25,7 @@ import (
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-func usbi_io_init(ctx *libusb_context) int {
+func usbi_io_init(ctx *libusb_context) libusb_error {
 	ctx.event_waiters_cond = sync.NewCond(ctx.event_waiters_lock)
 	list_init(ctx.flying_transfers)
 	list_init(ctx.ipollfds)

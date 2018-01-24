@@ -198,7 +198,7 @@ type libusb_device_handle struct {
 	list                      *LinkedList
 	dev                       *libusb_device
 	auto_detach_kernel_driver int
-	os_priv                   uint8
+	os_priv                   []uint8
 }
 
 /* in-memory transfer layout:
@@ -262,11 +262,7 @@ type usbi_pollfd struct {
  * which grows when required. it can be freed once discovery has completed,
  * eliminating the need for a list node in the libusb_device structure
  * itself. */
-type discovered_devs struct {
-	len      int
-	capacity int
-	devices  []*libusb_device
-}
+type discovered_devs []*libusb_device
 
 func IS_EPIN(ep uint8) bool {
 	return ep&LIBUSB_ENDPOINT_IN != 0
