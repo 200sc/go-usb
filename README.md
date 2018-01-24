@@ -7,7 +7,7 @@ OS-Agnostic code is converted and needs to be passed over for compile errors:
 
 * [x] backend.go
 * [x] core.go
-* [ ] descriptor.go
+* [x] descriptor.go
 * [ ] hotplug.go
 * [ ] io.go
 * [ ] io_unix.go
