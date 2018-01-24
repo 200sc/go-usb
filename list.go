@@ -70,19 +70,3 @@ func list_del(entry *LinkedList) {
 
 #define list_first_entry(ptr, type, member) \
  list_entry((ptr).next, type, member)
-
-/* Get each entry from a list
-*  pos - A structure pointer has a "member" element
-*  head - list head
-*  member - the list_head element in "pos"
-*  type - the type of the first parameter
-*/
-#define list_for_each_entry(pos, head, member, type)			\
- for (pos = list_entry((head).next, type, member)		\
-	  &pos.member != (head)				\
-	  pos = list_entry(pos.member.next, type, member))
-
-#define list_for_each_entry_safe(pos, n, head, member, type)		\
- for pos, n = list_entry((head).next, type, member), list_entry(pos.member.next, type, member);
-	  &pos.member != (head);
-	  pos, n = n, list_entry(n.member.next, type, member)

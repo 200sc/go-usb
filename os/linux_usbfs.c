@@ -942,8 +942,11 @@ static int linux_get_parent_info(struct libusb_device *dev, const char *sysfs_di
 
 retry:
 	/* find the parent in the context */
-	&ctx.usb_devs_lock.Lock();
-	list_for_each_entry(it, &ctx.usb_devs, list, struct libusb_device) {
+	&ctx.usb_devs_lock.Lock();			
+ 	for it = list_entry((&ctx.usb_devs).next, libusb_device, list);	
+	  	&it.list != (&ctx.usb_devs);
+	  	it = list_entry(it.list.next, libusb_device, list) {
+
 		struct linux_device_priv *priv = _device_priv(it);
 		if (0 == strcmp (priv.sysfs_dir, parent_sysfs_dir)) {
 			dev.parent_dev = libusb_ref_device(it);
@@ -1017,8 +1020,11 @@ void linux_hotplug_enumerate(uint8 busnum, uint8 devaddr, const char *sys_name)
 {
 	struct libusb_context *ctx;
 
-	&active_contexts_lock.Lock();
-	list_for_each_entry(ctx, &active_contexts_list, list, struct libusb_context) {
+	&active_contexts_lock.Lock();			
+ 	for ctx = list_entry((&active_contexts_list).next, libusb_context, list);	
+	  	&ctx.list != (&active_contexts_list);
+	 	ctx = list_entry(ctx.list.next, libusb_context, list) {
+
 		linux_enumerate_device(ctx, busnum, devaddr, sys_name);
 	}
 	&active_contexts_lock.Unlock();
@@ -1030,8 +1036,11 @@ void linux_device_disconnected(uint8 busnum, uint8 devaddr)
 	struct libusb_device *dev;
 	uint64 session_id = busnum << 8 | devaddr;
 
-	&active_contexts_lock.Lock();
-	list_for_each_entry(ctx, &active_contexts_list, list, struct libusb_context) {
+	&active_contexts_lock.Lock();		
+ 	for ctx = list_entry((&active_contexts_list).next, libusb_context, list);	
+	  	&ctx.list != (&active_contexts_list);
+	  	ctx = list_entry(ctx.list.next, libusb_context, list) {
+
 		dev = usbi_get_device_by_session_id (ctx, session_id);
 		if (NULL != dev) {
 			usbi_disconnect_device (dev);
@@ -2491,7 +2500,9 @@ static int op_handle_events(struct libusb_context *ctx,
 			continue;
 
 		num_ready--;
-		list_for_each_entry(handle, &ctx.open_devs, list, struct libusb_device_handle) {
+ 		for handle = list_entry((&ctx.open_devs).next, libusb_device_handle, list);	
+	  		&handle.list != (&ctx.open_devs);
+	  		handle = list_entry(pos.list.next, libusb_device_handle, list) {
 			hpriv = _device_handle_priv(handle);
 			if (hpriv.fd == pollfd.fd)
 				break;

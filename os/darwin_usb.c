@@ -221,7 +221,9 @@ static void darwin_devices_attached (void *ptr, io_iterator_t add_devices) {
 
   for ((service = IOIteratorNext(add_devices))) {
     /* add this device to each active context's device list */
-    list_for_each_entry(ctx, &active_contexts_list, list, struct libusb_context) {
+    for ctx = list_entry((&active_contexts_list).next, libusb_context, list);	
+	      &ctx.list != (&active_contexts_list);
+	      ctx = list_entry(ctx.list.next, libusb_context, list) {
       process_new_device (ctx, service);;
     }
 
@@ -252,15 +254,20 @@ static void darwin_devices_detached (void *ptr, io_iterator_t rem_devices) {
     /* we need to match darwin_ref_cached_device call made in darwin_get_cached_device function
        otherwise no cached device will ever get freed */
     &darwin_cached_devices_lock.Lock();
-    list_for_each_entry(old_device, &darwin_cached_devices, list, struct darwin_cached_device) {
+    for old_device = list_entry((&darwin_cached_devices).next, darwin_cached_device, list);	
+	      &old_device.list != (&darwin_cached_devices);
+	      old_device = list_entry(old_device.list.next, darwin_cached_device, list) {
+
       if (old_device.session == session) {
         darwin_deref_cached_device (old_device);
         break;
       }
     }
     &darwin_cached_devices_lock.Unlock();
-
-    list_for_each_entry(ctx, &active_contexts_list, list, struct libusb_context) {
+		
+    for ctx = list_entry((&active_contexts_list).next, libusb_context, list);	
+	    &ctx.list != (&active_contexts_list);
+	    ctx = list_entry(ctx.list.next, libusb_context, list) {
       // usbi_dbg ("notifying context %p of device disconnect", ctx);
 
       dev = usbi_get_device_by_session_id(ctx, (uint64) session);
@@ -407,7 +414,10 @@ static void __attribute__((destructor)) _darwin_finalize(void) {
   struct darwin_cached_device *dev, *next;
 
   &darwin_cached_devices_lock.Lock();
-  list_for_each_entry_safe(dev, next, &darwin_cached_devices, list, struct darwin_cached_device) {
+  for dev, next = list_entry((&darwin_cached_devices).next, darwin_cached_device, list), list_entry(dev.list.next, type, list);
+	    &dev.list != (&darwin_cached_devices);
+	    dev, next = next, list_entry(next.list.next, darwin_cached_device, list) {
+
     darwin_deref_cached_device(dev);
   }
   &darwin_cached_devices_lock.Unlock();
@@ -808,8 +818,10 @@ static int darwin_get_cached_device(struct libusb_context *ctx, io_service_t ser
   &darwin_cached_devices_lock.Lock();
   do {
     *cached_out = NULL;
-
-    list_for_each_entry(new_device, &darwin_cached_devices, list, struct darwin_cached_device) {
+	
+    for new_device = list_entry((&darwin_cached_devices).next, darwin_cached_device, list);	
+	    &new_device.list != (&darwin_cached_devices);
+	    new_device = list_entry(new_device.list.next, darwin_cached_device, list) {
       // usbi_dbg("matching sessionID 0x%" PRIx64 " against cached device with sessionID 0x%" PRIx64, sessionID, new_device.session);
       if (new_device.session == sessionID) {
         // usbi_dbg("using cached device for device");

@@ -684,8 +684,10 @@ static int wince_handle_events(
 
 		// Because a Windows OVERLAPPED is used for poll emulation,
 		// a pollable fd is created and stored with each transfer
-		&ctx.flying_transfers_lock.Lock();
-		list_for_each_entry(transfer, &ctx.flying_transfers, list, struct usbi_transfer) {
+		&ctx.flying_transfers_lock.Lock();	
+ 		for transfer = list_entry((&ctx.flying_transfers).next, usbi_transfer, list);	
+	  		&transfer.list != (&ctx.flying_transfers);
+	  		transfer = list_entry(transfer.list.next, usbi_transfer, list) {
 			transfer_priv = transfer.usbi_transfer_get_os_priv();
 			if (transfer_priv.pollable_fd.fd == fds[i].fd) {
 				found = TRUE;

@@ -352,8 +352,10 @@ int windows_handle_events(struct libusb_context *ctx, struct pollfd *fds, POLL_N
 		// Because a Windows OVERLAPPED is used for poll emulation,
 		// a pollable fd is created and stored with each transfer
 		&ctx.flying_transfers_lock.Lock();
-		found = false;
-		list_for_each_entry(transfer, &ctx.flying_transfers, list, struct usbi_transfer) {
+		found = false;	
+		for transfer = list_entry((&ctx.flying_transfers).next, usbi_transfer, list);	
+			&transfer.list != (&ctx.flying_transfers);
+	  		transfer = list_entry(transfer.list.next, usbi_transfer, list) {
 			pollable_fd = windows_get_fd(transfer);
 			if (pollable_fd.fd == fds[i].fd) {
 				found = true;
