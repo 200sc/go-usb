@@ -1,5 +1,11 @@
 package usb
 
+import (
+	"strconv"
+	"sync"
+	"time"
+)
+
 /*
  * Core functions for libusb
  * Copyright © 2012-2013 Nathan Hjelm <hjelmn@cs.unm.edu>
@@ -22,12 +28,12 @@ package usb
  */
 
 var (
-	usbi_default_context *libusb_context
+	usbi_default_context   *libusb_context
 	default_context_refcnt int
-	timestamp_origin time.Time
-	active_contexts_list list_head
-	default_context_lock = sync.Mutex{}
-	active_contexts_lock = sync.Mutex{}
+	timestamp_origin       time.Time
+	active_contexts_list   list_head
+	default_context_lock   = sync.Mutex{}
+	active_contexts_lock   = sync.Mutex{}
 )
 
 /* append a device to the discovered devices collection. may realloc itself,
@@ -48,7 +54,7 @@ func usbi_alloc_device(ctx *libusb_context, session_id uint64) *libusb_device {
 	dev.session_data = session_id
 	dev.speed = LIBUSB_SPEED_UNKNOWN
 
-	if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
+	if !libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG) {
 		usbi_connect_device(dev)
 	}
 
@@ -164,7 +170,7 @@ func libusb_has_capability(capability uint32) int {
  */
 func libusb_clear_halt(dev_handle *libusb_device_handle, endpoint uint8) int {
 	// usbi_dbg("endpoint %x", endpoint)
-	if !dev_handle.dev.attached) {
+	if !dev_handle.dev.attached {
 		return LIBUSB_ERROR_NO_DEVICE
 	}
 
@@ -190,7 +196,7 @@ func libusb_clear_halt(dev_handle *libusb_device_handle, endpoint uint8) int {
  * device has been disconnected
  * \returns another LIBUSB_ERROR code on other failure
  */
-return libusb_reset_device(dev_handle *libusb_device_handle) int {
+func libusb_reset_device(dev_handle *libusb_device_handle) int {
 	// usbi_dbg("")
 	if !dev_handle.dev.attached {
 		return LIBUSB_ERROR_NO_DEVICE
@@ -223,7 +229,7 @@ return libusb_reset_device(dev_handle *libusb_device_handle) int {
 func libusb_alloc_streams(dev_handle *libusb_device_handle, num_streams uint32, endpoints []uint8, num_endpoints int) int {
 	// usbi_dbg("streams %u eps %d", (unsigned) num_streams, num_endpoints)
 
-	if (!dev_handle.dev.attached) {
+	if !dev_handle.dev.attached {
 		return LIBUSB_ERROR_NO_DEVICE
 	}
 
@@ -285,7 +291,7 @@ func libusb_free_streams(dev_handle *libusb_device_handle,
  */
 
 func libusb_dev_mem_alloc(dev_handle *libusb_device_handle, length int) []uint8 {
-	if !dev_handle.dev.attached) {
+	if !dev_handle.dev.attached {
 		return nil
 	}
 
@@ -364,13 +370,14 @@ func libusb_kernel_driver_active(dev_handle *libusb_device_handle, interface_num
 func libusb_detach_kernel_driver(dev_handle *libusb_device_handle, interface_number int) int {
 	// usbi_dbg("interface %d", interface_number)
 
-	if (!dev_handle.dev.attached)
+	if !dev_handle.dev.attached {
 		return LIBUSB_ERROR_NO_DEVICE
+	}
 
-	if (usbi_backend.detach_kernel_driver)
+	if usbi_backend.detach_kernel_driver {
 		return usbi_backend.detach_kernel_driver(dev_handle, interface_number)
-	else
-		return LIBUSB_ERROR_NOT_SUPPORTED
+	}
+	return LIBUSB_ERROR_NOT_SUPPORTED
 }
 
 /** \ingroup libusb_dev
@@ -396,13 +403,14 @@ func libusb_detach_kernel_driver(dev_handle *libusb_device_handle, interface_num
 func libusb_attach_kernel_driver(dev_handle *libusb_device_handle, interface_number int) int {
 	// usbi_dbg("interface %d", interface_number)
 
-	if (!dev_handle.dev.attached)
+	if !dev_handle.dev.attached {
 		return LIBUSB_ERROR_NO_DEVICE
+	}
 
-	if (usbi_backend.attach_kernel_driver)
+	if usbi_backend.attach_kernel_driver {
 		return usbi_backend.attach_kernel_driver(dev_handle, interface_number)
-	else
-		return LIBUSB_ERROR_NOT_SUPPORTED
+	}
+	return LIBUSB_ERROR_NOT_SUPPORTED
 }
 
 /** \ingroup libusb_dev
@@ -428,7 +436,7 @@ func libusb_attach_kernel_driver(dev_handle *libusb_device_handle, interface_num
  * \see libusb_set_configuration()
  */
 func libusb_set_auto_detach_kernel_driver(dev_handle *libusb_device_handle, enable int) {
-	if (usbi_backend.caps & USBI_CAP_SUPPORTS_DETACH_KERNEL_DRIVER) == 0{
+	if (usbi_backend.caps & USBI_CAP_SUPPORTS_DETACH_KERNEL_DRIVER) == 0 {
 		return LIBUSB_ERROR_NOT_SUPPORTED
 	}
 
@@ -493,7 +501,7 @@ func usbi_disconnect_device(dev *libusb_device) {
  * to the discovered device list. */
 func usbi_sanitize_device(dev *libusb_device) int {
 	r := usbi_device_cache_descriptor(dev)
-	if (r < 0) {
+	if r < 0 {
 		return r
 	}
 
@@ -502,7 +510,7 @@ func usbi_sanitize_device(dev *libusb_device) int {
 		// usbi_err(dev), "too many configurations".ctx
 		return LIBUSB_ERROR_IO
 	} //else if 0 == num_configurations
-		// usbi_dbg("zero configurations, maybe an unauthorized device")
+	// usbi_dbg("zero configurations, maybe an unauthorized device")
 
 	dev.num_configurations = num_configurations
 	return 0
@@ -514,13 +522,12 @@ func usbi_sanitize_device(dev *libusb_device) int {
 func usbi_get_device_by_session_id(ctx *libusb_context, session_id uint64) *libusb_device {
 	var ret *libusb_device
 	ctx.usb_devs_lock.Lock()
-	 for (pos := list_entry((&ctx.usb_devs).next, list, libusb_device);	
-	 	 &dev.libusb_device != (&ctx.usb_devs);				
-	 	 dev = list_entry(dev.libusb_device.next, list, libusb_device)) {
-		if (dev.session_data == session_id) {
+	for pos := list_entry((&ctx.usb_devs).next, list, libusb_device); &dev.libusb_device != (&ctx.usb_devs); dev = list_entry(dev.libusb_device.next, list, libusb_device) {
+		if dev.session_data == session_id {
 			ret = libusb_ref_device(dev)
 			break
 		}
+	}
 	ctx.usb_devs_lock.Unlock()
 
 	return ret
@@ -546,14 +553,14 @@ func usbi_get_device_by_session_id(ctx *libusb_context, session_id uint64) *libu
  * \returns the number of devices in the outputted list, or any
  * \ref libusb_error according to errors encountered by the backend.
  */
- func libusb_get_device_list(ctx *libusb_context, list ***libusb_device) int {
+func libusb_get_device_list(ctx *libusb_context, list ***libusb_device) int {
 	discdevs := discovered_devs_alloc()
 	var r, i, ln int
 	ctx = USBI_GET_CONTEXT(ctx)
 
-	if (libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
+	if libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG) {
 		/* backend provides hotplug support */
-		struct libusb_device *dev
+		var dev *libusb_device
 
 		if usbi_backend.hotplug_poll != nil {
 			usbi_backend.hotplug_poll()
@@ -561,9 +568,7 @@ func usbi_get_device_by_session_id(ctx *libusb_context, session_id uint64) *libu
 
 		ctx.usb_devs_lock.Lock()
 
- 		for (dev = list_entry((&ctx.usb_devs).next, list, libusb_device);
-	 		&dev.libusb_device != (&ctx.usb_devs);
-	  		dev = list_entry(dev.libusb_device.next, list, libusb_device)) {
+		for dev = list_entry((&ctx.usb_devs).next, list, libusb_device); &dev.libusb_device != (&ctx.usb_devs); dev = list_entry(dev.libusb_device.next, list, libusb_device) {
 			discdevs = discovered_devs_append(discdevs, dev)
 		}
 
@@ -573,7 +578,7 @@ func usbi_get_device_by_session_id(ctx *libusb_context, session_id uint64) *libu
 		r = usbi_backend.get_device_list(ctx, &discdevs)
 	}
 
-	if (r < 0) {
+	if r < 0 {
 		if discdevs != nil {
 			discovered_devs_free(discdevs)
 		}
@@ -584,7 +589,7 @@ func usbi_get_device_by_session_id(ctx *libusb_context, session_id uint64) *libu
 	ln = discdevs.len
 	ret := make([]*libusb_device, len+1)
 
-	for (i = 0; i < ln; i++) {
+	for i := 0; i < ln; i++ {
 		ret[i] = libusb_ref_device(discdevs.devices[i])
 	}
 	*list = ret
@@ -628,7 +633,7 @@ func libusb_free_device_list(list **libusb_device, unref_devices int) {
  * \returns the number of elements filled
  * \returns LIBUSB_ERROR_OVERFLOW if the array is too small
  */
- func libusb_get_port_numbers(dev *libusb_device, port_numbers []uint8) int {
+func libusb_get_port_numbers(dev *libusb_device, port_numbers []uint8) int {
 	ctx := dev.ctx
 	i := len(port_numbers)
 
@@ -637,7 +642,7 @@ func libusb_free_device_list(list **libusb_device, unref_devices int) {
 		port_numbers[i] = dev.port_number
 		dev = dev.parent_dev
 	}
-	if (i < len(port_numbers)) {
+	if i < len(port_numbers) {
 		copy(port_numbers, port_numbers[i:])
 	}
 	return len(port_numbers) - i
@@ -651,13 +656,13 @@ func libusb_get_port_path(ctx *libusb_context, dev *libusb_device, port_numbers 
 }
 
 func find_endpoint(config *libusb_config_descriptor, endpoint uint8) *libusb_endpoint_descriptor {
-	for (iface_idx := 0; iface_idx < config.bNumInterfaces; iface_idx++) {
-		iface := &config.interface[iface_idx]
-		for (altsetting_idx := 0; altsetting_idx < iface.num_altsetting; altsetting_idx++) {
+	for iface_idx := 0; iface_idx < config.bNumInterfaces; iface_idx++ {
+		iface := &config.iface[iface_idx]
+		for altsetting_idx := 0; altsetting_idx < iface.num_altsetting; altsetting_idx++ {
 			altsetting := &iface.altsetting[altsetting_idx]
-			for (ep_idx := 0; ep_idx < altsetting.bNumEndpoints; ep_idx++) {
+			for ep_idx := 0; ep_idx < altsetting.bNumEndpoints; ep_idx++ {
 				ep := &altsetting.endpoint[ep_idx]
-				if (ep.bEndpointAddress == endpoint) {
+				if ep.bEndpointAddress == endpoint {
 					return ep
 				}
 			}
@@ -682,18 +687,18 @@ func find_endpoint(config *libusb_config_descriptor, endpoint uint8) *libusb_end
  * \returns LIBUSB_ERROR_NOT_FOUND if the endpoint does not exist
  * \returns LIBUSB_ERROR_OTHER on other failure
  */
- func libusb_get_max_packet_size(dev *libusb_device, endpoint uint8) int {
+func libusb_get_max_packet_size(dev *libusb_device, endpoint uint8) int {
 	var config libusb_config_descriptor
 
 	r := libusb_get_active_config_descriptor(dev, &config)
-	if (r < 0) {
+	if r < 0 {
 		// usbi_err(dev.ctx,
-			// "could not retrieve active config descriptor")
+		// "could not retrieve active config descriptor")
 		return LIBUSB_ERROR_OTHER
 	}
 
 	ep := find_endpoint(config, endpoint)
-	if (!ep) {
+	if !ep {
 		return LIBUSB_ERROR_NOT_FOUND
 	}
 
@@ -728,13 +733,13 @@ func find_endpoint(config *libusb_config_descriptor, endpoint uint8) *libusb_end
  * \returns LIBUSB_ERROR_NOT_FOUND if the endpoint does not exist
  * \returns LIBUSB_ERROR_OTHER on other failure
  */
- func libusb_get_max_iso_packet_size(dev *libusb_device, endpoint uint8) int{
+func libusb_get_max_iso_packet_size(dev *libusb_device, endpoint uint8) int {
 	var config libusb_config_descriptor
 
 	r := libusb_get_active_config_descriptor(dev, &config)
-	if (r < 0) {
+	if r < 0 {
 		// usbi_err(dev.ctx,
-			// "could not retrieve active config descriptor")
+		// "could not retrieve active config descriptor")
 		return LIBUSB_ERROR_OTHER
 	}
 
@@ -747,9 +752,9 @@ func find_endpoint(config *libusb_config_descriptor, endpoint uint8) *libusb_end
 	ep_type := libusb_transfer_type((ep.bmAttributes & 0x3))
 
 	r = val & 0x07ff
-	if (ep_type == LIBUSB_TRANSFER_TYPE_ISOCHRONOUS
-			|| ep_type == LIBUSB_TRANSFER_TYPE_INTERRUPT)
+	if ep_type == LIBUSB_TRANSFER_TYPE_ISOCHRONOUS || ep_type == LIBUSB_TRANSFER_TYPE_INTERRUPT {
 		r *= (1 + ((val >> 11) & 3))
+	}
 
 	return r
 }
@@ -771,7 +776,7 @@ func libusb_ref_device(libusb_device *dev) *libusb_device {
  * causes the reference count to reach zero, the device shall be destroyed.
  * \param dev the device to unreference
  */
- func libusb_unref_device(dev *libusb_device) {
+func libusb_unref_device(dev *libusb_device) {
 
 	if dev == nil {
 		return
@@ -779,7 +784,7 @@ func libusb_ref_device(libusb_device *dev) *libusb_device {
 
 	dev.lock.Lock()
 	dev.refcnt--
-	refcnt := dev.refcnt 
+	refcnt := dev.refcnt
 	dev.lock.Unlock()
 
 	if refcnt == 0 {
@@ -791,7 +796,7 @@ func libusb_ref_device(libusb_device *dev) *libusb_device {
 			usbi_backend.destroy_device(dev)
 		}
 
-		if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
+		if !libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG) {
 			/* backend does not support hotplug */
 			usbi_disconnect_device(dev)
 		}
@@ -802,7 +807,7 @@ func libusb_ref_device(libusb_device *dev) *libusb_device {
  * Signal the event pipe so that the event handling thread will be
  * interrupted to process an internal event.
  */
-func usbi_signal_event(struct libusb_context *ctx) int {
+func usbi_signal_event(ctx *libusb_context) int {
 	var dummy uint8
 
 	/* read some data on event pipe to clear it */
@@ -832,7 +837,6 @@ func usbi_clear_event(ctx *libusb_context) int {
 	return 0
 }
 
-
 /** \ingroup libusb_dev
  * Open a device and obtain a device handle. A handle allows you to perform
  * I/O on the device in question.
@@ -852,12 +856,12 @@ func usbi_clear_event(ctx *libusb_context) int {
  * \returns LIBUSB_ERROR_NO_DEVICE if the device has been disconnected
  * \returns another LIBUSB_ERROR code on other failure
  */
- func libusb_open(dev *libusb_device, dev_handle **libusb_device_handle) int {
+func libusb_open(dev *libusb_device, dev_handle **libusb_device_handle) int {
 	ctx := dev.ctx
 	priv_size := usbi_backend.device_handle_priv_size
 	// usbi_dbg("open %d.%d", dev.bus_number, dev.device_address)
 
-	if (!dev.attached) {
+	if !dev.attached {
 		return LIBUSB_ERROR_NO_DEVICE
 	}
 
@@ -880,7 +884,6 @@ func usbi_clear_event(ctx *libusb_context) int {
 	return 0
 }
 
-
 /** \ingroup libusb_dev
  * Convenience function for finding a device with a particular
  * <tt>idVendor</tt>/<tt>idProduct</tt> combination. This function is intended
@@ -898,9 +901,9 @@ func usbi_clear_event(ctx *libusb_context) int {
  * \returns a device handle for the first found device, or nil on error
  * or if the device could not be found. */
 
- func libusb_open_device_with_vid_pid(ctx *libusb_context, vendor_id, product_id uint16) *libusb_device_handle {
+func libusb_open_device_with_vid_pid(ctx *libusb_context, vendor_id, product_id uint16) *libusb_device_handle {
 
-	if (libusb_get_device_list(ctx, &devs) < 0) {
+	if libusb_get_device_list(ctx, &devs) < 0 {
 		return nil
 	}
 
@@ -940,10 +943,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 	ctx.flying_transfers_lock.Lock()
 
 	/* safe iteration because transfers may be being deleted */
- 	for (itransfer := list_entry((&ctx.flying_transfers).next, usbi_transfer, list),		
-		  tmp := list_entry(pos.member.next, usbi_transfer, list);	
-		  &itransfer.list != (&ctx.flying_transfers)				
-		  itransfer = tmp, tmp = list_entry(tmp.member.next, usbi_transfer, list))
+	for itransfer, tmp := list_entry((&ctx.flying_transfers).next, usbi_transfer, list), list_entry(pos.member.next, usbi_transfer, list); &itransfer.list != (&ctx.flying_transfers); itransfer, tmp = tmp, list_entry(tmp.member.next, usbi_transfer, list) {
 
 		transfer := itransfer.libusbTransfer
 
@@ -953,13 +953,13 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 
 		// itransfer.lock.Lock()
 		// if (itransfer.state_flags & USBI_TRANSFER_DEVICE_DISAPPEARED) == 0 {
-			// usbi_err(ctx, "Device handle closed while transfer was still being processed, but the device is still connected as far as we know")
+		// usbi_err(ctx, "Device handle closed while transfer was still being processed, but the device is still connected as far as we know")
 
-			// if (itransfer.state_flags & USBI_TRANSFER_CANCELLING)
-				// usbi_warn(ctx, "A cancellation for an in-flight transfer hasn't completed but closing the device handle")
-			// else
-				// usbi_err(ctx, "A cancellation hasn't even been scheduled on the transfer for which the device is closing")
-		}
+		// if (itransfer.state_flags & USBI_TRANSFER_CANCELLING)
+		// usbi_warn(ctx, "A cancellation for an in-flight transfer hasn't completed but closing the device handle")
+		// else
+		// usbi_err(ctx, "A cancellation hasn't even been scheduled on the transfer for which the device is closing")
+		// }
 		// itransfer.lock.Unlock()
 
 		/* remove from the list of in-flight transfers and make sure
@@ -974,7 +974,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 		 * the device handle is invalid
 		 */
 		// usbi_dbg("Removed transfer %p from the in-flight list because device handle %p closed",
-			//  transfer, dev_handle)
+		//  transfer, dev_handle)
 	}
 	ctx.flying_transfers_lock.Unlock()
 
@@ -997,8 +997,8 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
  *
  * \param dev_handle the device handle to close
  */
- func libusb_close(libusb_device_handle *dev_handle) {
-	if dev_handle) == nil {
+func libusb_close(libusb_device_handle *dev_handle) {
+	if dev_handle == nil {
 		return
 	}
 	// usbi_dbg("")
@@ -1039,7 +1039,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 		ctx.event_data_lock.Lock()
 		ctx.device_close--
 		pending_events = usbi_pending_events(ctx)
-		if !pending_events { 
+		if !pending_events {
 			usbi_clear_event(ctx)
 		}
 		ctx.event_data_lock.Unlock()
@@ -1069,7 +1069,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
  * \returns LIBUSB_ERROR_NO_DEVICE if the device has been disconnected
  * \returns another LIBUSB_ERROR code on other failure
  */
- func libusb_get_configuration(dev_handle *libusb_device_handle, config *int) int {
+func libusb_get_configuration(dev_handle *libusb_device_handle, config *int) int {
 	r := LIBUSB_ERROR_NOT_SUPPORTED
 
 	if usbi_backend.get_configuration != nil {
@@ -1145,7 +1145,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
  * \returns another LIBUSB_ERROR code on other failure
  * \see libusb_set_auto_detach_kernel_driver()
  */
- func libusb_set_configuration(dev_handle *libusb_device_handle, configuration int) int {
+func libusb_set_configuration(dev_handle *libusb_device_handle, configuration int) int {
 	return usbi_backend.set_configuration(dev_handle, configuration)
 }
 
@@ -1177,7 +1177,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
  * \returns a LIBUSB_ERROR code on other failure
  * \see libusb_set_auto_detach_kernel_driver()
  */
- func libusb_claim_interface(dev_handle *libusb_device_handle, interface_number int) int {
+func libusb_claim_interface(dev_handle *libusb_device_handle, interface_number int) int {
 
 	// usbi_dbg("interface %d", interface_number)
 	if interface_number >= USB_MAXINTERFACES {
@@ -1189,7 +1189,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 	}
 
 	dev_handle.lock.Lock()
-	if dev_handle.claimed_interfaces & (1 << interface_number) != 0 {
+	if dev_handle.claimed_interfaces&(1<<interface_number) != 0 {
 		dev_handle.lock.Unlock()
 		return r
 	}
@@ -1222,11 +1222,12 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
  * \returns another LIBUSB_ERROR code on other failure
  * \see libusb_set_auto_detach_kernel_driver()
  */
- func libusb_release_interface(dev_handle *libusb_device_handle, interface_number int) int {
+func libusb_release_interface(dev_handle *libusb_device_handle, interface_number int) int {
 
 	// usbi_dbg("interface %d", interface_number)
-	if (interface_number >= USB_MAXINTERFACES)
+	if interface_number >= USB_MAXINTERFACES {
 		return LIBUSB_ERROR_INVALID_PARAM
+	}
 
 	&dev_handle.lock.Lock()
 	if (dev_handle.claimed_interfaces & (1 << interface_number)) == 0 {
@@ -1236,7 +1237,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 
 	r := usbi_backend.release_interface(dev_handle, interface_number)
 	if r == 0 {
-		dev_handle.claimed_interfaces &= ~(1 << interface_number)
+		dev_handle.claimed_interfaces &= ^(1 << interface_number)
 	}
 
 	dev_handle.lock.Unlock()
@@ -1264,14 +1265,15 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
  * \returns LIBUSB_ERROR_NO_DEVICE if the device has been disconnected
  * \returns another LIBUSB_ERROR code on other failure
  */
- func libusb_set_interface_alt_setting(dev_handle *libusb_device_handle, interface_number, alternate_setting int) int {
+func libusb_set_interface_alt_setting(dev_handle *libusb_device_handle, interface_number, alternate_setting int) int {
 	// usbi_dbg("interface %d altsetting %d",
-		// interface_number, alternate_setting)
-	if (interface_number >= USB_MAXINTERFACES)
+	// interface_number, alternate_setting)
+	if interface_number >= USB_MAXINTERFACES {
 		return LIBUSB_ERROR_INVALID_PARAM
+	}
 
 	dev_handle.lock.Lock()
-	if (!dev_handle.dev.attached) {
+	if !dev_handle.dev.attached {
 		dev_handle.lock.Unlock()
 		return LIBUSB_ERROR_NO_DEVICE
 	}
@@ -1285,7 +1287,7 @@ func do_close(ctx *libusb_context, dev_handle *libusb_device_handle) {
 	return usbi_backend.set_interface_altsetting(dev_handle, interface_number, alternate_setting)
 }
 
-var init = sync.Once{}
+var initOnce = sync.Once{}
 var timeStampOriginInit = sync.Once{}
 
 /** \ingroup libusb_lib
@@ -1305,7 +1307,7 @@ func libusb_init(context **libusb_context) int {
 	var r int
 
 	default_context_lock.Lock()
-	
+
 	timeStampOriginInit.Do(func() {
 		timestamp_origin = time.Now()
 	})
@@ -1340,7 +1342,7 @@ func libusb_init(context **libusb_context) int {
 	list_init(ctx.hotplug_cbs)
 
 	active_contexts_lock.Lock()
-	init.Do(list_init(active_contexts_list))
+	initOnce.Do(list_init(active_contexts_list))
 	list_add(&ctx.list, &active_contexts_list)
 	active_contexts_lock.Unlock()
 
@@ -1366,7 +1368,7 @@ func libusb_init(context **libusb_context) int {
 		usbi_backend.exit()
 	}
 err_free_ctx:
-	if (ctx == usbi_default_context) {
+	if ctx == usbi_default_context {
 		usbi_default_context = nil
 		default_context_refcnt--
 	}
@@ -1377,17 +1379,13 @@ err_free_ctx:
 
 	ctx.usb_devs_lock.Lock()
 
-	struct libusb_device *dev, *next
- 	for dev := list_entry((&ctx.usb_devs).next, libusb_device, list),
-		  next := list_entry(dev.member.next, libusb_device, list);	
-		  &dev.member != (&ctx.usb_devs);
-		  dev = next, next = list_entry(next.member.next, type, member {
+	var dev, next *libusb_device
+	for dev, next := list_entry((&ctx.usb_devs).next, libusb_device, list), list_entry(dev.member.next, libusb_device, list); &dev.list != (&ctx.usb_devs); dev, next = next, list_entry(next.member.next, libusb_device, list) {
 		list_del(&dev.list)
 		libusb_unref_device(dev)
 	}
 	ctx.usb_devs_lock.Unlock()
 
-err_unlock:
 	default_context_lock.Unlock()
 	return r
 }

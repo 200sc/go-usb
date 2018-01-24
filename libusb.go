@@ -774,7 +774,8 @@ type libusb_config_descriptor struct {
 
 	/** Array of interfaces supported by this configuration. The length of
 	 * this array is determined by the bNumInterfaces field. */
-	libusb_interface *interface
+	// Go: note: renamed from interface
+	iface []libusb_interface
 
 	/** Extra descriptors. If libusb encounters unknown configuration
 	 * descriptors, it will store them here, should you wish to parse them. */
