@@ -1,4 +1,4 @@
-package usb
+package usb 
 
 /*
  * USB descriptor handling functions for libusb
@@ -686,4 +686,271 @@ func parse_configuration(ctx *libusb_context,
 
 	// ?
 	return i
+}
+
+func parse_interface(ctx *libusb_context, usb_interface *libusb_interface, buffer []uint8, size int, host_endian bool) int {
+
+	parsed := 0
+	interface_number := -1
+	var header usb_descriptor_header 
+ 
+	usb_interface.num_altsetting = 0
+	alti := 0
+ 
+	for size >= INTERFACE_DESC_LENGTH {
+ 
+		altsetting := make([]libusb_interface_descriptor, usb.num_altsetting+1)
+		usb_interface.altsetting = altsetting
+ 
+		// todo: this replaces pointer math nonsense
+		ifp := usb_interface.AltSettingNum(usb_interface.num_altsetting)
+ 
+		usbi_parse_descriptor(buffer, "bbbbbbbbb", ifp, 0)
+		if (ifp.bDescriptorType != LIBUSB_DT_INTERFACE) {
+			// usbi_err(ctx, "unexpected descriptor %x (expected %x)",
+				 // ifp.bDescriptorType, LIBUSB_DT_INTERFACE)
+			return parsed
+		}
+		if (ifp.bLength < INTERFACE_DESC_LENGTH) {
+			// usbi_err(ctx, "invalid interface bLength (%d)",
+				 // ifp.bLength)
+			return LIBUSB_ERROR_IO
+		}
+		if (ifp.bLength > size) {
+			// usbi_warn(ctx, "short intf descriptor read %d/%d",
+				 // size, ifp.bLength)
+			return parsed
+		}
+		if (ifp.bNumEndpoints > USB_MAXENDPOINTS) {
+			// usbi_err(ctx, "too many endpoints (%d)", ifp.bNumEndpoints)
+			return LIBUSB_ERROR_IO
+		}
+ 
+		usb_interface.num_altsetting++
+		ifp.extra = nil
+		ifp.endpoint = nil
+ 
+		if interface_number == -1 {
+			interface_number = ifp.bInterfaceNumber
+		}
+ 
+		/* Skip over the interface */
+		parsed += ifp.bLength
+		size -= ifp.bLength
+ 
+		begin := buffer[parsed:]
+ 
+		/* Skip over any interface, class or vendor descriptors */
+		for size >= DESC_HEADER_LENGTH {
+			usbi_parse_descriptor(buffer, "bb", &header, 0)
+			if (header.bLength < DESC_HEADER_LENGTH) {
+				// usbi_err(ctx,
+					 // "invalid extra intf desc len (%d)",
+					 // header.bLength)
+				return LIBUSB_ERROR_IO
+			} else if (header.bLength > size) {
+				// usbi_warn(ctx,
+					 //  "short extra intf desc read %d/%d",
+					 //  size, header.bLength)
+				return parsed
+			}
+ 
+			/* If we find another "proper" descriptor then we're done */
+			if ((header.bDescriptorType == LIBUSB_DT_INTERFACE) ||
+					(header.bDescriptorType == LIBUSB_DT_ENDPOINT) ||
+					(header.bDescriptorType == LIBUSB_DT_CONFIG) ||
+					(header.bDescriptorType == LIBUSB_DT_DEVICE))
+				break
+ 
+			parsed += header.bLength
+			size -= header.bLength
+		}
+ 
+		/* Copy any unknown descriptors into a storage area for */
+		/*  drivers to later parse */
+		ln := len(buffer) - len(begin)
+		if ln != 0 {
+			ifp.extra = make([]uint8, ln)
+			copy(ifp.extra, begin)
+		}
+ 
+		if (ifp.bNumEndpoints > 0) {
+			endpoint := make([]libusb_endpoint_descriptor, ifp.bNumEndpoints)
+			ifp.endpoint = endpoint
+ 
+			for i := 0; i < ifp.bNumEndpoints; i++ {
+				r := parse_endpoint(ctx, endpoint + i, buffer, size, host_endian)
+				if r < 0 {
+					return r
+				}
+				if r == 0 {
+					ifp.bNumEndpoints = uint8(i)
+					break
+				}
+ 
+				parsed += r
+				size -= r
+			}
+		}
+ 
+		/* We check to see if it's an alternate to this one */
+		// todo: replacing conversions from raw bytes to structs
+		//binary.Read() will replace it
+		ifp = NewLibusbInterfaceDescriptor(buffer)
+		if (size < LIBUSB_DT_INTERFACE_SIZE ||
+				ifp.bDescriptorType != LIBUSB_DT_INTERFACE ||
+				ifp.bInterfaceNumber != interface_number) {
+			return parsed
+		 }
+	}
+ 
+	return parsed
+ }
+
+ func parse_endpoint(ctx *libusb_context, endpoint *libusb_endpoint_descriptor, buffer []uint8, size int, host_endian bool) int {
+
+	var header usb_descriptor_header
+	parsed := 0
+
+	if (size < DESC_HEADER_LENGTH) {
+		// usbi_err(ctx, "short endpoint descriptor read %d/%d",
+			//  size, DESC_HEADER_LENGTH);
+		return LIBUSB_ERROR_IO
+	}
+
+	usbi_parse_descriptor(buffer, "bb", &header, 0)
+	if (header.bDescriptorType != LIBUSB_DT_ENDPOINT) {
+		// usbi_err(ctx, "unexpected descriptor %x (expected %x)",
+			// header.bDescriptorType, LIBUSB_DT_ENDPOINT);
+		return parsed
+	}
+	if header.bLength > size {
+		// usbi_warn(ctx, "short endpoint descriptor read %d/%d",
+			//   size, header.bLength);
+		return parsed
+	}
+	if (header.bLength >= ENDPOINT_AUDIO_DESC_LENGTH) {
+		usbi_parse_descriptor(buffer, "bbbbwbbb", endpoint, host_endian)
+	} else if (header.bLength >= ENDPOINT_DESC_LENGTH) {
+		usbi_parse_descriptor(buffer, "bbbbwb", endpoint, host_endian)
+	} else {
+		// usbi_err(ctx, "invalid endpoint bLength (%d)", header.bLength);
+		return LIBUSB_ERROR_IO
+	}
+
+	size -= header.bLength
+	parsed += header.bLength
+
+	/* Skip over the rest of the Class Specific or Vendor Specific */
+	/*  descriptors */
+	begin := buffer[parsed]
+	for size >= DESC_HEADER_LENGTH {
+		usbi_parse_descriptor(buffer, "bb", &header, 0);
+		if header.bLength < DESC_HEADER_LENGTH {
+			// usbi_err(ctx, "invalid extra ep desc len (%d)",
+				//  header.bLength)
+			return LIBUSB_ERROR_IO
+		} else if header.bLength > size {
+			// usbi_warn(ctx, "short extra ep desc read %d/%d",
+				//   size, header.bLength)
+			return parsed
+		}
+
+		/* If we find another "proper" descriptor then we're done  */
+		if (header.bDescriptorType == LIBUSB_DT_ENDPOINT) ||
+				(header.bDescriptorType == LIBUSB_DT_INTERFACE) ||
+				(header.bDescriptorType == LIBUSB_DT_CONFIG) ||
+				(header.bDescriptorType == LIBUSB_DT_DEVICE)
+			break
+
+		// usbi_dbg("skipping descriptor %x", header.bDescriptorType);
+		size -= header.bLength
+		parsed += header.bLength
+	}
+
+	/* Copy any unknown descriptors into a storage area for drivers */
+	/*  to later parse */
+	ln = len(buffer) - len(begin)
+	if ln == 0 {
+		endpoint.extra = nil
+		return parsed
+	}
+
+	extra := make([]uint8, ln)
+	endpoint.extra = extra
+
+	copy(extra, begin)
+
+	return parsed
+}
+
+func parse_bos(ctx *libusb_context, bos **libusb_bos_descriptor, buffer []uint8, size int, host_endian bool) int {
+
+	var dev_cap libusb_bos_dev_capability_descriptor 
+
+	if size < LIBUSB_DT_BOS_SIZE {
+		// usbi_err(ctx, "short bos descriptor read %d/%d",
+			//  size, LIBUSB_DT_BOS_SIZE);
+		return LIBUSB_ERROR_IO;
+	}
+
+	bos_header := libusb_bos_descriptor{}
+
+	usbi_parse_descriptor(buffer, "bbwb", &bos_header, host_endian)
+	if bos_header.bDescriptorType != LIBUSB_DT_BOS {
+		// usbi_err(ctx, "unexpected descriptor %x (expected %x)",
+			//  bos_header.bDescriptorType, LIBUSB_DT_BOS);
+		return LIBUSB_ERROR_IO;
+	}
+	if bos_header.bLength < LIBUSB_DT_BOS_SIZE {
+		// usbi_err(ctx, "invalid bos bLength (%d)", bos_header.bLength);
+		return LIBUSB_ERROR_IO
+	}
+	if bos_header.bLength > size {
+		// usbi_err(ctx, "short bos descriptor read %d/%d",
+			//  size, bos_header.bLength);
+		return LIBUSB_ERROR_IO
+	}
+
+	_bos = &libusb_bos_descriptor{}
+
+	usbi_parse_descriptor(buffer, "bbwb", _bos, host_endian);
+	buffi := bos_header.bLength
+	size -= bos_header.bLength
+
+	/* Get the device capability descriptors */
+	i := 0
+	for i = 0; i < bos_header.bNumDeviceCaps; i++ {
+		if (size < LIBUSB_DT_DEVICE_CAPABILITY_SIZE) {
+			// usbi_warn(ctx, "short dev-cap descriptor read %d/%d",
+			//     size, LIBUSB_DT_DEVICE_CAPABILITY_SIZE);
+			break
+		}
+		usbi_parse_descriptor(buffer[buffi], "bbb", &dev_cap, host_endian);
+		if (dev_cap.bDescriptorType != LIBUSB_DT_DEVICE_CAPABILITY) {
+			// usbi_warn(ctx, "unexpected descriptor %x (expected %x)",
+			//   dev_cap.bDescriptorType, LIBUSB_DT_DEVICE_CAPABILITY);
+			break
+		}
+		if (dev_cap.bLength < LIBUSB_DT_DEVICE_CAPABILITY_SIZE) {
+			// usbi_err(ctx, "invalid dev-cap bLength (%d)",
+			//     dev_cap.bLength);
+			return LIBUSB_ERROR_IO;
+		}
+		if (dev_cap.bLength > size) {
+			// usbi_warn(ctx, "short dev-cap descriptor read %d/%d",
+			//     size, dev_cap.bLength);
+			break
+		}
+
+		_bos.dev_capability[i] := ([]uint8, dev_cap.bLength)
+
+		copy(_bos.dev_capability[i], buffer[buffi:])
+		buffi += dev_cap.bLength
+		size -= dev_cap.bLength
+	}
+	_bos.bNumDeviceCaps = uint8(i)
+	*bos = _bos
+
+	return LIBUSB_SUCCESS
 }
