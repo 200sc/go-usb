@@ -38,3 +38,23 @@ type USB_CONFIGURATION_DESCRIPTIOR struct {
 	bmAttributes        uint8
 	MaxPower            uint8
 }
+
+int windows_common_init(ctx *libusb_context) {
+	if !windows_init_clock(ctx) {
+		windows_common_exit()
+		return LIBUSB_ERROR_NO_MEM
+	}
+
+	if !htab_create(ctx, HTAB_SIZE) {
+		windows_common_exit()
+		return LIBUSB_ERROR_NO_MEM
+	}
+
+	return LIBUSB_SUCCESS
+}
+
+func windows_common_exit() {
+	htab_destroy()
+	windows_destroy_clock()
+	windows_exit_dlls()
+}
