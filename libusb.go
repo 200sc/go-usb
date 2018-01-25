@@ -886,6 +886,19 @@ type libusb_bos_descriptor struct {
 	dev_capability *libusb_bos_dev_capability_descriptor
 }
 
+// BosDescriptorFromBytes does not populate the dev_capability field
+func BosDescriptorFromBytes(bytes []uint8) (*libusb_bos_descriptor, error) {
+	if len(bytes) != 5 {
+		return nil, errors.New("Expected 5 bytes")
+	}
+	return &libusb_bos_descriptor{
+		bLength:         bytes[0],
+		bDescriptorType: bytes[1],
+		wTotalLength:    bytes[2:4],
+		bNumDeviceCaps:  bytes[4],
+	}, nil
+}
+
 /** \ingroup libusb_desc
  * A structure representing the USB 2.0 Extension descriptor
  * This descriptor is documented in section 9.6.2.1 of the USB 3.0 specification.
@@ -910,6 +923,18 @@ type libusb_usb_2_0_extension_descriptor struct {
 	 * supported a value of zero indicates it is not supported.
 	 * See \ref libusb_usb_2_0_extension_attributes. */
 	bmAttributes uint32
+}
+
+func Usb20ExtensionDescriptorFromBytes(bytes []uint8) (*libusb_usb_2_0_extension_descriptor, error) {
+	if len(bytes) != 7 {
+		return nil, errors.New("Expected 7 bytes")
+	}
+	return &libusb_usb_2_0_extension_descriptor{
+		bLength:            bytes[0],
+		bDescriptorType:    bytes[1],
+		bDevCapabilityType: bytes[2],
+		bmAttributes:       bytes[3:],
+	}, nil
 }
 
 /** \ingroup libusb_desc
@@ -952,6 +977,22 @@ type libusb_ss_usb_device_capability_descriptor struct {
 
 	/** U2 Device Exit Latency. */
 	bU2DevExitLat uint16
+}
+
+func SsUsbDeviceCapabilityDescriptorFromBytes(bytes []uint8) (*libusb_ss_usb_device_capability_descriptor, error) {
+	if len(bytes) != 10 {
+		return nil, errors.New("Expected 10 bytes")
+	}
+	return &libusb_ss_usb_device_capability_descriptor{
+		bLength:               bytes[0],
+		bDescriptorType:       bytes[1],
+		bDevCapabilityType:    bytes[2],
+		bmAttributes:          bytes[3],
+		wSpeedSupported:       bytes[4:6],
+		bFunctionalitySupport: bytes[6],
+		bU1DevExitLat:         bytes[7],
+		bU2DevExitLat:         bytes[8:10],
+	}, nil
 }
 
 /** \ingroup libusb_desc
@@ -1603,11 +1644,11 @@ func libusb_get_iso_packet_buffer(transfer *libusb_transfer, packet int32) ([]ui
  * \returns number of bytes returned in data, or LIBUSB_ERROR code on failure
  */
 func libusb_get_descriptor(dev_handle *libusb_device_handle, desc_type,
-	desc_index uint8, data []uint8, length int) int {
+	desc_index libusb_descriptor_type, data []uint8, length uint16) libusb_error {
 
 	return libusb_control_transfer(dev_handle, LIBUSB_ENDPOINT_IN,
 		LIBUSB_REQUEST_GET_DESCRIPTOR, uint16(((desc_type << 8) | desc_index)),
-		0, data, uint16(length), 1000)
+		0, data, length, 1000)
 }
 
 /** \ingroup libusb_desc
@@ -1625,7 +1666,7 @@ func libusb_get_descriptor(dev_handle *libusb_device_handle, desc_type,
  * \see libusb_get_string_descriptor_ascii()
  */
 func libusb_get_string_descriptor(dev_handle *libusb_device_handle, desc_index uint8,
-	langid uint16, data []uint8, length int) int {
+	langid uint16, data []uint8, length int) libusb_error {
 
 	return libusb_control_transfer(dev_handle, LIBUSB_ENDPOINT_IN,
 		LIBUSB_REQUEST_GET_DESCRIPTOR, uint16(((LIBUSB_DT_STRING << 8) | desc_index)),

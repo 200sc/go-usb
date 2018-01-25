@@ -59,9 +59,7 @@ func libusb_get_container_id_descriptor(ctx *libusb_context,
 		return LIBUSB_ERROR_IO
 	}
 
-	idDest := make([]uint8, 6)
-
-	usbi_parse_descriptor(dev_cap.ToBytes(), "bbbbu", idDest, host_endian)
+	idDest := usbi_parse_descriptor(dev_cap.ToBytes(), "bbbbu", host_endian)
 
 	var err error
 	*container_id, err = containerIdFromBytes(idDest)
@@ -83,7 +81,7 @@ func libusb_get_container_id_descriptor(ctx *libusb_context,
  * \param length size of data buffer
  * \returns number of bytes returned in data, or LIBUSB_ERROR code on failure
  */
-func libusb_get_string_descriptor_ascii(dev_handle *libusb_device_handle, desc_index uint8, data []uint8, length int) int {
+func libusb_get_string_descriptor_ascii(dev_handle *libusb_device_handle, desc_index uint8, data []uint8, length int) libusb_error {
 
 	/* Asking for the zero'th index is special - it returns a string
 	 * descriptor that contains all the language IDs supported by the
@@ -98,9 +96,9 @@ func libusb_get_string_descriptor_ascii(dev_handle *libusb_device_handle, desc_i
 		return LIBUSB_ERROR_INVALID_PARAM
 	}
 
-	var tbuff [255]uint8 /* Some devices choke on size > 255 */
+	tbuff := make([]uint8, 255) /* Some devices choke on size > 255 */
 
-	r := libusb_get_string_descriptor(dev_handle, 0, 0, tbuf, len(tbuff))
+	r := libusb_get_string_descriptor(dev_handle, 0, 0, tbuff, len(tbuff))
 	if r < 0 {
 		return r
 	}
@@ -110,38 +108,38 @@ func libusb_get_string_descriptor_ascii(dev_handle *libusb_device_handle, desc_i
 	}
 
 	var langid uint16
-	langid = tbuf[2] | (tbuf[3] << 8)
+	langid = uint16(tbuff[2]) | uint16(tbuff[3])<<8
 
-	r = libusb_get_string_descriptor(dev_handle, desc_index, langid, tbuf, len(tbuf))
+	r = libusb_get_string_descriptor(dev_handle, desc_index, langid, tbuff, len(tbuff))
 	if r < 0 {
 		return r
 	}
 
-	if tbuf[1] != LIBUSB_DT_STRING {
+	if tbuff[1] != uint8(LIBUSB_DT_STRING) {
 		return LIBUSB_ERROR_IO
 	}
 
-	if tbuf[0] > r {
+	if tbuff[0] > uint8(r) {
 		return LIBUSB_ERROR_IO
 	}
 
 	di := 0
-	for si := 2; si < tbuf[0]; si += 2 {
+	for si := uint8(2); si < tbuff[0]; si += 2 {
 		if di >= (length - 1) {
 			break
 		}
 
-		if (tbuf[si]&0x80) != 0 || (tbuf[si+1]) != 0 { /* non-ASCII */
+		if (tbuff[si]&0x80) != 0 || (tbuff[si+1]) != 0 { /* non-ASCII */
 			data[di] = '?'
 			di++
 		} else {
-			data[di] = tbuf[si]
+			data[di] = tbuff[si]
 			di++
 		}
 	}
 
 	data[di] = 0
-	return di
+	return libusb_error(di)
 }
 
 /** \ingroup libusb_desc
@@ -160,7 +158,7 @@ func libusb_get_string_descriptor_ascii(dev_handle *libusb_device_handle, desc_i
 func libusb_get_ss_usb_device_capability_descriptor(
 	ctx *libusb_context,
 	dev_cap *libusb_bos_dev_capability_descriptor,
-	ss_usb_device_cap **libusb_ss_usb_device_capability_descriptor) int {
+	ss_usb_device_cap **libusb_ss_usb_device_capability_descriptor) libusb_error {
 
 	if dev_cap.bDevCapabilityType != LIBUSB_BT_SS_USB_DEVICE_CAPABILITY {
 		// usbi_err(ctx, "unexpected bDevCapabilityType %x (expected %x)",
@@ -174,11 +172,13 @@ func libusb_get_ss_usb_device_capability_descriptor(
 		return LIBUSB_ERROR_IO
 	}
 
-	capDest := &libusb_ss_device_capability_descriptor{}
+	capDest := usbi_parse_descriptor(dev_cap.ToBytes(), "bbbbwbbw", false)
 
-	usbi_parse_descriptor([]uint8(dev_cap), "bbbbwbbw", capDest, 0)
-
-	*ss_usb_device_cap = capDest
+	var err error
+	*ss_usb_device_cap, err = SsUsbDeviceCapabilityDescriptorFromBytes(capDest)
+	if err != nil {
+		return LIBUSB_ERROR_INVALID_PARAM
+	}
 	return LIBUSB_SUCCESS
 }
 
@@ -198,7 +198,7 @@ func libusb_get_ss_usb_device_capability_descriptor(
 func libusb_get_usb_2_0_extension_descriptor(
 	ctx *libusb_context,
 	dev_cap *libusb_bos_dev_capability_descriptor,
-	usb_2_0_extension **libusb_usb_2_0_extension_descriptor) int {
+	usb_2_0_extension **libusb_usb_2_0_extension_descriptor) libusb_error {
 
 	if dev_cap.bDevCapabilityType != LIBUSB_BT_USB_2_0_EXTENSION {
 		// usbi_err(ctx, "unexpected bDevCapabilityType %x (expected %x)",
@@ -212,11 +212,13 @@ func libusb_get_usb_2_0_extension_descriptor(
 		return LIBUSB_ERROR_IO
 	}
 
-	extDest := &libusb_usb_2_0_extension_descriptor{}
+	extDest := usbi_parse_descriptor(dev_cap.ToBytes(), "bbbd", false)
 
-	usbi_parse_descriptor([]uint8(dev_cap), "bbbd", extDest, 0)
-
-	*usb_2_0_extension = extDest
+	var err error
+	*usb_2_0_extension, err = Usb20ExtensionDescriptorFromBytes(extDest)
+	if err != nil {
+		return LIBUSB_ERROR_INVALID_PARAM
+	}
 	return LIBUSB_SUCCESS
 }
 
@@ -231,7 +233,7 @@ func libusb_get_usb_2_0_extension_descriptor(
  * \returns LIBUSB_ERROR_NOT_FOUND if the device doesn't have a BOS descriptor
  * \returns another LIBUSB_ERROR code on error
  */
-func libusb_get_bos_descriptor(dev_handle *libusb_device_handle, bos **libusb_bos_descriptor) int {
+func libusb_get_bos_descriptor(dev_handle *libusb_device_handle, bos **libusb_bos_descriptor) libusb_error {
 
 	bos_header := make([]uint8, LIBUSB_DT_BOS_SIZE)
 
@@ -249,17 +251,15 @@ func libusb_get_bos_descriptor(dev_handle *libusb_device_handle, bos **libusb_bo
 		return LIBUSB_ERROR_IO
 	}
 
-	_bos := libusb_bos_descriptor{}
-	host_endian := false
-
-	usbi_parse_descriptor(bos_header, "bbwb", &_bos, host_endian)
+	bosBytes := usbi_parse_descriptor(bos_header, "bbwb", false)
+	_bos, _ := BosDescriptorFromBytes(bosBytes)
 	// usbi_dbg("found BOS descriptor: size %d bytes, %d capabilities",
 	//  _bos.wTotalLength, _bos.bNumDeviceCaps);
 	bos_data := make([]uint8, _bos.wTotalLength)
 
 	r = libusb_get_descriptor(dev_handle, LIBUSB_DT_BOS, 0, bos_data, _bos.wTotalLength)
 	if r >= 0 {
-		r = parse_bos(dev_handle.dev.ctx, bos, bos_data, r, host_endian)
+		r = parse_bos(dev_handle.dev.ctx, bos, bos_data, int(r), false)
 	}
 	// else usbi_err(dev_handle), "failed to read BOS (%d)", r.dev.ctx;
 
@@ -631,12 +631,29 @@ func parse_configuration(ctx *libusb_context,
 	return size
 }
 
+func descriptorLen(desc string) (size int) {
+	for _, r := range desc {
+		switch r {
+		case 'b':
+			size++
+		case 'w':
+			size += 2
+		case 'd':
+			size += 4
+		case 'u':
+			size += 16
+		}
+	}
+}
+
 /* set host_endian if the w values are already in host endian format,
  * as opposed to bus endian. */
-func usbi_parse_descriptor(sp []uint8, descriptor string, dp []uint8, host_endian bool) int {
+func usbi_parse_descriptor(sp []uint8, descriptor string, host_endian bool) []uint8 {
 
 	i := 0
 	di := 0
+
+	dp := make([]uint8, descriptorLen(descriptor))
 
 	for _, r := range descriptor {
 		switch r {
@@ -885,7 +902,7 @@ func parse_endpoint(ctx *libusb_context, endpoint *libusb_endpoint_descriptor, b
 	return parsed
 }
 
-func parse_bos(ctx *libusb_context, bos **libusb_bos_descriptor, buffer []uint8, size int, host_endian bool) int {
+func parse_bos(ctx *libusb_context, bos **libusb_bos_descriptor, buffer []uint8, size int, host_endian bool) libusb_error {
 
 	var dev_cap libusb_bos_dev_capability_descriptor
 
