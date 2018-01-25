@@ -34,7 +34,6 @@ var udev_monitor_fd int = -1
 var udev_control_pipe [2]int = {-1, -1}
 // Go: renamed from udev_monitor
 var _udev_monitor *udev_monitor
-var linux_event_thread pthread_t
 
 var udev_hotplug_event func(*udev_device)
 
@@ -50,24 +49,24 @@ func linux_udev_start_event_monitor() int {
 		goto err
 	}
 
-	udev_monitor = udev_monitor_new_from_netlink(udev_ctx, "udev")
-	if udev_monitor == nil {
+	_udev_monitor = udev_monitor_new_from_netlink(udev_ctx, "udev")
+	if _udev_monitor == nil {
 		// usbi_err(nil, "could not initialize udev monitor")
 		goto err_free_ctx
 	}
 
-	r := udev_monitor_filter_add_match_subsystem_devtype(udev_monitor, "usb", "usb_device")
+	r := udev_monitor_filter_add_match_subsystem_devtype(_udev_monitor, "usb", "usb_device")
 	if r != 0 {
 		// usbi_err(nil, "could not initialize udev monitor filter for \"usb\" subsystem")
 		goto err_free_monitor
 	}
 
-	if udev_monitor_enable_receiving(udev_monitor) {
+	if udev_monitor_enable_receiving(_udev_monitor) {
 		// usbi_err(nil, "failed to enable the udev monitor")
 		goto err_free_monitor
 	}
 
-	udev_monitor_fd = udev_monitor_get_fd(udev_monitor)
+	udev_monitor_fd = udev_monitor_get_fd(_udev_monitor)
 
 	/* Some older versions of udev are not non-blocking by default,
 	 * so make sure this is set */
@@ -101,8 +100,8 @@ err_close_pipe:
 	close(udev_control_pipe[0])
 	close(udev_control_pipe[1])
 err_free_monitor:
-	udev_monitor_unref(udev_monitor)
-	udev_monitor = nil
+	udev_monitor_unref(_udev_monitor)
+	_udev_monitor = nil
 	udev_monitor_fd = -1
 err_free_ctx:
 	udev_unref(udev_ctx)
@@ -115,7 +114,7 @@ func linux_udev_stop_event_monitor() libusb_error {
 	if udev_ctx == nil {
 		panic("assert(udev_ctx != nil)")
 	}
-	if udev_monitor == nil {
+	if _udev_monitor == nil {
 		panic("assert(udev_monitor != nil")
 	}
 	if udev_monitor_fd == -1 {
@@ -132,8 +131,8 @@ func linux_udev_stop_event_monitor() libusb_error {
 	pthread_join(linux_event_thread, nil)
 
 	/* Release the udev monitor */
-	udev_monitor_unref(udev_monitor)
-	udev_monitor = nil
+	udev_monitor_unref(_udev_monitor)
+	_udev_monitor = nil
 	udev_monitor_fd = -1
 
 	/* Clean up the udev context */
@@ -151,7 +150,7 @@ func linux_udev_stop_event_monitor() libusb_error {
 
 // Go change: this always returns NULL, so instead it's just 
 // not returning anything
-func linux_udev_event_thread_main(arg interface{}) {
+func linux_udev_event_thread_main() {
 	var dummy rune
 	fds := [2]pollfd{
 		{	
@@ -177,7 +176,7 @@ func linux_udev_event_thread_main(arg interface{}) {
 		}
 		if fds[1].revents & POLLIN != 0 {
 			linux_hotplug_lock.Lock()
-			udev_dev := udev_monitor_receive_device(udev_monitor)
+			udev_dev := udev_monitor_receive_device(_udev_monitor)
 			if udev_dev != nil {
 				udev_hotplug_event(udev_dev)
 			}
@@ -280,11 +279,11 @@ func udev_hotplug_event(udev_dev *udev_device) {
 
 func linux_udev_hotplug_poll() {
 	linux_hotplug_lock.Lock()
-	udev_dev := udev_monitor_receive_device(udev_monitor)
+	udev_dev := udev_monitor_receive_device(_udev_monitor)
 	for udev_dev != nil {
 		// usbi_dbg("Handling hotplug event from hotplug_poll")
 		udev_hotplug_event(udev_dev)
-		udev_dev = udev_monitor_receive_device(udev_monitor)		
+		udev_dev = udev_monitor_receive_device(_udev_monitor)		
 	}
 	linux_hotplug_lock.Unlock()
 }
