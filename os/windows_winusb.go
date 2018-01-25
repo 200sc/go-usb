@@ -774,3 +774,16 @@ type Range struct {
 type USB_HUB_NAME_FIXED struct {
 	root_or_node USB_ROOT_HUB_NAME_FIXED
 }
+
+type USB_PROTOCOLS struct {
+	Usb110 bool
+	Usb200 bool
+	Usb300 bool 
+	reservedMBZ [29]bool
+}
+
+type USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS struct {
+	DeviceIsOperatingAtSuperSpeedOrHigher bool
+	DeviceIsSuperSpeedCapableOrHigher bool
+	reservedMBZ [30]bool
+}
