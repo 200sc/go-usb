@@ -34,3 +34,7 @@ Semantic:
 * [ ] sync.go
 
 OS-Specific code is in the process of conversion
+
+All of the small OS-specific files have been converted, the smallest remaining file at over 600 LOC. 
+
+Before I start converting the larger files I want to look into whether the `poll` semantics that libusb uses are even a thing we need to care about, or if they can be replicated with channels. All references to `poll` in the libusb docs suggest that they are "fake" and just used for signalling, which sounds a heck of a lot like a `chan struct{}`.
